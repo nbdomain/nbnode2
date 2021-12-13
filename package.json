@@ -1,0 +1,33 @@
+{
+  "name": "nbnode",
+  "version": "0.2.0",
+  "description": "NBDomain node server.",
+  "directories": {
+    "bin": "./bin"
+  },
+  "author": "nbdomain-dev",
+  "license": "MIT",
+  "dependencies": {
+    "abort-controller": "^3.0.0",
+    "arweave": "^1.10.18",
+    "axios": "^0.21.1",
+    "better-sqlite3": "^7.1.0",
+    "bitidentity": "^1.0.44",
+    "body": "^5.1.0",
+    "body-parser": "^1.19.0",
+    "bsv": "1.5.6",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "event-stream": "^4.0.1",
+    "eventsource": "^1.1.0",
+    "express": "^4.17.1",
+    "greenlock-express": "^4.0.3",
+    "http-proxy-middleware": "^1.0.6",
+    "minimist": "^1.2.5",
+    "morgan": "^1.10.0",
+    "nbpay": "^1.0.19",
+    "node-cron": "^2.0.3",
+    "node-fetch": "^2.6.0",
+    "reconnecting-eventsource": "^1.1.0"
+  }
+}

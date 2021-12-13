@@ -1,0 +1,9 @@
+{
+  "t":"web",
+  "price":100,
+  "content":"",
+  "summary":"It's a summary",
+  "urlmap":{
+    "/":"bitfs://729dcc63aa3cf388296177e86a564f8cd5d112be1a3cd43f5c71195fe5eab716.out.0.3"
+  }
+}

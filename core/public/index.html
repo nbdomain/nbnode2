@@ -1,0 +1,238 @@
+<html>
+
+<head>
+	<link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" />
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<script src="https://unpkg.com/vue@next"></script>
+	<link href="/files/text.css" rel="stylesheet" type="text/css" />
+	<script src="https://unpkg.com/opay@1.0.90/opay.min.js"></script>
+	<style>
+		/* Style the overall container */
+		#tabscontainer {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			position: relative;
+			margin: 10px 0 1px 0;
+			padding: 0;
+			white-space: nowrap;
+		}
+
+		/* Set the font-family for all text within the #tabscontainer */
+		#tabscontainer * {
+			font-family: Trebuchet MS, Verdana, Helvetica, Arial;
+		}
+
+		/* Style the radio group that corresponds to the tabs */
+		#tabscontainer>[name="radiogroupfortabs"] {
+			position: absolute;
+			visibility: hidden;
+		}
+
+		/* Set Flexbox ordering of radio items within the #tabscontainer.  A unique rule has to be created for each tab. */
+		#tabscontainer>#radiofortab1 {
+			-webkit-box-ordinal-group: 2;
+			-webkit-order: 1;
+			-ms-flex-order: 1;
+			order: 1;
+		}
+
+		#tabscontainer>#radiofortab2 {
+			-webkit-box-ordinal-group: 3;
+			-webkit-order: 2;
+			-ms-flex-order: 2;
+			order: 2;
+		}
+
+		/* Style all radio group LABELS (by class) to look like tabs.  The currently selected tab is re-styled by another rule near the end.  Could use the background-image attribute here instead of colors in order to give the tabs any appearance desired.  If doing this, then would have to create a separate rule for each tab. */
+		#tabscontainer>[id^="tab-label"] {
+			position: relative;
+			top: 0px;
+			max-height: 38px;
+			margin: 0px 0px 0 0;
+			display: inline-block;
+			padding: 10px 12px;
+			border-radius: 5px 5px 0 0;
+			border-width: 2px 2px 2px 2px;
+			border-style: solid;
+			border-color: #fff;
+			font-size: 16px;
+			font-weight: bold;
+			text-transform: uppercase;
+			background: #ddd;
+			cursor: pointer;
+			-webkit-transition: all 0.2s ease-in-out;
+			transition: all 0.2s ease-in-out;
+		}
+
+		/* Style unselected tabs (INPUT element's label) when the pointer hovers over them.  Could use the background-image attribute here instead of colors in order to give the tab any appearance. */
+		#tabscontainer>[id^="tab-label"]:hover {
+			background: #fff;
+			border-color: #fff #fff #fff #fff;
+		}
+
+		/* Style all of the content DIVs including setting DISPLAY to None to start with.  The DIV corresponding to the currently selected tab is displayed by the rule near the end. */
+		#tabscontainer>[id^="tab-content"] {
+			-webkit-box-ordinal-group: 999;
+			-webkit-order: 999;
+			-ms-flex-order: 999;
+			order: 999;
+			/* Set to a high value - just has to be at least one more than the number of tabs */
+			display: none;
+			z-index: 2;
+			top: 48px;
+			width: 100%;
+			min-height: 5em;
+			overflow: hidden;
+			overflow-wrap: normal;
+			font-size: 14px;
+			border-width: 0px;
+			border-style: solid;
+			padding: 10px 10px 10px 25px;
+			background: #fff;
+			margin-top: -1px;
+			border-radius: 0 5px 5px 5px;
+		}
+
+		/* Style the currently selected tab (checked INPUT element's label) by first selecting the lone checked item from the radiogroup for the tabs and then select the label (by class) that follows the checked INPUT element (INPUT element within the named group - radiogroupfortabs) in order to apply the following effects to just the selected tab/label.  Could use the background-image attribute here instead of colors in order to give the tab any appearance. */
+		#tabscontainer>[name="radiogroupfortabs"]:checked+[id^="tab-label"] {
+			z-index: 4;
+			margin-top: 0px;
+			padding-top: 10px;
+			background: #fff;
+			border-color: #fff #fff #fff #fff;
+		}
+
+		/* Display the content DIV that corresponds to the selected tab (because of the limitations of CSS selectors, this could not be done with a single rule.  A unique rule has to be created for each tab/tab content within the tab set.) */
+		#tabscontainer>#radiofortab1:checked~#tab-content1 {
+			display: block;
+		}
+
+		#tabscontainer>#radiofortab2:checked~#tab-content2 {
+			display: block;
+		}
+
+		#tabscontainer>#radiofortab3:checked~#tab-content3 {
+			display: block;
+		}
+
+		/* ----- END OF TAB COMPONENT ----- */
+	</style>
+</head>
+
+<body class="font-mono bg-green-100">
+	<div id="app">
+	<div id="tabscontainer" class="flex flex-row flex-wrap whitespace-nowrap m-5">
+		<input type="radio" id="radiofortab1" name="radiogroupfortabs" checked />
+		<label id="tab-label1" for="radiofortab1">Welcome</label>
+		<div id="tab-content1">
+			<div id="welcome">
+			</div>
+		</div>
+
+		<input type="radio" id="radiofortab2" name="radiogroupfortabs" class="hidden absolute order-2" />
+		<label id="tab-label2" for="radiofortab2">Info</label>
+		<div id="tab-content2">
+			<div id="infoPanel" align="center" class="flex flex-row">
+				<div class="flex-col flex m-2 font-bold">
+					<div>Version:</div>
+					<div>Domain:</div>
+					<div>Contact:</div>
+					<div>Endpoints:</div>
+					
+				</div>
+				<div class="flex-col flex m-2">
+					<div>{{nodeInfo.version}}</div>
+					<div>{{nodeInfo.domain}}</div>
+					<div>{{nodeInfo.contact}}</div>
+					<div>{{nodeInfo.endpoints.join(' ')}}</div>
+				</div>
+
+			</div>
+		</div>
+
+		<input type="radio" id="radiofortab3" name="radiogroupfortabs" class="hidden absolute order-3" />
+		<label id="tab-label3" for="radiofortab3">Services</label>
+		<div id="tab-content3">
+			<div v-if="hasDomain">
+			<div id="apply" class="text-md font-bold m-3">Host NBlink Domains <a href="https://"
+					class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600">Help</a></div>
+			<span id="name" class="m-3">Domain Name:</span><input id="elDomain"
+				class="focused:border-green py-2 border-2" />
+			<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mx-2 rounded"
+				onclick="applyDomain()">Apply
+			</button>
+			<div class="m-3 text-sm">Hosting price per NBlink domain: {{priceDomainHost}} Sat</div>
+			<div id="pay" style="width:250px;height:250px"></div>
+			<div id="status" style="color:red"></div>
+		</div>
+		<div v-else>Please assign a domain to this node and update config.js->node_info->domain</div>
+		</div>
+	</div>
+</div>
+	<script>
+		const app = Vue.createApp({
+		data() {
+			return { 
+				hasDomain: false,
+				nodeInfo:{endpoints:[]},
+				welcome:"",
+				domain:"NULL",
+				contact:"NULL",
+				endpoints:"NULL",
+				payment:null,
+			}
+		},
+		computed:{
+			priceDomainHost(){
+				return this.nodeInfo.prices?this.nodeInfo.prices.domainHost:0
+			},
+		}
+		})
+
+		const vm = app.mount('#app');
+
+		fetch("/files/welcome.md").then(res => {
+			return res.text()
+		}).then(data => {
+			document.getElementById('welcome').innerHTML = marked(data);
+		})
+		fetch("/nodeInfo").then(res => {
+			return res.json()
+		}).then(data => {
+			vm.nodeInfo = data;
+			vm.hasDomain = data.domain;
+		})
+
+		opay.init({ containerID: "pay" });
+		function callApplyDomain(domain){
+			const applyURL = "/nblink/add/?domain=" + domain;
+				fetch(applyURL).then(res => res.json()).then(json => {
+					if (json.code != 0) {
+						alert(json.message)
+					}
+				});
+		}
+		function applyDomain() {
+			const domain = document.querySelector("#elDomain").value.trim();
+			if (domain == "") return;
+			if(vm.nodeInfo.prices.domainHost==0){
+				callApplyDomain(domain);
+				return;
+			}
+			let reqBody = {
+				to: [{ address: vm.nodeInfo.payment, value: vm.nodeInfo.prices.domainHost }],
+				expire: Date.now() + 120 * 1000,
+				broadcast: false
+			};
+			opay.request({ pay_request: { data: reqBody } }, e => {
+				let result = e;
+				console.log(result);
+				document.querySelector("#status").innerText = JSON.stringify(result);
+				callApplyDomain(domain);
+			});
+		}
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <title>Upload Website</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <h1>Upload Website</h1>
+
+    <p>Upload a website to <strong>Meta Web</strong></p>
+
+
+    <p>
+      Choose the folder that contains website files.
+    </p>
+
+    <h3>Choose Folder</h3>
+    <div class="picker">
+      <input type="file" id="picker" name="items" webkitdirectory multiple />
+    </div>
+
+    <h3>Percentage</h3>
+    <span id="box">0%</span>
+
+    <h3>Progress</h3>
+    <div id="myProgress">
+      <div id="myBar"></div>
+    </div>
+
+    <h3>Files Uploaded</h3>
+    <!-- <ul id="listing"></ul> -->
+    <span id="listing"></span>
+
+    <h3>Loader Animation</h3>
+    <!-- <ul id="listing"></ul> -->
+    <img id="loader" src="/assets/loader.gif" />
+
+    <script src="main.js"></script>
+  </body>
+</html>

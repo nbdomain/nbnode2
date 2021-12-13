@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <link href="https://nbgate.glitch.me/text.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.0.2/markdown-it.min.js"></script>
+  </head>
+  <body>
+    <script>
+      var domainObject = **OBJ**
+      var md = window.markdownit();
+      var result = md.render(domainObject.obj);
+      document.write(result);
+      
+    </script>
+    <div align="right">
+      <a href="#" id="txid" style="font-size:8px;color:grey;text-decoration:none;"></a>
+    </div>
+    <script>
+      var elid = document.querySelector("#txid");
+      elid.innerText = domainObject.txid;
+      elid.href = "https://whatsonchain.com/tx/"+domainObject.txid;
+    </script>
+  </body>
+</html>
