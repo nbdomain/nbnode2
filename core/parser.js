@@ -30,9 +30,9 @@ class Parser {
         this.parser_domain.init(db)
         this.parser_nft.init(db)
     }
-    verify(rawtx, height) {
-        if(this.blockchain==='ar')return ARChain.verify(rawtx,height);
-        if(this.blockchain==='bsv')return BSVChain.verify(rawtx,height);
+    verify(rawtx, height,block_time) {
+        if(this.blockchain==='ar')return ARChain.verify(rawtx,height,block_time);
+        if(this.blockchain==='bsv')return BSVChain.verify(rawtx,height,block_time);
         throw "Unsupported blockchain"
     }
     domainParser(){
@@ -53,6 +53,12 @@ class Parser {
         
         let rtx = ( this.blockchain==='ar'?ARChain.raw2rtx(rawtx,height):BSVChain.raw2rtx(rawtx,height) )
         try {
+            if(verify&&height==-1){ //p2p rawtx
+                const tspan = Date.now()/1000 - rtx.ts
+                if(tspan>10||tspan<-1){
+                    return {code:1,msg:"invalid timestamp"}
+                }
+            }
             let handler = this.domainParser().getAllCommands()[rtx.command]
             if (!handler) handler = this.nftParser().getAllCommands()[rtx.command]
             if (handler) rtx.output = handler.parseTX(rtx,verify)

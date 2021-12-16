@@ -9,7 +9,9 @@
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const API = 'arnode'  // 'planaria','mattercloud','urchain','nbnode'
+const API = {
+  bsv:"planaria",ar:'arnode'
+  }  // 'planaria','mattercloud','urchain','nbnode'
 const MATTERCLOUD_KEY = "44h9cKf4VHUvdpbRnG8KER1qCwx3oEjqho7TFBZv23BFgMtewE7k4kXPJbfv1EPQsi"
 const PLANARIA_TOKEN = "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiIxQzc5M0RkVjI0Q3NORTJFUDZNbVZmckhqVlNGVmc2dU4iLCJpc3N1ZXIiOiJnZW5lcmljLWJpdGF1dGgifQ.SUJlYUc2TGNGdFlZaGk3amxwa3ZoRGZJUEpFcGhObWhpdVNqNXVBbkxORTdLMWRkaGNESC81SWJmM2J1N0V5SzFuakpKTWFPNXBTcVJlb0ZHRm5uSi9VPQ"
 const NETWORK = 'main'
@@ -35,7 +37,7 @@ const CONFIG = {
       domainHost: 0 //host user's triditional domain and link to a nbdomain
     }
   },
-  seeds:["https://api.nbdomain.com","https://tnode.nbdomain.com","http://localhost:9001","http://localhost:9002"],
+  peers:["https://api.nbdomain.com","https://tnode.nbdomain.com","http://localhost:9001","http://localhost:9002"],
   //SSL:["abc.nbdomain.com"],
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
   "node_port": 9001,

@@ -180,6 +180,7 @@ class Resolver {
                 // Add transaction to Nid one by one in their creation order
                 try {
                     rtxArray.forEach((rtx, _) => {
+                        this.db.setTransactionResolved(rtx.txid)
                         if (!rtx.output || !rtx.output.domain) return
                         if (rtx.command == CMD.REGISTER && rtx.output.err) return
                         let domain = rtx.output.domain
@@ -213,8 +214,8 @@ class Resolver {
 
                     }
                 }
-                if (lastResolvedId != 0)
-                    this.db.saveLastResolvedId(lastResolvedId)
+                //if (lastResolvedId != 0)
+                //    this.db.saveLastResolvedId(lastResolvedId)
             }
 
         } catch (err) {

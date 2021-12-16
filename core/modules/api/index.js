@@ -11,6 +11,7 @@ const { Util } = require('../../util.js')
 const Parser = require('../../parser')
 const { json } = require('body-parser');
 const axios = require('axios');
+const Nodes = require('../../nodes')
 var app = express();
 
 app.use(cors());
@@ -142,6 +143,13 @@ app.post('/sendTx', async function (req, res) {
         return
     }
     ret = await Util.sendRawtx(obj.rawtx,blockchain);
+    if(ret.code==0){
+        if(blockchain=='ar'){
+            indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
+        }else
+            indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)
+        Nodes.notifyPeers({cmd:"newtx",data:ret.txid})
+    }
     res.json(ret);
 });
 app.get('/p2p/:cmd/',function(req,res){ //sever to server command
@@ -165,7 +173,13 @@ app.get('/queryTags', function (req, res) {
     res.json(result);
     return;
 });
-
+app.get('/nodeInfo',(req,res)=>{
+    let info = CONFIG.node_info;
+    info.endpoints = Object.keys(CONFIG.proxy_map);
+    info.version = "1.5.1";
+    info.tld = CONFIG.tld_config
+    res.json(info);
+})
 app.get(`/tld`, function (req, res) {
     if (!auth(req, res)) {
         return;

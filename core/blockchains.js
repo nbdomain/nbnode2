@@ -7,13 +7,14 @@ class ARChain {
         if (!publicKey) {
             return { code: -1, msg: `Failed to verify transaction signature.` }
         }
-        return { code: 0 }
+        const rtx = ARChain.raw2rtx(rawtx)
+        return { code: 0,txTime:rtx.ts }
     }
     static raw2rtx(rawtx) {
-        const tx = rawtx;
+        const tx = JSON.parse(rawtx);
         let rtx = {
             height: tx.block.height,
-            //ts: timestamp,
+            ts: +(tx.tags.txTime),
             txid: tx.id,
             publicKey: tx.owner.key,
             command: tx.tags.command,
@@ -36,14 +37,21 @@ class BSVChain {
         }
         return null
     }
-    static verify(rawtx, height) {
+    static verify(rawtx, height,block_time) {
+        let txTime = null
         if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
             const publicKey = BSVChain.verifySig(rawtx)
             if (!publicKey) {
                 return { code: -1, msg: `Failed to verify transaction signature.` }
             }
         }
-        return { code: 0 }
+        if(block_time){ //check txtime
+            const rtx = BSVChain.raw2rtx(rawtx)
+            txTime = rtx.ts
+            if(rtx.ts&&rtx.ts>block_time)
+                return { code: -1, msg: 'txTime invalid' }
+        }
+        return { code: 0,txTime:txTime }
     }
     static _reArrage(rtx) {
         if (rtx.out[0].s2 === "nbd") {
@@ -76,6 +84,13 @@ class BSVChain {
             in: tx.in,
             out: tx.out,
         };
+        if(tx.out[0].s2 == "nbd"&&tx.out[0].s3 != "1"){
+            try{
+                const attrib = JSON.parse(tx.out[0].s3)
+                rtx.ts = +attrib.ts
+            }catch(e){}
+            
+        }
         tx.in.forEach(inp=>{if(inp.e.a)rtx.inputAddress = inp.e.a.toString()})
         BSVChain._reArrage(rtx)
         rtx.blockchain = 'bsv'

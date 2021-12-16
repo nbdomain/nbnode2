@@ -61,16 +61,17 @@ class Util {
         nidObj.sell_info = null;
         return nidObj;
     }
-    static async sendRawtx(rawtx,blockchain) 
+    static async sendRawtx(rawtx,blockchain='bsv') 
     {   
         let ret = {code:1}
         if(blockchain=='bsv'){
             const res =  await nbpay.send({tx:rawtx})
             ret = {code:res.err?1:0,...res}
+            return ret
         }
         if(blockchain=='ar'){
             const res =  await AWNode.sendRawTx(rawtx)
-            
+            return res
         }
         throw("sendRawtx:unsupported blockchain")
     }

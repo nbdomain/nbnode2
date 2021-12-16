@@ -223,10 +223,10 @@ class Indexer {
         return
       }
       const height = this.database.getTransactionHeight(txid);
-      const ts = this.database.getTransactionTime(txid);
+      const block_time = this.database.getTransactionTime(txid);
       let meta = null
       try{
-        meta = Parser.getParser(this.blockchain).verify(rawtx,height);
+        meta = Parser.getParser(this.blockchain).verify(rawtx,height,block_time);
         if(meta.code!=0){
           this.logger.warn(txid,":"+meta.msg);
           this.database.deleteTransaction(txid);
@@ -238,7 +238,7 @@ class Indexer {
         return;
       }
       //this.database.setTransaction(txid, meta.obj)
-      this.database.saveTransaction(txid,rawtx)
+      this.database.saveTransaction(txid,rawtx,meta.txTime)
       return
     
 

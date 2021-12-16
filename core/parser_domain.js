@@ -146,7 +146,7 @@ class CMD_BUY {
         if (nidObj.status == DEF.STATUS_TRANSFERING && nidObj.sell_info) {
             //TODO validate
             {
-                if (rtx.time != -1 && rtx.time * 1000 > Number(nidObj.sell_info.expire)) return null //expired
+                if (rtx.txTime != -1 && rtx.txTime * 1000 > Number(nidObj.sell_info.expire)) return null //expired
                 let clearData = nidObj.sell_info.clear_data;
                 if (nidObj.sell_info.buyer != 'any') { //check if it's the right buyer
                     if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
@@ -327,7 +327,7 @@ class CMD_KEYUSER {
             if (!authorized)
                 return null;
         }
-        const ts = rtx.time ? rtx.time : new Date().valueOf()
+        const ts = rtx.txTime ? rtx.txTime : rtx.time
         if (rtx.command == CMD.KEY) {
             if (rtx.output.value.toDomain) {
                 let obj = objMap[rtx.output.value.toDomain]

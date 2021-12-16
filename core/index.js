@@ -8,7 +8,7 @@ const Indexer = require('./indexer')
 const Server = require('./server')
 const Nodes = require('./nodes')
 const {
-  API, TXDB,DMDB, NETWORK, FETCH_LIMIT, WORKERS, MATTERCLOUD_KEY, PLANARIA_TOKEN, START_HEIGHT,
+  API, TXDB, DMDB, NETWORK, FETCH_LIMIT, WORKERS, MATTERCLOUD_KEY, PLANARIA_TOKEN, START_HEIGHT,
   MEMPOOL_EXPIRATION, ZMQ_URL, RPC_URL
 } = require('./config')
 const Planaria = require('./planaria')
@@ -27,46 +27,52 @@ const AWNode = require('./arweave')
 // ------------------------------------------------------------------------------------------------
 
 const logger = console
-logger.info("PLANARIA_TOKEN:",PLANARIA_TOKEN);
+logger.info("PLANARIA_TOKEN:", PLANARIA_TOKEN);
 var myArgs = process.argv.slice(2);
 let REORG = 0;
-if(myArgs){
-  var argv = parseArgs(myArgs, opts={})
-  logger.info("cmd:",argv);
-  if(argv.reorg){
+if (myArgs) {
+  var argv = parseArgs(myArgs, opts = {})
+  logger.info("cmd:", argv);
+  if (argv.reorg) {
     REORG = argv.reorg
-    fs.unlinkSync(__dirname+"/db/"+DMDB)
+    fs.unlinkSync(__dirname + "/db/" + DMDB)
   }
 }
-let api = null
-switch (API) {
-  //case 'arnode': api = new AWNode("",logger);break
-  //default: throw new Error(`Unknown API: ${API}`)
-}
-//bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
-const apiAR = new AWNode("",logger);
-const apiBSV = new Planaria(PLANARIA_TOKEN, logger);
-//const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
-const indexers = {bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
 
-server = new Server(indexers, logger)
 
 // ------------------------------------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------------------------------------
 
-async function main () {
-  await Nodes.init()
+async function main() {
+  
+  let apiAR=null,apiBSV=null;
+  switch (API.bsv) {
+    case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, logger);break
+    //default: throw new Error(`Unknown API: ${API}`)
+  }
+  switch (API.ar) {
+    case 'arnode': apiAR = new AWNode("", logger);break
+    //default: throw new Error(`Unknown API: ${API}`)
+  }
+  //bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
+  
+  //const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
+  const indexers = { bsv: new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG) }
+
+  server = new Server(indexers, logger)
+
   indexers.ar && await indexers.ar.start()
   indexers.bsv && await indexers.bsv.start()
   server.start()
+  const seedNode = await Nodes.init()
 }
 
 // ------------------------------------------------------------------------------------------------
 // shutdown
 // ------------------------------------------------------------------------------------------------
 
-async function shutdown () {
+async function shutdown() {
   server.stop()
   await indexer.stop()
   process.exit(0)
