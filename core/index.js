@@ -8,8 +8,8 @@ const Indexer = require('./indexer')
 const Server = require('./server')
 const Nodes = require('./nodes')
 const {
-  API, TXDB, DMDB, NETWORK, FETCH_LIMIT, WORKERS, MATTERCLOUD_KEY, PLANARIA_TOKEN, START_HEIGHT,
-  MEMPOOL_EXPIRATION, ZMQ_URL, RPC_URL
+  API, TXDB, DMDB, FETCH_LIMIT, WORKERS, PLANARIA_TOKEN, START_HEIGHT,
+  MEMPOOL_EXPIRATION,
 } = require('./config')
 const Planaria = require('./planaria')
 const UrChain = require('./urchain')
