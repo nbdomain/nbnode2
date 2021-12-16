@@ -74,7 +74,8 @@ async function main() {
 
 async function shutdown() {
   server.stop()
-  await indexer.stop()
+  await indexers.ar.stop()
+  await indexers.bsv.stop()
   process.exit(0)
 }
 
