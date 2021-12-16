@@ -29,15 +29,16 @@ const CONFIG = {
   debug: true,
   "node_info": {
     payment: "1LQ2tBsvBvaUsxrg14TeRoiLjWoaAwsTLH", //address of the owner. Payment (if any) will goto this address.
-    domain: "", //domain name of the node, for SSL certificate. Replace with real domain
+    domain: "", //domain name or IP of the node
     contact: "", //contact email of the owner
+    https:true, //for auto generated SSL certificate
+    port:80,  //port for http service
     prices: {
       domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
       keyUpdate: {bsv:1000,ar:1000}
     }
   },
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
-  "node_port": 9000,
   "proxy_map": {
     "/api/": "api",
     "/web/": "web"

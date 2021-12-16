@@ -20,12 +20,12 @@ class Nodes{
         })
     }
     async init(){
-        this.endpoint = config.CONFIG.node_info.domain
+        this.endpoint = (config.CONFIG.node_info.https?"https://":"http://")+config.CONFIG.node_info.domain+":"+config.CONFIG.node_info.port
         setTimeout(this.refreshPeers.bind(this),5000)
         return node
     }
     async refreshPeers(){
-        const port = config.CONFIG.node_port
+        const port = config.CONFIG.node_info.port
         const res = await axios.get("http://localhost:"+port+"/api/queryKeys?tags=nbnode")
         let peers2test=[]
         if(res.data){

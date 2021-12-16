@@ -105,9 +105,13 @@ class Indexer {
 
   
 
-  tx (txid) {
+  rawtx (txid) {
     txid = this._parseTxid(txid)
-    return this.database.getTransactionHex(txid)
+    const ret = this.database.getRawTransaction(txid)
+    if(this.blockchain=='bsv'){
+      return ret.toString('hex')
+    }
+    return ret
   }
 
   time (txid) {
@@ -246,8 +250,8 @@ class Indexer {
   }
 
   _parseTxid (txid) {
-    txid = txid.trim().toLowerCase()
-    if (!/^[0-9a-f]{64}$/.test(txid)) throw new Error('Not a txid: ' + txid)
+  //  txid = txid.trim().toLowerCase()
+  //  if (!/^[0-9a-f]{64}$/.test(txid)) throw new Error('Not a txid: ' + txid)
     return txid
   }
 }

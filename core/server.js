@@ -123,9 +123,9 @@ class Server {
   }
   async startWebServer() {
     //Start HTTPS server
-    if (CONFIG.node_info.domain) {
+    if (CONFIG.node_info.domain&&CONFIG.node_info.https) {
         var appSSL = express();
-        const localAPI = "http://localhost:" + CONFIG.node_port;
+        const localAPI = "http://localhost:" + CONFIG.node_info.port;
         appSSL.use(createProxyMiddleware("**", { target: localAPI }));
         let domainError = {};
         greenlock = require("@root/greenlock").create({
@@ -165,8 +165,8 @@ class Server {
   }
   startProxyServer(app) {
     const self = this;
-    this.listener = app.listen(CONFIG.node_port, async function () {
-      console.log(`NBnode server started on port ${CONFIG.node_port}...`);
+    this.listener = app.listen(CONFIG.node_info.port, async function () {
+      console.log(`NBnode server started on port ${CONFIG.node_info.port}...`);
 
       var proxyPassConfig = CONFIG.proxy_map;
 

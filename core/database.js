@@ -121,7 +121,7 @@ class Database {
 
     this.addNewTransactionStmt = this.txdb.prepare('INSERT OR IGNORE INTO tx (txid, height, time, bytes) VALUES (?, null, ?, null)')
     this.setTransactionBytesStmt = this.txdb.prepare('UPDATE tx SET bytes = ?, txTime = ? WHERE txid = ?')
-    this.getTransactionHexStmt = this.txdb.prepare('SELECT LOWER(HEX(bytes)) AS hex FROM tx WHERE txid = ?')
+    this.getRawTransactionStmt = this.txdb.prepare('SELECT bytes AS raw FROM tx WHERE txid = ?')
     this.getTransactionsToDownloadStmt = this.txdb.prepare(`SELECT txid FROM tx WHERE bytes IS NULL`)
 
     this.setTransactionTimeStmt = this.txdb.prepare('UPDATE tx SET time = ? WHERE txid = ?')
@@ -198,8 +198,8 @@ class Database {
     this.setTransactionTimeStmt.run(time, txid)
   }
 
-  getTransactionHex(txid) {
-    const row = this.getTransactionHexStmt.raw(true).get(txid)
+  getRawTransaction(txid) {
+    const row = this.getRawTransactionStmt.raw(true).get(txid)
     return row && row[0]
   }
 

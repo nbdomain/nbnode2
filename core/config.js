@@ -31,7 +31,9 @@ const CONFIG = {
   debug: true,
   "node_info": {
     payment: "1LQ2tBsvBvaUsxrg14TeRoiLjWoaAwsTLH", //nbdomain of the owner. Payment (if any) will goto this address.
-    domain: "", //domain name of the node, for SSL certificate. Replace with real domain
+    domain: "192.168.1.102", //domain name of the node, for SSL certificate. Replace with real domain
+    https:false,
+    port:9001,
     contact: "bloodchen@gmail.com", //contact email of the owner
     prices: {
       domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
@@ -41,7 +43,6 @@ const CONFIG = {
   peers:["http://192.168.1.108:9001"],
   //SSL:["abc.nbdomain.com"],
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
-  "node_port": 9001,
   "proxy_map": {
     "/api/": "api",
     "/web/": "web"
@@ -83,16 +84,12 @@ const CONFIG = {
 
 module.exports = {
   API,
-  MATTERCLOUD_KEY,
   PLANARIA_TOKEN,
-  NETWORK,
   TXDB,
   DMDB,
   WORKERS,
   FETCH_LIMIT,
   START_HEIGHT,
   MEMPOOL_EXPIRATION,
-  ZMQ_URL,
-  RPC_URL,
   CONFIG
 }

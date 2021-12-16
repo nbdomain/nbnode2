@@ -24,7 +24,7 @@ class nbweb_mgr {
     return false;
   }
   async readDomain(domain){
-    const url = "http://localhost:" + this.env.node_port + "/api/?nid="+domain;
+    const url = "http://localhost:" + this.env.node_info.port + "/api/?nid="+domain;
     try{
       return (await axios.get(url)).data;
     }catch(e){

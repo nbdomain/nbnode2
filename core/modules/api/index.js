@@ -148,14 +148,39 @@ app.post('/sendTx', async function (req, res) {
             indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
         }else
             indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)
-        Nodes.notifyPeers({cmd:"newtx",data:ret.txid})
+        Nodes.notifyPeers({cmd:"newtx",data:JSON.stringify({txid:ret.txid,blockchain:blockchain})})
     }
     res.json(ret);
 });
+async function handleNewTx(para,from){
+    let db = bsv_resolver.db,indexer = indexers.bsv;
+    if(para.blockchain=="ar") {
+        db = ar_resolver.db
+        indexer = indexers.ar
+    }
+    if(!db.hasTransaction(para.txid)){
+        const url = from+"/api/p2p/gettx?txid="+para.txid+"&blockchain="+para.blockchain
+        const res = await axios.get(url)
+        if(res.data){
+            indexer._onMempoolTransaction(para.txid,res.data.rawtx)
+        }
+    }
+}
 app.get('/p2p/:cmd/',function(req,res){ //sever to server command
     const cmd = req.params['cmd']
     let ret = {code:0}
-    if(cmd=='ping')ret.msg = "pong";
+    console.log("get p2p cmd:",cmd," params:",req.query)
+    if(cmd==='ping')ret.msg = "pong";
+    if(cmd==="newtx"){
+        const para = JSON.parse(req.query['data'])
+        const from = JSON.parse(req.query['from'])
+        handleNewTx(para,from)
+    }
+    if(cmd==='gettx'){
+        let indexer = indexers.bsv
+        if(req.query['blockchain']=='ar')indexer = indexers.ar
+        ret.rawtx = indexer.rawtx(req.query['txid'])
+    }
     res.json(ret)
 })
 app.get('/queryKeys', function (req, res) {
