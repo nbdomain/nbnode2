@@ -16,22 +16,27 @@ class Nodes{
                 })
                 if(i>count)break;
             }
-            resolve(selected_nodes.length==0?null:selected_nodes)
+            resolve(selected_nodes.length==0?[]:selected_nodes)
         })
     }
     async init(){
         this.endpoint = config.CONFIG.node_info.domain
-        setTimeout(this.refreshPeers.bind(this),60000)
+        setTimeout(this.refreshPeers.bind(this),5000)
         return node
     }
     async refreshPeers(){
         const port = config.CONFIG.node_port
         const res = await axios.get("http://localhost:"+port+"/api/queryKeys?tags=nbnode")
+        let peers2test=[]
         if(res.data){
-            this.peers = await this.selectNode(res.data.data,50)
-            console.log(`found ${this.peers.length} peers`)
+            //peers2test = res.data
         }
-        setTimeout(this.refreshPeers.bind(this),5000)
+        if(config.CONFIG.peers.length)
+            peers2test  = peers2test.concat(config.CONFIG.peers)
+        this.peers = await this.selectNode(peers2test,50)
+        console.log(`found ${this.peers.length} peers`)
+        
+        setTimeout(this.refreshPeers.bind(this),60000)
     }
     async notifyPeers({cmd,data}){
         for (const peer of this.peers) {

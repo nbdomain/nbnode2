@@ -9,13 +9,13 @@
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const API = 'planaria'  //'mattercloud', 'planaria','bitcoin-node'
-const MATTERCLOUD_KEY = ""
-const PLANARIA_TOKEN = "" // get from https://token.planaria.network/
+const API = {
+  bsv:"planaria",ar:'arnode'
+  }  // 'planaria','mattercloud','urchain','nbnode'
+const PLANARIA_TOKEN = ""
 const NETWORK = 'main'
 const TXDB = 'txs.db'
 const DMDB = 'domains.db'
-const WORKERS = 4
 const FETCH_LIMIT =  20
 const START_HEIGHT = 613645
 const TIMEOUT = 10000
@@ -28,11 +28,12 @@ require('axios').default.defaults.timeout = TIMEOUT
 const CONFIG = {
   debug: true,
   "node_info": {
-    payment: "14ganPKEiFHPZYmQ88MUTqwrRd7JYQsv7L", //address of the owner. Payment (if any) will goto this address.
+    payment: "1LQ2tBsvBvaUsxrg14TeRoiLjWoaAwsTLH", //address of the owner. Payment (if any) will goto this address.
     domain: "", //domain name of the node, for SSL certificate. Replace with real domain
     contact: "", //contact email of the owner
     prices: {
-      domainHost: 0 //host user's triditional domain and link to a nbdomain
+      domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
+      keyUpdate: {bsv:1000,ar:1000}
     }
   },
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit

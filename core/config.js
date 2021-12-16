@@ -30,14 +30,15 @@ require('axios').default.defaults.timeout = TIMEOUT
 const CONFIG = {
   debug: true,
   "node_info": {
-    payment: "14ganPKEiFHPZYmQ88MUTqwrRd7JYQsv7L", //nbdomain of the owner. Payment (if any) will goto this address.
+    payment: "1LQ2tBsvBvaUsxrg14TeRoiLjWoaAwsTLH", //nbdomain of the owner. Payment (if any) will goto this address.
     domain: "", //domain name of the node, for SSL certificate. Replace with real domain
     contact: "bloodchen@gmail.com", //contact email of the owner
     prices: {
-      domainHost: 0 //host user's triditional domain and link to a nbdomain
+      domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
+      keyUpdate: {bsv:1000,ar:1000}
     }
   },
-  peers:["https://api.nbdomain.com","https://tnode.nbdomain.com","http://localhost:9001","http://localhost:9002"],
+  peers:["http://192.168.1.108:9001"],
   //SSL:["abc.nbdomain.com"],
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
   "node_port": 9001,
