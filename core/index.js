@@ -43,7 +43,7 @@ if (myArgs) {
 // ------------------------------------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------------------------------------
-let indexers = null,server = null
+let indexers = null, server=null
 async function main() {
   
   let apiAR=null,apiBSV=null;
@@ -74,8 +74,8 @@ async function main() {
 
 async function shutdown() {
   server.stop()
-  await indexers.ar.stop()
-  await indexers.bsv.stop()
+  indexers.ar&&await indexers.ar.stop()
+  indexers.bsv&&await indexers.bsv.stop()
   process.exit(0)
 }
 
