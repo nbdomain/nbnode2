@@ -27,7 +27,8 @@ class Nodes{
         })
     }
     async init(){
-        this.endpoint = (config.CONFIG.node_info.https?"https://":"http://")+config.CONFIG.node_info.domain+":"+config.CONFIG.node_info.port
+        this.endpoint = (config.CONFIG.node_info.https?"https://":"http://")+config.CONFIG.node_info.domain
+        if(!config.CONFIG.node_info.https)this.endpoint+=":"+config.CONFIG.node_info.port
         setTimeout(this.refreshPeers.bind(this),5000)
         return node
     }
