@@ -151,11 +151,11 @@ class AWNode {
   }
 
   async listenForMempool(mempoolTxCallback) {
-    const txs = await this.queryTx({ name: "protocol", values: ["nbtest2"] }, { max: 0 })
+  /*  const txs = await this.queryTx({ name: "protocol", values: ["nbtest2"] }, { max: 0 })
     console.log(txs);
     for (let item of txs.edges) {
       mempoolTxCallback(item.node.id, item.node)
-    }
+    }*/
   }
 }
 

@@ -95,7 +95,7 @@ class NbNode {
   }
   
   async listenForMempool(mempoolTxCallback) {
-    let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5","14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ","nbd"];//Util.getAllRegProtocols();
+  /*  let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5","14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ","nbd"];//Util.getAllRegProtocols();
     this.logger.info('Listening for mempool via BitSocket')
 
     const query = {
@@ -133,7 +133,7 @@ class NbNode {
                 }
             }
         }
-    })
+    })*/
 }
   /*async listenForMempool(mempoolTxCallback) {
     console.log("checking mempool via urchain")

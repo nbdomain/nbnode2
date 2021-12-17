@@ -8,6 +8,7 @@
   "author": "nbdomain-dev",
   "license": "MIT",
   "dependencies": {
+    "@root/greenlock": "^4.0.5",
     "abort-controller": "^3.0.0",
     "arweave": "^1.10.18",
     "axios": "^0.21.1",
