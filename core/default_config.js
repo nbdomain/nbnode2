@@ -32,18 +32,19 @@ const CONFIG = {
     domain: "", //domain name or IP of the node
     contact: "", //contact email of the owner
     https:true, //for auto generated SSL certificate
-    port:80,  //port for http service
+    port:9000,  //port for http service
     prices: {
       domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
       keyUpdate: {bsv:1000,ar:1000}
     }
   },
+  peers:["http://192.168.1.108:9001"],//other(than public) nbnode peers (optional)
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
   "proxy_map": {
     "/api/": "api",
     "/web/": "web"
   },
-  "nidcheck_endpoint": "https://nb-namecheck.glitch.me/v1/check/",
+  "nidcheck_endpoint": "https://util.nbsite.link/namecheck/v1/check/",
   "admin": {
     "transfer_fee": 1000,
     "transfer_fee_rate": 0.1

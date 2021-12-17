@@ -2,9 +2,14 @@ const config = require('./config')
 const axios = require('axios')
 let node = null
 class Nodes{
-    async selectNode(nodes,count=1){
+    async sleep(seconds){
         return new Promise(resolve=>{
-            let i=1,selected_nodes=[]
+            setTimeout(resolve, seconds*1000);
+        })
+    }
+    async selectNode(nodes,count=1){
+        return new Promise(async resolve=>{
+            let i=1,selected_nodes=[],j=1;
             for(const node of nodes){
                 axios.get(node+"/api/p2p/ping").then(res=>{
                     if(res.data&&res.data.msg=="pong"){
@@ -13,8 +18,10 @@ class Nodes{
                     }
                 }).catch(e=>{
                     console.log(e)
-                })
-                if(i>count)break;
+                }).finally(()=>j++)
+            }
+            while(i<=count&&j<=nodes.length){
+                await this.sleep(1)
             }
             resolve(selected_nodes.length==0?[]:selected_nodes)
         })
