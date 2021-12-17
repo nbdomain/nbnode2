@@ -43,7 +43,7 @@ if (myArgs) {
 // ------------------------------------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------------------------------------
-
+let indexers = null
 async function main() {
   
   let apiAR=null,apiBSV=null;
@@ -58,7 +58,7 @@ async function main() {
   //bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
   
   //const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
-  const indexers = { bsv: new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG) }
+  indexers = { bsv: new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG) }
 
   server = new Server(indexers, logger)
 
