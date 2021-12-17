@@ -173,7 +173,7 @@ app.get('/p2p/:cmd/',function(req,res){ //sever to server command
     if(cmd==='ping')ret.msg = "pong";
     if(cmd==="newtx"){
         const para = JSON.parse(req.query['data'])
-        const from = JSON.parse(req.query['from'])
+        const from = req.query['from']
         handleNewTx(para,from)
     }
     if(cmd==='gettx'){
@@ -216,7 +216,9 @@ app.get('/queryTX', (req, res) => {
     const toHeight = req.query['to']
     res.json(bsv_resolver.readNBTX(fromHeight ? fromHeight : 0, toHeight ? toHeight : -1))
 })
-
+app.get('/test',(req,res)=>{
+    Nodes.notifyPeers({cmd:"newtx",data:JSON.stringify({txid:"e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951",blockchain:'bsv'})})
+})
 app.get(`/find_domain`, function (req, res) {
     try {
         if (!auth(req, res)) {
