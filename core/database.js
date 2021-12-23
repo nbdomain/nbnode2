@@ -7,6 +7,7 @@ const fs = require('fs')
 const Sqlite3Database = require('better-sqlite3')
 const Parser = require('./parser')
 const { Util } = require('./util')
+const {createChannel} =require("better-sse")
 //const { DEFAULT_TRUSTLIST } = require('./config')
 
 // ------------------------------------------------------------------------------------------------
@@ -29,7 +30,8 @@ class Database {
     this.logger = logger
     this.txdb = null
     this.dmdb = null
-
+    this.tickerAll = createChannel()
+    this.tickers = {}
     this.onAddTransaction = null
     this.onDeleteTransaction = null
   }
@@ -408,6 +410,8 @@ class Database {
       const keyName = item + "." + nidObj.domain;
       const tags = nidObj.tag_map[item + '.'];
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
+      if(this.tickers[keyName]) //notify subscribers
+        this.tickers[keyName].broadcast('key_update',value)
       if (value.length > 512) {
         nidObj.keys[item] = '$truncated';
       }
@@ -421,6 +425,15 @@ class Database {
         nidObj.keys[item] = '$truncated';
       }
     }
+  }
+  subscribe(domain,session){
+    if(domain=="all"){
+      this.tickerAll.register(session)
+    }else{
+      if(!this.tickers[domain])this.tickers[domain] = createChannel() 
+      this.tickers[domain].register(session)
+    }
+    
   }
   queryDomains(field, value) {
     if (field != null) {
@@ -451,6 +464,7 @@ class Database {
         this.saveDomainObjStmt.run(obj.domain, obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld,
           obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld)
       })
+      this.tickerAll.broadcast("key_update",obj)
     } catch (e) {
       this.logger.error(e)
     }

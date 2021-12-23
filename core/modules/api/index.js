@@ -13,6 +13,7 @@ const { json } = require('body-parser');
 const axios = require('axios');
 const Nodes = require('../../nodes')
 var app = express();
+const {createSession} = require("better-sse");
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -166,6 +167,19 @@ async function handleNewTx(para,from){
         }
     }
 }
+app.get('/sub/:domain/',async (req,res)=>{
+    const domain = req.params['domain']
+    const session = await createSession(req, res);
+	let db = bsv_resolver.db;
+    if(domain.indexOf('.c')!=-1){
+        db = ar_resolver.db
+    }
+    db.subscribe(domain,session)
+    req.on("close",()=>{
+        res.end()
+        console.log("one sub closed")
+    })
+})
 app.get('/p2p/:cmd/',function(req,res){ //sever to server command
     const cmd = req.params['cmd']
     let ret = {code:0}
