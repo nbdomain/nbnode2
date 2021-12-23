@@ -13,6 +13,7 @@ const API = {
   bsv:"planaria",ar:'arnode'
   }  // 'planaria','mattercloud','urchain','nbnode'
 const PLANARIA_TOKEN = ""
+const NODEKEY = "" //base64ed private key of the nbdomain in node_info. Used to verify the node
 const NETWORK = 'main'
 const TXDB = 'txs.db'
 const DMDB = 'domains.db'
@@ -20,17 +21,16 @@ const FETCH_LIMIT =  20
 const START_HEIGHT = 613645
 const TIMEOUT = 10000
 const MEMPOOL_EXPIRATION =  60 * 60 * 24
-const ZMQ_URL = null
-const RPC_URL = null
 
 require('axios').default.defaults.timeout = TIMEOUT
 
 const CONFIG = {
   debug: true,
   "node_info": {
-    payment: "1LQ2tBsvBvaUsxrg14TeRoiLjWoaAwsTLH", //address of the owner. Payment (if any) will goto this address.
+    nbdomain: "", //nbdomain of the node
+    payment:{bsv:"1Bti24c8ZQLYMTaifVkiRwJ1cwT4K6ucJu",ar:""}, //address to receive payment
     domain: "", //domain name or IP of the node
-    contact: "", //contact email of the owner
+    contact: "", //contact email of the owner 
     https:true, //for auto generated SSL certificate
     port:9000,  //port for http service
     prices: {
@@ -38,7 +38,7 @@ const CONFIG = {
       keyUpdate: {bsv:1000,ar:1000}
     }
   },
-  peers:["http://192.168.1.108:9001"],//other(than public) nbnode peers (optional)
+  peers:[],//other(than public) nbnode peers (optional)
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
   "proxy_map": {
     "/api/": "api",
@@ -80,16 +80,13 @@ const CONFIG = {
 
 module.exports = {
   API,
-  MATTERCLOUD_KEY,
   PLANARIA_TOKEN,
   NETWORK,
+  NODEKEY,
   TXDB,
   DMDB,
-  WORKERS,
   FETCH_LIMIT,
   START_HEIGHT,
   MEMPOOL_EXPIRATION,
-  ZMQ_URL,
-  RPC_URL,
   CONFIG
 }

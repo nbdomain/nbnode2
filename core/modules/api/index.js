@@ -184,7 +184,12 @@ app.get('/p2p/:cmd/',function(req,res){ //sever to server command
     const cmd = req.params['cmd']
     let ret = {code:0}
     console.log("get p2p cmd:",cmd," params:",req.query)
-    if(cmd==='ping')ret.msg = "pong";
+    if(cmd==='ping'){
+        if(req.query['sign']){
+            
+        }
+        ret.msg = "pong";
+    }
     if(cmd==="newtx"){
         const para = JSON.parse(req.query['data'])
         const from = req.query['from']
