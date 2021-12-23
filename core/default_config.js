@@ -30,8 +30,8 @@ const CONFIG = {
     nbdomain: "", //nbdomain of the node
     payment:{bsv:"1Bti24c8ZQLYMTaifVkiRwJ1cwT4K6ucJu",ar:""}, //address to receive payment
     domain: "", //domain name or IP of the node
-    contact: "", //contact email of the owner 
-    https:true, //for auto generated SSL certificate
+    contact: "", //contact email of the owner,required for ssl certificate
+    https:false, //for auto generated SSL certificate
     port:9000,  //port for http service
     prices: {
       domainHost:  {bsv:1000,ar:1000}, //host user's triditional domain and link to a nbdomain
