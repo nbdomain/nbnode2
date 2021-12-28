@@ -58,7 +58,7 @@ app.get('/', async function (req, res, next) {
         res.json({ code: 99, message: err.message });
     }
 });
-async function getAllItems(para,forceFull=false) {
+async function getAllItems(para,forceFull=false,from=null) {
     //check ,
     let items = []
     const domains = para.split(',')
@@ -89,18 +89,23 @@ async function getAllItems(para,forceFull=false) {
         if (item === '') continue;
         const dd = item.split('/')
         const result = await bsv_resolver.readDomain(dd[0], forceFull, dd[1])
+        if(from){
+            if(result.obj.ts<from)continue
+        }
         ret.push(result)
     }
     return ret
 }
 app.get('/q/*', async function (req, res) {
     const para = req.params[0]
-    const ret = await getAllItems(para,false)
+    const from = req.query['from']
+    const ret = await getAllItems(para,false,from)
     res.json(ret)
 })
 app.get('/qf/*', async function (req, res) {
     const para = req.params[0]
-    const ret = await getAllItems(para,true)
+    const from = req.query['from']
+    const ret = await getAllItems(para,true,from)
     res.json(ret)
 })
 app.get('/address/:address/balance', async function (req, res) {

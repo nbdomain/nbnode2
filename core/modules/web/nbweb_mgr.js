@@ -69,11 +69,11 @@ class nbweb_mgr {
       } else {
         if (res_content.code != 102) {
           const domain = q.hostname.split('.');
-          const redirectUrl = "https://app.nbdomain.com/#/search?nid=" + domain[0] + "&tld=." + domain[1];
+          const redirectUrl = "https://www.nbdomain.com/#/search?nid=" + domain[0] + "&tld=." + domain[1];
           res.redirect(redirectUrl);
         }
         else {
-          res.send("No website at: " + q.hostname + ".<p><a href='https://app.nbdomain.com'>Manage</a>");
+          res.send("No website at: " + q.hostname + ".<p><a href='https://www.nbdomain.com'>Manage</a>");
         }
         //res.sendFile(__dirname + "/template/welcome.html");
         return;
