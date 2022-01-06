@@ -49,13 +49,13 @@ class Parser {
         }
         return null
     }
-    parseRaw(rawtx, height,verify=false) {
+    parseRaw({rawtx, height,time,verify=false}) {
         
-        let rtx = ( this.blockchain==='ar'?ARChain.raw2rtx(rawtx,height):BSVChain.raw2rtx(rawtx,height) )
+        let rtx = ( this.blockchain==='ar'?ARChain.raw2rtx({rawtx,height,time}):BSVChain.raw2rtx({rawtx,height,time}) )
         try {
             if(verify&&height==-1){ //p2p rawtx
                 const tspan = Date.now()/1000 - rtx.ts
-                if(tspan>10||tspan<-1){
+                if(tspan>60||tspan<-1){
                     return {code:1,msg:"invalid timestamp"}
                 }
             }

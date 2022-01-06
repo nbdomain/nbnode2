@@ -10,7 +10,7 @@ class ARChain {
         const rtx = ARChain.raw2rtx(rawtx)
         return { code: 0,txTime:rtx.ts }
     }
-    static raw2rtx(rawtx) {
+    static raw2rtx({rawtx}) {
         const tx = JSON.parse(rawtx);
         let rtx = {
             height: tx.block.height,
@@ -46,7 +46,7 @@ class BSVChain {
             }
         }
         if(block_time){ //check txtime
-            const rtx = BSVChain.raw2rtx(rawtx)
+            const rtx = BSVChain.raw2rtx({rawtx,height,time:block_time})
             txTime = rtx.ts
             if(rtx.ts&&rtx.ts>block_time)
                 return { code: -1, msg: 'txTime invalid' }
@@ -71,11 +71,11 @@ class BSVChain {
             }
         }
     }
-    static raw2rtx(rawtx,height) {
+    static raw2rtx({rawtx,height,time}) {
         const tx = TXO.fromRaw(rawtx);
         let rtx = {
             height: height,
-            //ts: timestamp,
+            time: time,
             txid: tx.tx.h,
             publicKey: tx.in[0].h1.toString(),
             command: tx.out[0].s2 == "nbd" ? tx.out[0].s6 : tx.out[0].s4,

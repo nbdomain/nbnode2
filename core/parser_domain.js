@@ -274,7 +274,8 @@ class CMD_KEYUSER {
                         ? (output.tags = tags)
                         : (output.utags = tags);
             } catch (e) { }
-
+            output.ts = rtx.ts ? rtx.ts : rtx.time
+            output.txid = rtx.txid
             for (const out of rtx.out) {
                 if (out.e.a && out.e.a != rtx.inputAddress) {
                     pay[out.e.a] = out.e.v
@@ -292,21 +293,20 @@ class CMD_KEYUSER {
         }
         return output;
     }
-    static updateKeyAndHistory(obj, txid, key, value, ts, tags, pay) {
+    static updateKeyAndHistory(obj, key, newValue, output) {
         if (key == "todomain") return false//'todomain' is not a key
         const oldvalue = obj.keys[key];
         if (oldvalue) {
             bsvdb.saveKeyHistory(obj, key, oldvalue);
         }
-        obj.keys[key] = { value: value, txid: txid };
-        if (ts) {
-            obj.keys[key].ts = ts;
+        let newKey = { value: newValue, txid: output.txid };
+        if (output.ts) newKey.ts = output.ts;
+        if (output.pay) newKey.pay = output.pay;
+        if (output.tags) {
+            newKey.tags = output.tags
+            obj.tag_map[key + '.'] = output.tags;
         }
-        if (pay)
-            obj.keys[key].pay = pay;
-        if (tags) {
-            obj.tag_map[key + '.'] = tags;
-        }
+        obj.keys[key] = newKey
         return true
     }
     static fillObj(nidObj, rtx, objMap) {
@@ -314,7 +314,7 @@ class CMD_KEYUSER {
             rtx.output.err = "No owner"
             return null
         }
-        if (nidObj.owner_key != rtx.publicKey) { //different owner
+        if ( (nidObj.owner_key != rtx.publicKey) ) { //different owner
             let authorized = false; //check admin
             rtx.output.err = "unAuthorized owner"
             for (var name in nidObj.admins) {
@@ -327,7 +327,7 @@ class CMD_KEYUSER {
             if (!authorized)
                 return null;
         }
-        const ts = rtx.txTime ? rtx.txTime : rtx.time
+        //const ts = rtx.txTime ? rtx.txTime : rtx.time
         if (rtx.command == CMD.KEY) {
             if (rtx.output.value.toDomain) {
                 let obj = objMap[rtx.output.value.toDomain]
@@ -336,18 +336,21 @@ class CMD_KEYUSER {
                     objMap[rtx.output.value.toDomain] = obj
                 }
                 if (obj && obj.status == DEF.STATUS_PUBLIC) {
-
+                    
                     for (const key in rtx.output.value) {
-                        let lowerKey = key.toLowerCase()
-                        if (CMD_KEYUSER.updateKeyAndHistory(obj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay))
-                            obj.keys[lowerKey].fromDomain = nidObj.domain
+                        let newKey = key.toLowerCase()
+                        let newValue = rtx.output.value[key]
+                        if (CMD_KEYUSER.updateKeyAndHistory(obj, newKey, newValue, rtx.output))
+                            obj.keys[newKey].fromDomain = nidObj.domain
                     }
                     obj.dirty = true
                 }
             } else {
                 for (const key in rtx.output.value) {
-                    let lowerKey = key.toLowerCase();
-                    CMD_KEYUSER.updateKeyAndHistory(nidObj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay)
+                    let newKey = key.toLowerCase()
+                    let newValue = rtx.output.value[key]
+                    CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
+                    //CMD_KEYUSER.updateKeyAndHistory(nidObj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay)
                 }
             }
 
@@ -356,7 +359,7 @@ class CMD_KEYUSER {
             // Change deep merge to shallow merge.
             for (const key in rtx.output.value) {
                 let lowerKey = key.toLowerCase();
-                nidObj.users[lowerKey] = { value: rtx.output.value[key], txid: rtx.txid, ts: ts };
+                nidObj.users[lowerKey] = { value: rtx.output.value[key], txid: rtx.txid, ts: rtx.output.ts };
                 nidObj.update_tx[lowerKey + '@'] = rtx.txid;
                 if (rtx.output.tags) {
                     nidObj.tag_map[lowerKey + '@'] = rtx.output.tags;

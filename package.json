@@ -12,7 +12,7 @@
     "abort-controller": "^3.0.0",
     "arweave": "^1.10.18",
     "axios": "^0.21.1",
-    "better-sqlite3": "^7.1.0",
+    "better-sqlite3": "^7.4.6",
     "better-sse": "^0.6.0",
     "bitidentity": "^1.0.44",
     "body": "^5.1.0",

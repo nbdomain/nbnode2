@@ -16,7 +16,7 @@ const {createChannel} =require("better-sse")
 
 const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
-const HEIGHT_TMSTAMP = 918001
+const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
 // ------------------------------------------------------------------------------------------------
 // Database
@@ -81,7 +81,7 @@ class Database {
                 ON CONFLICT( key ) DO UPDATE
                 SET value=?,tags=?`
     this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
-    this.readKeyStmt = this.dmdb.prepare('SELECT value from keys where key=?')
+    this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
     this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
     this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
     this.getLastResolvedIdStmt = this.dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedId\'')
@@ -294,7 +294,7 @@ class Database {
           break;
         }
         const rawtx = (this.blockchain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
-        const res = Parser.getParser(this.blockchain).parseRaw(rawtx, list[i].height)
+        const res = Parser.getParser(this.blockchain).parseRaw({rawtx:rawtx, height:list[i].height,time:list[i].time})
         if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
         else {
           list[i].output = { err: res.msg }
@@ -366,7 +366,10 @@ class Database {
       if (ret) {
         const lenRet = this.readKeyStmt.get(keyLenName);
         let value = JSON.parse(ret.value);
-        if (lenRet) value.hisLen = +lenRet.value;
+        if (lenRet) {
+          value.hisLen = +lenRet.value;
+        }
+        //if(ret.tags)value.tags = ret.tags;
         return value;
       }
     } catch (e) {
@@ -391,14 +394,22 @@ class Database {
   saveKeyHistory(nidObj, keyName, value, txid) {
     try {
       this.transaction(() => {
+        if(nidObj.domain=="10200.test"){
+          console.log("found")
+        }
         const lenKey = keyName + "." + nidObj.domain + "/len";
         let lenRet = this.readKeyStmt.get(lenKey);
         let count = 0;
         if (lenRet) count = +lenRet.value;
         count++;
-        this.saveKeysStmt.run(lenKey, count.toString(), null, count.toString(), null); //save len
+        const tags = nidObj.keys[keyName].tags;
+        this.saveKeysStmt.run(lenKey, count.toString(),null, count.toString(), null); //save len
         const hisKey = keyName + "." + nidObj.domain + "/" + count;
-        this.saveKeysStmt.run(hisKey, JSON.stringify(value), null, JSON.stringify(value), null); //save len
+        this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, JSON.stringify(value), tags); //save len
+        const tag1 = tags.split(';')
+        tag1.map(tag => {
+          this.saveTagStmt.run(tag, hisKey);
+        })
       })
     } catch (e) {
       this.logger.error(e)
@@ -408,7 +419,10 @@ class Database {
     for (var item in nidObj.keys) {
       const value = JSON.stringify(nidObj.keys[item]);
       const keyName = item + "." + nidObj.domain;
-      const tags = nidObj.tag_map[item + '.'];
+      const tags = nidObj.keys[item].tags;
+      if(tags){
+        console.log("tags")
+      }
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
       if(this.tickers[keyName]) //notify subscribers
         this.tickers[keyName].broadcast('key_update',value)
@@ -458,6 +472,9 @@ class Database {
   saveDomainObj(obj) {
     try {
       this.transaction(() => {
+        if(obj.domain=="10200.test"){
+          console.log("found")
+        }
         this.saveKeys(obj);
         this.saveTags(obj);
         this.saveNFT(obj);

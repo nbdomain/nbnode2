@@ -14,6 +14,7 @@ const axios = require('axios');
 const Nodes = require('../../nodes')
 var app = express();
 const {createSession} = require("better-sse");
+const { bsv } = require('nbpay');
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -89,9 +90,7 @@ async function getAllItems(para,forceFull=false,from=null) {
         if (item === '') continue;
         const dd = item.split('/')
         const result = await bsv_resolver.readDomain(dd[0], forceFull, dd[1])
-        if(from){
-            if(result.obj.ts<from)continue
-        }
+        if(from&&result.obj.ts<=from)continue
         ret.push(result)
     }
     return ret
@@ -99,7 +98,7 @@ async function getAllItems(para,forceFull=false,from=null) {
 app.get('/q/*', async function (req, res) {
     const para = req.params[0]
     const from = req.query['from']
-    const ret = await getAllItems(para,false,from)
+    const ret = await getAllItems(para,false,+from)
     res.json(ret)
 })
 app.get('/qf/*', async function (req, res) {
@@ -107,6 +106,10 @@ app.get('/qf/*', async function (req, res) {
     const from = req.query['from']
     const ret = await getAllItems(para,true,from)
     res.json(ret)
+})
+app.get('/t/addtx/:txid',(req,res)=>{
+    const txid = req.params['txid']
+    indexers.bsv.add(txid)
 })
 app.get('/address/:address/balance', async function (req, res) {
     const address = req.params['address']
@@ -143,7 +146,7 @@ app.post('/sendTx', async function (req, res) {
     const obj = req.body;
     let blockchain = 'bsv'
     if(obj.blockchain=='ar')blockchain = 'ar'
-    let ret = Parser.getParser(blockchain).parseRaw(obj.rawtx, -1, true);
+    let ret = Parser.getParser(blockchain).parseRaw({rawtx:obj.rawtx, height:-1, verify:true});
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
         return
@@ -208,11 +211,14 @@ app.get('/p2p/:cmd/',function(req,res){ //sever to server command
     res.json(ret)
 })
 app.get('/queryKeys', function (req, res) {
-
     const num = req.query['num'] ? req.query['num'] : 50;
     const startID = req.query['startID'] ? req.query['startID'] : 0;
     const tags = req.query['tags'] ? req.query['tags'] : null;
+    const includeHistory = req.query['includeHistory'] ? req.query['includeHistory'] : 0;
     const result = bsv_resolver.db.queryKeys({ v: 1, num: num, startID: startID, tags: tags });
+    if(includeHistory==0){
+        result.data = result.data.filter(item=>item.key.indexOf('/')==-1)
+    }
     res.json(result);
     return;
 });
