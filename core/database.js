@@ -43,7 +43,7 @@ class Database {
     let noTxdb = false;
     if (this.txdb) throw new Error('Database already open')
     if(!fs.existsSync(this.dmpath+"."+VER_DMDB)){
-      fs.unlinkSync(this.dmpath)
+    if (fs.existsSync(this.dmpath)) fs.unlinkSync(this.dmpath)
       fs.writeFileSync(this.dmpath+"."+VER_DMDB, "do not delete this file");
     }
     if (!fs.existsSync(this.path)) {
