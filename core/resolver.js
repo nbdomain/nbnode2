@@ -128,10 +128,11 @@ class Resolver {
             obj = this.db.loadDomain(fullDomain)
             if (obj) {
                 obj = reduceKeys_(obj, true)
-                if (forceFull) { //expand $truncated keys
+                if (!forceFull) { //expand $truncated keys
                     for (const key in obj.keys) {
-                        if (obj.keys[key] === "$truncated") {
-                            obj.keys[key] = this.db.readKey(key + "." + fullDomain).value;
+                        if(JSON.stringify(obj.keys[key].value.value)>512){
+                            obj.keys[key].value.value = "$truncated"
+                            obj.truncated = true
                         }
                     }
                 }
@@ -141,7 +142,6 @@ class Resolver {
                         delete obj.nfts[symbol] //remove the non-exist nft
                     }
                 }
-                obj.truncated = Object.values(obj.keys).indexOf('$truncated') != -1 ? true : false
                 return { code: 0, obj: obj,domain:fullDomain }
             }
             let ret = await DomainTool.fetchDomainAvailibility(fullDomain);

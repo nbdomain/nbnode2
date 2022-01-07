@@ -18,6 +18,9 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
+const VER_DMDB = 2
+const VER_TXDB = 0
+
 // ------------------------------------------------------------------------------------------------
 // Database
 // ------------------------------------------------------------------------------------------------
@@ -39,6 +42,10 @@ class Database {
   open() {
     let noTxdb = false;
     if (this.txdb) throw new Error('Database already open')
+    if(!fs.existsSync(this.dmpath+"."+VER_DMDB)){
+      fs.unlinkSync(this.dmpath)
+      fs.writeFileSync(this.dmpath+"."+VER_DMDB, "do not delete this file");
+    }
     if (!fs.existsSync(this.path)) {
       //const result = Util.downloadFile("https://tnode.nbdomain.com/files/txs.db",this.path)
       //console.log(result)
@@ -426,18 +433,12 @@ class Database {
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
       if(this.tickers[keyName]) //notify subscribers
         this.tickers[keyName].broadcast('key_update',value)
-      if (value.length > 512) {
-        nidObj.keys[item] = '$truncated';
-      }
     }
     for (var item in nidObj.users) {
       const value = JSON.stringify(nidObj.users[item]);
       const keyName = item + "@" + nidObj.domain;
       const tags = nidObj.tag_map[item + '@'];
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
-      if (value.length > 512) {
-        nidObj.keys[item] = '$truncated';
-      }
     }
   }
   subscribe(domain,session){
