@@ -1,28 +1,47 @@
 const TXO = require("./txo.js");
 const { DEF } = require("./def");
+const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
 class ARChain {
-    static verify(rawtx, height) {
-        const publicKey = rawtx.owner.key
-        if (!publicKey) {
-            return { code: -1, msg: `Failed to verify transaction signature.` }
-        }
-        const rtx = ARChain.raw2rtx(rawtx)
-        return { code: 0,txTime:rtx.ts }
+    static async verify(rawtx, height) {
+        const rtx = await ARChain.raw2rtx({ rawtx, height })
+        return { code: rtx ? 0 : 1, txTime: rtx.ts }
     }
-    static raw2rtx({rawtx}) {
-        const tx = JSON.parse(rawtx);
-        let rtx = {
-            height: tx.block.height,
-            ts: +(tx.tags.txTime),
-            txid: tx.id,
-            publicKey: tx.owner.key,
-            command: tx.tags.command,
-            output: null,
-            tx: tx
-        };
-        rtx.blockchain = 'ar'
-        return rtx
+    static async raw2rtx({ rawtx, height }) {
+        try {
+            const tx = JSON.parse(rawtx);
+            let tags = ArUtil.decodeTags(tx.tags)
+            const nbdata = JSON.parse(tags.nbdata)
+            const ts = JSON.parse(nbdata[1]).ts
+            const cmd = tags.cmd ? JSON.parse(tags.cmd):JSON.parse(ArUtil.decode(tx.data))
+            let out = [], out0 = {e:{}}, i = 0
+            for (; i < nbdata.length; i++) {
+                out0['s' + i] = nbdata[i]
+            }
+            for (let j = 0; j < cmd.length; j++, i++) {
+                out0['s' + i] = cmd[j]
+            }
+            out.push(out0)
+            tx.tags = tags
+            let rtx = {
+                height: height,
+                ts: +ts,
+                txid: tx.id,
+                publicKey: tx.owner.key ? tx.owner.key : tx.owner,
+                command: cmd[0],
+                output: null,
+                out: out,
+            };
+            rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
+            if(rtx.inputAddress==tx.target){ // ar blockchain does not allow send to self
+                return null
+            }
+            rtx.blockchain = 'ar'
+            return rtx
+        } catch (e) {
+            console.error(e)
+            return null
+        }
     }
 }
 class BSVChain {
@@ -37,7 +56,7 @@ class BSVChain {
         }
         return null
     }
-    static verify(rawtx, height,block_time) {
+    static async verify(rawtx, height, block_time) {
         let txTime = null
         if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
             const publicKey = BSVChain.verifySig(rawtx)
@@ -45,13 +64,13 @@ class BSVChain {
                 return { code: -1, msg: `Failed to verify transaction signature.` }
             }
         }
-        if(block_time){ //check txtime
-            const rtx = BSVChain.raw2rtx({rawtx,height,time:block_time})
+        if (block_time) { //check txtime
+            const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time })
             txTime = rtx.ts
-            if(rtx.ts&&rtx.ts>block_time)
+            if (rtx.ts && rtx.ts > block_time)
                 return { code: -1, msg: 'txTime invalid' }
         }
-        return { code: 0,txTime:txTime }
+        return { code: 0, txTime: txTime }
     }
     static _reArrage(rtx) {
         if (rtx.out[0].s2 === "nbd") {
@@ -71,7 +90,7 @@ class BSVChain {
             }
         }
     }
-    static raw2rtx({rawtx,height,time}) {
+    static async raw2rtx({ rawtx, height, time }) {
         const tx = TXO.fromRaw(rawtx);
         let rtx = {
             height: height,
@@ -84,14 +103,14 @@ class BSVChain {
             in: tx.in,
             out: tx.out,
         };
-        if(tx.out[0].s2 == "nbd"&&tx.out[0].s3 != "1"){
-            try{
+        if (tx.out[0].s2 == "nbd" && tx.out[0].s3 != "1") {
+            try {
                 const attrib = JSON.parse(tx.out[0].s3)
                 rtx.ts = +attrib.ts
-            }catch(e){}
-            
+            } catch (e) { }
+
         }
-        tx.in.forEach(inp=>{if(inp.e.a)rtx.inputAddress = inp.e.a.toString()})
+        tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
         BSVChain._reArrage(rtx)
         rtx.blockchain = 'bsv'
         return rtx

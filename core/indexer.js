@@ -126,12 +126,12 @@ class Indexer {
     }
   }
 
-  _onDownloadTransaction (txid, hex, height, time) {
+  async _onDownloadTransaction (txid, hex, height, time) {
     this.logger.info(`Downloaded ${txid} (${this.downloader.remaining()} remaining)`)
     if (!this.database.hasTransaction(txid)) return
     if (height) this.database.setTransactionHeight(txid, height)
     if (time) this.database.setTransactionTime(txid, time)
-    this._parseAndStoreTransaction(txid, hex)
+    await this._parseAndStoreTransaction(txid, hex)
     if (this.onDownload) this.onDownload(txid)
   }
 
@@ -205,13 +205,13 @@ class Indexer {
         if (time) this.database.setTransactionTime(txid, time)
       })
 
-      txids.forEach((txid, i) => {
+      txids.forEach(async (txid, i) => {
         const downloaded = this.database.isTransactionDownloaded(txid)
         if (downloaded) return
 
         const hex = txhexs && txhexs[i]
         if (hex) {
-          this._parseAndStoreTransaction(txid, hex)
+          await this._parseAndStoreTransaction(txid, hex)
         } else {
           this.downloader.add(txid)
         }
@@ -219,7 +219,7 @@ class Indexer {
     })
   }
 
-  _parseAndStoreTransaction (txid, rawtx) {
+  async _parseAndStoreTransaction (txid, rawtx) {
     if (this.database.isTransactionDownloaded(txid)) return
      
       if (!rawtx) {
@@ -230,7 +230,7 @@ class Indexer {
       const block_time = this.database.getTransactionTime(txid);
       let meta = null
       try{
-        meta = Parser.getParser(this.blockchain).verify(rawtx,height,block_time);
+        meta = await Parser.getParser(this.blockchain).verify(rawtx,height,block_time);
         if(meta.code!=0){
           this.logger.warn(txid,":"+meta.msg);
           this.database.deleteTransaction(txid);

@@ -1,10 +1,5 @@
 const { Parser_Domain } = require('./parser_domain')
-const { AR_Parser_Domain } = require('./blockchains/ar_parser_domain')
-const BitID = require("bitidentity");
-
-const { DEF } = require("./def");
 const { Parser_NFT } = require('./parser_nft');
-const { AR_Parser_NFT } = require('./blockchains/ar_parser_nft');
 const {ARChain, BSVChain} = require('./blockchains.js')
 
 const parsers = {}
@@ -18,7 +13,6 @@ class Parser {
             if(!parsers.ar)parsers.ar = new Parser('ar')
             return parsers.ar
         }
-            
         throw("Unsupported blockchain")
     }
     constructor(blockchain){
@@ -30,28 +24,29 @@ class Parser {
         this.parser_domain.init(db)
         this.parser_nft.init(db)
     }
-    verify(rawtx, height,block_time) {
-        if(this.blockchain==='ar')return ARChain.verify(rawtx,height,block_time);
-        if(this.blockchain==='bsv')return BSVChain.verify(rawtx,height,block_time);
+    async verify(rawtx, height,block_time) {
+        if(this.blockchain==='ar')return await ARChain.verify(rawtx,height,block_time);
+        if(this.blockchain==='bsv')return await BSVChain.verify(rawtx,height,block_time);
         throw "Unsupported blockchain"
     }
     domainParser(){
-        switch(this.blockchain){
+        /*switch(this.blockchain){
             case 'bsv': return Parser_Domain
             case 'ar': return AR_Parser_Domain
         }
-        return null
+        return null*/
+        return this.parser_domain
     }
     nftParser(){
-        switch(this.blockchain){
+       /* switch(this.blockchain){
             case 'bsv': return Parser_NFT
             case 'ar': return null
-        }
-        return null
+        }*/
+        return this.parser_nft
     }
-    parseRaw({rawtx, height,time,verify=false}) {
+    async parseRaw({rawtx, height,time,verify=false}) {
         
-        let rtx = ( this.blockchain==='ar'?ARChain.raw2rtx({rawtx,height,time}):BSVChain.raw2rtx({rawtx,height,time}) )
+        let rtx = ( this.blockchain==='ar'? await ARChain.raw2rtx({rawtx,height,time}): await BSVChain.raw2rtx({rawtx,height,time}) )
         try {
             if(verify&&height==-1){ //p2p rawtx
                 const tspan = Date.now()/1000 - rtx.ts
@@ -59,9 +54,9 @@ class Parser {
                     return {code:1,msg:"invalid timestamp"}
                 }
             }
-            let handler = this.domainParser().getAllCommands()[rtx.command]
-            if (!handler) handler = this.nftParser().getAllCommands()[rtx.command]
-            if (handler) rtx.output = handler.parseTX(rtx,verify)
+            let handler = this.domainParser().getHandler(rtx.command)
+            if (!handler) handler = this.nftParser().getHandler(rtx.command)
+            if (handler) rtx.output = await handler.parseTX(rtx,verify)
             delete rtx.in
             delete rtx.out
             if (!rtx.output) {
@@ -69,11 +64,12 @@ class Parser {
             }
         } catch (e) {
             console.error(e)
+            if(!rtx.output)rtx.output={}
             rtx.output.err = e.message
         }
         return { code: 0, obj: rtx, msg: rtx.output.err ? rtx.output.err : "success" }
     }
-    fillObj(nidObj, rtx, objMap) {
+    async fillObj(nidObj, rtx, objMap) {
         let retObj = null
         nidObj.lastUpdateheight = rtx.height;
         nidObj.last_txid = rtx.txid
@@ -83,9 +79,9 @@ class Parser {
         if(rtx.output.err){
             return null
         }
-        let handler = this.domainParser().getAllCommands()[rtx.command]
-        if (!handler) handler = this.nftParser().getAllCommands()[rtx.command]
-        if (handler) retObj = handler.fillObj(nidObj, rtx, objMap)
+        let handler = this.domainParser().getHandler(rtx.command)
+        if (!handler) handler = this.nftParser().getHandler(rtx.command)
+        if (handler) retObj = await handler.fillObj(nidObj, rtx, objMap)
         else {
             console.error(rtx.command,":No handler found")
         }

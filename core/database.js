@@ -7,7 +7,7 @@ const fs = require('fs')
 const Sqlite3Database = require('better-sqlite3')
 const Parser = require('./parser')
 const { Util } = require('./util')
-const {createChannel} =require("better-sse")
+const { createChannel } = require("better-sse")
 //const { DEFAULT_TRUSTLIST } = require('./config')
 
 // ------------------------------------------------------------------------------------------------
@@ -19,8 +19,9 @@ const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
 const VER_DMDB = 2
-const VER_TXDB = 0
+const VER_TXDB = 2
 
+let g_txdb = null, g_dmdb = null
 // ------------------------------------------------------------------------------------------------
 // Database
 // ------------------------------------------------------------------------------------------------
@@ -31,47 +32,53 @@ class Database {
     this.path = txpath
     this.dmpath = dmpath
     this.logger = logger
-    this.txdb = null
-    this.dmdb = null
+    g_txdb = null
+    g_dmdb = null
     this.tickerAll = createChannel()
     this.tickers = {}
     this.onAddTransaction = null
     this.onDeleteTransaction = null
   }
-
   open() {
     let noTxdb = false;
-    if (this.txdb) throw new Error('Database already open')
-    if(!fs.existsSync(this.dmpath+"."+VER_DMDB)){
-    if (fs.existsSync(this.dmpath)) fs.unlinkSync(this.dmpath)
-      fs.writeFileSync(this.dmpath+"."+VER_DMDB, "do not delete this file");
-    }
-    if (!fs.existsSync(this.path)) {
-      //const result = Util.downloadFile("https://tnode.nbdomain.com/files/txs.db",this.path)
-      //console.log(result)
-      fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.path);
-      // noTxdb = true;
-    }
-    if (!fs.existsSync(this.dmpath)) {
-      fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
-    }
+    if (!g_txdb) {
+      if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
+        if (fs.existsSync(this.dmpath)) fs.unlinkSync(this.dmpath)
+        fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
+      }
+      if (!fs.existsSync(this.path + "." + VER_TXDB)) {
+        if (fs.existsSync(this.path)) fs.unlinkSync(this.path)
+        fs.writeFileSync(this.path + "." + VER_TXDB, "do not delete this file");
+      }
+      if (!fs.existsSync(this.path)) {
+        const result = Util.downloadFile(`https://tnode.nbdomain.com/files/txs.db`, this.path)
+        console.log(result)
+        if (!fs.existsSync(this.path))
+          fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.path);
+        // noTxdb = true;
+      }
+      if (!fs.existsSync(this.dmpath)) {
+        fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
+      }
       const states = fs.statSync(this.dmpath)
       TXRESOLVED_FLAG = states.birthtimeMs
-    
+    }
 
     //--------------------------------------------------------//
     //  Domains DB
     //-------------------------------------------------------//
-    this.dmdb = new Sqlite3Database(this.dmpath)
-    // 100MB cache
-    this.dmdb.pragma('cache_size = 6400')
-    this.dmdb.pragma('page_size = 16384')
+    if(!g_dmdb){
+      g_dmdb = new Sqlite3Database(this.dmpath)
+      // 100MB cache
+      g_dmdb.pragma('cache_size = 6400')
+      g_dmdb.pragma('page_size = 16384')
 
-    // WAL mode allows simultaneous readers
-    this.dmdb.pragma('journal_mode = WAL')
+      // WAL mode allows simultaneous readers
+      g_dmdb.pragma('journal_mode = WAL')
 
-    // Synchronizes WAL at checkpoints
-    this.dmdb.pragma('synchronous = NORMAL')
+      // Synchronizes WAL at checkpoints
+      g_dmdb.pragma('synchronous = NORMAL')
+    }
 
     const saveDomainSql = `
     INSERT INTO "nidobj" 
@@ -80,82 +87,61 @@ class Database {
                 ON CONFLICT( domain ) DO UPDATE
                 SET nid=?,owner=? ,owner_key=?,status=?,last_txid=?,lastUpdateBlockId=?,jsonString=?,tld=?
     `
-    this.saveDomainObjStmt = this.dmdb.prepare(saveDomainSql);
+    this.saveDomainObjStmt = g_dmdb.prepare(saveDomainSql);
     const saveKeysSql = `
     INSERT INTO "keys" 
                 (key, value,tags) 
                 VALUES ( ?, ?, ?)
                 ON CONFLICT( key ) DO UPDATE
                 SET value=?,tags=?`
-    this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
-    this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
-    this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
-    this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
-    this.getLastResolvedIdStmt = this.dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedId\'')
-    this.getLastResolvedCursorStmt = this.dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedCursor\'')
-    this.setLastResolvedIdStmt = this.dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedId\'')
-    this.setLastResolvedCursorStmt = this.dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedCursor\'')
-    this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
-    this.queryDomainsStmt = this.dmdb.prepare('SELECT * FROM nidobj WHERE owner = ? ')
+    this.saveKeysStmt = g_dmdb.prepare(saveKeysSql);
+    this.readKeyStmt = g_dmdb.prepare('SELECT * from keys where key=?')
+    this.saveTagStmt = g_dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
+    this.deleteTagStmt = g_dmdb.prepare('DELETE FROM tags where "key"= ?')
+    this.getLastResolvedIdStmt = g_dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedId\'')
+    this.getLastResolvedCursorStmt = g_dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedCursor\'')
+    this.setLastResolvedIdStmt = g_dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedId\'')
+    this.setLastResolvedCursorStmt = g_dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedCursor\'')
+    this.getDomainStmt = g_dmdb.prepare('SELECT * from nidObj where domain = ?')
+    this.queryDomainsStmt = g_dmdb.prepare('SELECT * FROM nidobj WHERE owner = ? ')
 
     //-------------------------------NFT-------------------------------------------
-    this.getNFTStmt = this.dmdb.prepare('SELECT * from nfts where symbol=?')
+    this.getNFTStmt = g_dmdb.prepare('SELECT * from nfts where symbol=?')
     const addNFTsql = `
     INSERT INTO "nfts" 
                 (symbol,attributes,data,log) 
                 VALUES ( ?,?,?,'')
                 ON CONFLICT( symbol ) DO UPDATE
                 SET attributes=?,data=?`
-    this.addNFTStmt = this.dmdb.prepare(addNFTsql)
-    this.deleteNFTStmt = this.dmdb.prepare("DELETE FROM nfts where symbol = ?")
-    this.NFTappendLogStmt = this.dmdb.prepare("UPDATE nfts SET log = log || ?  where symbol = ?")
-    this.NFTgetLogStmt = this.dmdb.prepare("SELECT log from nfts where symbol = ?")
+    this.addNFTStmt = g_dmdb.prepare(addNFTsql)
+    this.deleteNFTStmt = g_dmdb.prepare("DELETE FROM nfts where symbol = ?")
+    this.NFTappendLogStmt = g_dmdb.prepare("UPDATE nfts SET log = log || ?  where symbol = ?")
+    this.NFTgetLogStmt = g_dmdb.prepare("SELECT log from nfts where symbol = ?")
 
     //--------------------------------------------------------//
     //  Transaction DB
     //-------------------------------------------------------//
-    this.txdb = new Sqlite3Database(this.path)
+    if(!g_txdb){
+
+    
+    g_txdb = new Sqlite3Database(this.path)
     // 100MB cache
-    this.txdb.pragma('cache_size = 6400')
-    this.txdb.pragma('page_size = 16384')
+    g_txdb.pragma('cache_size = 6400')
+    g_txdb.pragma('page_size = 16384')
 
     // WAL mode allows simultaneous readers
-    this.txdb.pragma('journal_mode = WAL')
+    g_txdb.pragma('journal_mode = WAL')
 
     // Synchronizes WAL at checkpoints
-    this.txdb.pragma('synchronous = NORMAL')
+    g_txdb.pragma('synchronous = NORMAL')
+    }
 
-    //this.addNewTransactionStmt = this.txdb.prepare('INSERT OR IGNORE INTO tx (txid, height, time,command,publicKey,inputAddress,output,"in",out) VALUES (?, null, ?, null, null, null, null, null,null)')
-    //this.setTransactionBytesStmt = this.txdb.prepare('UPDATE tx SET command = ? ,publicKey= ? ,inputAddress = ? ,output = ? ,"in" = ? ,out = ? WHERE txid = ?')
+    //this.getHeightStmt = g_txdb.prepare(`SELECT height FROM ${this.blockchain}_config WHERE role = \'tip\'`)
+    //this.getHashStmt = g_txdb.prepare(`SELECT hash FROM ${this.blockchain}_config WHERE role = \'tip\'`)
+    //this.setHeightAndHashStmt = g_txdb.prepare(`UPDATE ${this.blockchain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
 
-    this.addNewTransactionStmt = this.txdb.prepare('INSERT OR IGNORE INTO tx (txid, height, time, bytes) VALUES (?, null, ?, null)')
-    this.setTransactionBytesStmt = this.txdb.prepare('UPDATE tx SET bytes = ?, txTime = ? WHERE txid = ?')
-    this.getRawTransactionStmt = this.txdb.prepare('SELECT bytes AS raw FROM tx WHERE txid = ?')
-    this.getTransactionsToDownloadStmt = this.txdb.prepare(`SELECT txid FROM tx WHERE bytes IS NULL`)
-
-    this.setTransactionTimeStmt = this.txdb.prepare('UPDATE tx SET time = ? WHERE txid = ?')
-    this.setTransactionHeightStmt = this.txdb.prepare(`UPDATE tx SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`)
-    this.hasTransactionStmt = this.txdb.prepare('SELECT txid FROM tx WHERE txid = ?')
-    //this.getTransactionCommandStmt = this.txdb.prepare('SELECT command FROM tx WHERE txid = ?')
-    this.getTransactionTimeStmt = this.txdb.prepare('SELECT time FROM tx WHERE txid = ?')
-    this.getTransactionHeightStmt = this.txdb.prepare('SELECT height FROM tx WHERE txid = ?')
-    this.getUnresolvedTransactionV1 = this.txdb.prepare(`SELECT * FROM tx WHERE height <= ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`)
-    this.getUnresolvedTransactionV2 = this.txdb.prepare(`SELECT * FROM tx WHERE height > ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`)
-    //this.getTransactionDownloadedStmt = this.txdb.prepare('SELECT output IS NOT NULL AS downloaded FROM tx WHERE txid = ?')
-    this.getTransactionDownloadedStmt = this.txdb.prepare('SELECT bytes IS NOT NULL AS downloaded FROM tx WHERE txid = ?')
-    this.deleteTransactionStmt = this.txdb.prepare('DELETE FROM tx WHERE txid = ?')
-    this.unconfirmTransactionStmt = this.txdb.prepare(`UPDATE tx SET height = ${HEIGHT_MEMPOOL} WHERE txid = ?`)
-    this.getTransactionsAboveHeightStmt = this.txdb.prepare('SELECT txid FROM tx WHERE height > ?')
-    this.getMempoolTransactionsBeforeTimeStmt = this.txdb.prepare(`SELECT txid FROM tx WHERE height = ${HEIGHT_MEMPOOL} AND txTime < ?`)
-    //this.getTransactionsToDownloadStmt = this.txdb.prepare(`SELECT txid FROM tx WHERE output IS NULL`)
-    this.getTransactionsToDownloadStmt = this.txdb.prepare(`SELECT txid FROM tx WHERE bytes IS NULL`)
-    //this.getTransactionsDownloadedCountStmt = this.txdb.prepare('SELECT COUNT(*) AS count FROM tx WHERE output IS NOT NULL')
-    this.getTransactionsDownloadedCountStmt = this.txdb.prepare('SELECT COUNT(*) AS count FROM tx WHERE bytes IS NOT NULL')
-    this.getHeightStmt = this.txdb.prepare('SELECT height FROM config WHERE role = \'tip\'')
-    this.getHashStmt = this.txdb.prepare('SELECT hash FROM config WHERE role = \'tip\'')
-    this.setHeightAndHashStmt = this.txdb.prepare('UPDATE config SET height = ?, hash = ? WHERE role = \'tip\'')
-    this.getPayTxStmt = this.txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
-    this.setPayTxStmt = this.txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
+    this.getPayTxStmt = g_txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
+    this.setPayTxStmt = g_txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
 
     if (noTxdb) {
       this.saveLastResolvedId(0)
@@ -163,17 +149,17 @@ class Database {
   }
 
   close() {
-    if (this.txdb) {
-      this.txdb.close()
-      this.txdb = null
-      this.dmdb.close()
-      this.dmdb = null
+    if (g_txdb) {
+      g_txdb.close()
+      g_txdb = null
+      g_dmdb.close()
+      g_dmdb = null
     }
   }
 
   transaction(f) {
-    if (!this.txdb) return
-    this.txdb.transaction(f)()
+    if (!g_txdb) return
+    g_txdb.transaction(f)()
   }
 
   // --------------------------------------------------------------------------
@@ -183,70 +169,87 @@ class Database {
   addNewTransaction(txid) {
     if (this.hasTransaction(txid)) return
 
-    //    const time = Math.round(Date.now() / 1000)
-
-    this.addNewTransactionStmt.run(txid, 9999999999)
+    const sql = `INSERT OR IGNORE INTO ${this.blockchain}_tx (txid, height, time, bytes) VALUES (?, null, ?, null)`
+    g_txdb.prepare(sql).run(txid, 9999999999)
 
     if (this.onAddTransaction) this.onAddTransaction(txid)
   }
-  setTransaction(txid, obj) {
-    this.setTransactionBytesStmt.run(obj.command, obj.publicKey, obj.inputAddress, JSON.stringify(obj.output), JSON.stringify(obj.out), JSON.stringify(obj.in), txid);
-  }
+
   saveTransaction(txid, rawtx, txTime) {
-    const bytes = (this.blockchain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(JSON.stringify(rawtx)))
-    this.setTransactionBytesStmt.run(bytes, txTime, txid)
+    const bytes = (this.blockchain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
+    const sql = `UPDATE ${this.blockchain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`
+    g_txdb.prepare(sql).run(bytes, txTime, txid)
   }
-  setTransactionResolved(txid){
-    this.txdb.prepare(`UPDATE tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
+  setTransactionResolved(txid) {
+    g_txdb.prepare(`UPDATE ${this.blockchain}_tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
   }
   setTransactionHeight(txid, height) {
-    this.setTransactionHeightStmt.run(height, txid)
+    const sql = `UPDATE ${this.blockchain}_tx SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
+    g_txdb.prepare(sql).run(height, txid)
   }
 
   setTransactionTime(txid, time) {
-    this.setTransactionTimeStmt.run(time, txid)
+    const sql = `UPDATE ${this.blockchain}_tx SET time = ? WHERE txid = ?`
+    g_txdb.prepare(sql).run(time, txid)
   }
 
   getRawTransaction(txid) {
-    const row = this.getRawTransactionStmt.raw(true).get(txid)
+    const sql = `SELECT bytes AS raw FROM ${this.blockchain}_tx WHERE txid = ?`
+    const row = g_txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
   getTransactionTime(txid) {
-    const row = this.getTransactionTimeStmt.raw(true).get(txid)
+    const sql = `SELECT time FROM ${this.blockchain}_tx WHERE txid = ?`
+    const row = g_txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
   getTransactionHeight(txid) {
-    const row = this.getTransactionHeightStmt.raw(true).get(txid)
+    const sql = `SELECT height FROM ${this.blockchain}_tx WHERE txid = ?`
+    const row = g_txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
   deleteTransaction(txid) {
-    //  if (deleted.has(txid)) return
-    //  deleted.add(txid)
 
     this.transaction(() => {
-      this.deleteTransactionStmt.run(txid)
+      const sql = `DELETE FROM ${this.blockchain}_tx WHERE txid = ?`
+      g_txdb.prepare(sql).run(txid)
       if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
     })
   }
 
   unconfirmTransaction(txid) {
-    this.unconfirmTransactionStmt.run(txid)
+    const sql = `UPDATE ${this.blockchain}_tx SET height = ${HEIGHT_MEMPOOL} WHERE txid = ?`
+    g_txdb.prepare(sql).run(txid)
   }
 
 
   hasTransaction(txid) {
-    return !!this.hasTransactionStmt.get(txid)
+    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE txid = ?`
+    return !!g_txdb.prepare(sql).get(txid)
   }
   isTransactionDownloaded(txid) {
-    return !!this.getTransactionDownloadedStmt.raw(true).get(txid)[0]
+    const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${this.blockchain}_tx WHERE txid = ?`
+    return !!g_txdb.prepare(sql).raw(true).get(txid)[0]
   }
-  getTransactionsAboveHeight(height) { return this.getTransactionsAboveHeightStmt.raw(true).all(height).map(row => row[0]) }
-  getMempoolTransactionsBeforeTime(time) { return this.getMempoolTransactionsBeforeTimeStmt.raw(true).all(time).map(row => row[0]) }
-  getTransactionsToDownload() { return this.getTransactionsToDownloadStmt.raw(true).all().map(row => row[0]) }
-  getDownloadedCount() { return this.getTransactionsDownloadedCountStmt.get().count }
+  getTransactionsAboveHeight(height) {
+    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE height > ?`
+    return g_txdb.prepare(sql).raw(true).all(height).map(row => row[0])
+  }
+  getMempoolTransactionsBeforeTime(time) {
+    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE height = ${HEIGHT_MEMPOOL} AND txTime < ?`
+    return g_txdb.prepare(sql).raw(true).all(time).map(row => row[0])
+  }
+  getTransactionsToDownload() {
+    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE bytes IS NULL`
+    return g_txdb.prepare(sql).raw(true).all().map(row => row[0])
+  }
+  getDownloadedCount() {
+    const sql = 'SELECT COUNT(*) AS count FROM ${this.blockchain}_tx WHERE bytes IS NOT NULL'
+    return g_txdb.prepare(sql).get().count
+  }
   getIndexedCount() { return this.getTransactionsIndexedCountStmt.get().count }
   getNumQueuedForExecution() { return this.numQueuedForExecution }
 
@@ -256,27 +259,30 @@ class Database {
   // --------------------------------------------------------------------------
 
   getHeight() {
-    const row = this.getHeightStmt.raw(true).all()[0]
+    const sql = `SELECT height FROM ${this.blockchain}_config WHERE role = \'tip\'`
+    const row = g_txdb.prepare(sql).raw(true).all()[0]
     return row && row[0]
   }
 
   getHash() {
-    const row = this.getHashStmt.raw(true).all()[0]
+    const sql = `SELECT hash FROM ${this.blockchain}_config WHERE role = \'tip\'`
+    const row = g_txdb.prepare(sql).raw(true).all()[0]
     return row && row[0]
   }
 
   setHeightAndHash(height, hash) {
-    this.setHeightAndHashStmt.run(height, hash)
+    const sql = `UPDATE ${this.blockchain}_config SET height = ?, hash = ? WHERE role = \'tip\'`
+    g_txdb.prepare(sql).run(height, hash)
   }
 
   // --------------------------------------------------------------------------
   // resolver
   // --------------------------------------------------------------------------
   getAllPaytx(type) {
-    return this.txdb.prepare('SELECT * from paytx where type = ?').all(type);
+    return g_txdb.prepare('SELECT * from paytx where type = ?').all(type);
   }
   deletePaytx(domain, type) {
-    this.txdb.prepare('DELETE from paytx where domain = ? AND type = ?').run(domain, type);
+    g_txdb.prepare('DELETE from paytx where domain = ? AND type = ?').run(domain, type);
   }
   getPaytx(domain, type) {
     return this.getPayTxStmt.get(domain, type);
@@ -284,16 +290,18 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
-  getUnresolvedTX(count) {
+  async getUnresolvedTX(count) {
     let list = [];
-  if(this.blockchain=='bsv'){
-      list = this.getUnresolvedTransactionV1.raw(false).all(count);
+    if (this.blockchain == 'bsv') {
+      const sql = `SELECT * FROM ${this.blockchain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+      list = g_txdb.prepare(sql).raw(false).all(count);
     }
-    if(list.length==0){ //no more old format tx
-      const list1 = this.getUnresolvedTransactionV2.raw(false).all(count);
+    if (list.length == 0) { //no more old format tx
+      const sql = `SELECT * FROM ${this.blockchain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+      const list1 = g_txdb.prepare(sql).raw(false).all(count);
       list = list.concat(list1)
     }
-    
+
     if (list) {
       for (let i = 0; i < list.length; i++) {
         if (list[i].bytes == null) {
@@ -301,7 +309,7 @@ class Database {
           break;
         }
         const rawtx = (this.blockchain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
-        const res = Parser.getParser(this.blockchain).parseRaw({rawtx:rawtx, height:list[i].height,time:list[i].time})
+        const res = await (Parser.getParser(this.blockchain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
         if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
         else {
           list[i].output = { err: res.msg }
@@ -320,7 +328,7 @@ class Database {
   }
   queryTags(expression) {
     let sql = "select DISTINCT tag from tags where tag like ?";
-    return this.dmdb.prepare(sql).all(expression);
+    return g_dmdb.prepare(sql).all(expression);
   }
   saveTags(nidObj) {
     for (var item in nidObj.tag_map) {
@@ -363,7 +371,7 @@ class Database {
     sql += ";";
     return {
       code: 0,
-      data: this.dmdb.prepare(sql).all()
+      data: g_dmdb.prepare(sql).all()
     }
   }
   readKey(keyName) {
@@ -401,7 +409,7 @@ class Database {
   saveKeyHistory(nidObj, keyName, value, txid) {
     try {
       this.transaction(() => {
-        if(nidObj.domain=="10200.test"){
+        if (nidObj.domain == "10200.test") {
           console.log("found")
         }
         const lenKey = keyName + "." + nidObj.domain + "/len";
@@ -410,13 +418,15 @@ class Database {
         if (lenRet) count = +lenRet.value;
         count++;
         const tags = nidObj.keys[keyName].tags;
-        this.saveKeysStmt.run(lenKey, count.toString(),null, count.toString(), null); //save len
+        this.saveKeysStmt.run(lenKey, count.toString(), null, count.toString(), null); //save len
         const hisKey = keyName + "." + nidObj.domain + "/" + count;
         this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, JSON.stringify(value), tags); //save len
-        const tag1 = tags.split(';')
-        tag1.map(tag => {
-          this.saveTagStmt.run(tag, hisKey);
-        })
+        if (tags) {
+          const tag1 = tags.split(';')
+          tag1.map(tag => {
+            this.saveTagStmt.run(tag, hisKey);
+          })
+        }
       })
     } catch (e) {
       this.logger.error(e)
@@ -427,12 +437,12 @@ class Database {
       const value = JSON.stringify(nidObj.keys[item]);
       const keyName = item + "." + nidObj.domain;
       const tags = nidObj.keys[item].tags;
-      if(tags){
+      if (tags) {
         console.log("tags")
       }
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
-      if(this.tickers[keyName]) //notify subscribers
-        this.tickers[keyName].broadcast('key_update',value)
+      if (this.tickers[keyName]) //notify subscribers
+        this.tickers[keyName].broadcast('key_update', value)
     }
     for (var item in nidObj.users) {
       const value = JSON.stringify(nidObj.users[item]);
@@ -441,14 +451,14 @@ class Database {
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
     }
   }
-  subscribe(domain,session){
-    if(domain=="all"){
+  subscribe(domain, session) {
+    if (domain == "all") {
       this.tickerAll.register(session)
-    }else{
-      if(!this.tickers[domain])this.tickers[domain] = createChannel() 
+    } else {
+      if (!this.tickers[domain]) this.tickers[domain] = createChannel()
       this.tickers[domain].register(session)
     }
-    
+
   }
   queryDomains(field, value) {
     if (field != null) {
@@ -473,7 +483,7 @@ class Database {
   saveDomainObj(obj) {
     try {
       this.transaction(() => {
-        if(obj.domain=="10200.test"){
+        if (obj.domain == "10200.test") {
           console.log("found")
         }
         this.saveKeys(obj);
@@ -482,7 +492,7 @@ class Database {
         this.saveDomainObjStmt.run(obj.domain, obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld,
           obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld)
       })
-      this.tickerAll.broadcast("key_update",obj)
+      this.tickerAll.broadcast("key_update", obj)
     } catch (e) {
       this.logger.error(e)
     }
@@ -493,7 +503,7 @@ class Database {
       toHeight = null
       sql = 'SELECT * from tx where height == ? AND ? IS NULL'
     }
-    const ret = this.txdb.prepare(sql).all(fromHeight, toHeight)
+    const ret = g_txdb.prepare(sql).all(fromHeight, toHeight)
     ret.forEach(item => {
       const rawtx = Buffer.from(item.bytes).toString('hex')
       item.rawtx = rawtx

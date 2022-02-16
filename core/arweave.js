@@ -100,7 +100,9 @@ class AWNode {
     return response.data.data ? response.data.data.transactions : null
   }
   async fetch(txid) {
-    //return await this.runConnectFetcher.fetch(txid)
+    //const tx = await this.arweave.transactions.get(txid)
+    console.log("ar: fetching ",txid," return null")
+    return {hex:"{}",height:0,time:0}
   }
   async _recrawl() {
     const scheduleRecrawl = () => {
@@ -119,24 +121,30 @@ class AWNode {
   }
   async _crawl() {
     let height = this.lastCrawlHeight + 1
-    const txs = await this.queryTx({ name: "protocol", values: ["nbtest2"] }, { min: height })
+    const txs = await this.queryTx({ name: "nbprotocol", values: ["nbd"] }, { min: height })
     console.log(txs);
 
     for (let item of txs.edges) {
       let height = item.node.block.height
+      let time = item.node.block.timestamp
       if (this.lastCrawlHeight < height) this.lastCrawlHeight = height
       let block = this.txs.find(bl => bl.height === height)
       if (!block) {
-        block = { height: height, hash: null, txids: [], txhexs: [] }
+        block = { height: height, time:time, hash: item.node.block.id, txids: [], txhexs: [] }
         this.txs.push(block)
       }
 
       let tags = {}
       item.node.tags.forEach(tag => tags[tag.name] = tag.value)
       item.node.tags = tags
-      if (item.node.block&&(item.node.block.timestamp * 1000 < tags.ts)) continue //ts must before block time
+      if(!tags.cmd){
+        const data = await this.arweave.transactions.getData(item.node.id,{decode:true,string:true})
+        if(data)item.node.data = data
+        console.log(data)
+      }
+      //if (item.node.block&&(item.node.block.timestamp * 1000 < tags.ts)) continue //ts must before block time
       block.txids.push(item.node.id)
-      block.txhexs.push(item.node)
+      block.txhexs.push(JSON.stringify(item.node))
     }
 
   }

@@ -6,7 +6,15 @@ function isTesting(symbol){
 }
 let bsvdb = null
 class Parser_NFT {
-    static getAllCommands() {
+    getHandler(command){
+        const handler = this.getAllCommands()[command]
+        if(handler){
+         handler.parser = this
+         return handler
+        }
+        return null
+     }
+    getAllCommands() {
         return { [CMD.NFT_CREATE]: CMD_NFT_Create, [CMD.NFT_TRANSFER]: CMD_NFT_Transfer,
             [CMD.NFT_REFILL]: CMD_NFT_REFILL, [CMD.NFT_SELL]: CMD_NFT_SELL
         }

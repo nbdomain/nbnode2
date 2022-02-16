@@ -60,7 +60,7 @@ class NIDObject {
 }
 
 class Resolver {
-    constructor(blockchain,database) {
+    constructor(blockchain, database) {
         this.blockchain = blockchain
         this.db = database
         this.resolveNextBatchInterval = 5000
@@ -105,11 +105,11 @@ class Resolver {
         if (obj) {
             if (history) {
                 const subObj = this.db.readKeyHistory(fullDomain, history)
-                return subObj ? { code: 0, domain:fullDomain, obj: subObj } : null
+                return subObj ? { code: 0, domain: fullDomain, obj: subObj } : null
             } else {
                 const subObj = this.db.readKey(fullDomain)
                 if (subObj) {
-                    let retObj = { code: 0, domain:fullDomain, obj: subObj }
+                    let retObj = { code: 0, domain: fullDomain, obj: subObj }
                     return retObj;
                 }
             }
@@ -130,7 +130,7 @@ class Resolver {
                 obj = reduceKeys_(obj, true)
                 if (!forceFull) { //expand $truncated keys
                     for (const key in obj.keys) {
-                        if(JSON.stringify(obj.keys[key].value.value)>512){
+                        if (JSON.stringify(obj.keys[key].value.value) > 512) {
                             obj.keys[key].value.value = "$truncated"
                             obj.truncated = true
                         }
@@ -142,7 +142,7 @@ class Resolver {
                         delete obj.nfts[symbol] //remove the non-exist nft
                     }
                 }
-                return { code: 0, obj: obj,domain:fullDomain }
+                return { code: 0, obj: obj, domain: fullDomain }
             }
             let ret = await DomainTool.fetchDomainAvailibility(fullDomain);
             ret.domain = fullDomain;
@@ -154,18 +154,18 @@ class Resolver {
         return { code: ERR.KEY_NOTFOUND, message: fullDomain + " not found" }
 
     }
-    getDomainHistoryLen(domain){
+    getDomainHistoryLen(domain) {
         return this.db.readKeyHistoryLen(domain)
     }
-    readNBTX(fromHeight,toHeight){
-        if(toHeight==-1){
+    readNBTX(fromHeight, toHeight) {
+        if (toHeight == -1) {
             toHeight = this.db.getHeight()
         }
-        return this.db.queryTX(fromHeight,toHeight)
+        return this.db.queryTX(fromHeight, toHeight)
     }
-    resolveNextBatch() {
+    async resolveNextBatch() {
         if (!this.started) return
-        const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
 
         try {
             if (rtxArray == null || rtxArray.length == 0) {
@@ -179,10 +179,10 @@ class Resolver {
                 console.log("get ", rtxArray.length, " txs from DB")
                 // Add transaction to Nid one by one in their creation order
                 try {
-                    rtxArray.forEach((rtx, _) => {
+                    for (const rtx of rtxArray) {
                         this.db.setTransactionResolved(rtx.txid)
-                        if (!rtx.output || !rtx.output.domain) return
-                        if (rtx.command == CMD.REGISTER && rtx.output.err) return
+                        if (!rtx.output || !rtx.output.domain) continue
+                        if (rtx.command == CMD.REGISTER && rtx.output.err) continue
                         let domain = rtx.output.domain
                         if (!(domain in g_nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain)
@@ -193,15 +193,16 @@ class Resolver {
                             }
                         }
                         //const obj = DomainTool.fillNIDFromTX(g_nidObjMap[domain], rtx)
-                        const obj = Parser.getParser(this.blockchain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap)
+                        const obj = await (Parser.getParser(this.blockchain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
                         if (obj) {
                             g_nidObjMap[domain] = obj
                             g_nidObjMap[domain].dirty = true
-
                         }
-
                         lastResolvedId = rtx.id
-                    })
+                    }
+
+
+
                 } catch (e) {
                     console.error(e);
                 }

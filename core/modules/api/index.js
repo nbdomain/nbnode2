@@ -52,7 +52,7 @@ app.get('/', async function (req, res, next) {
         return;
     }
     try {
-        const ret = await bsv_resolver.readDomain(domain, f);
+        const ret = await indexers.resolver(Util.getBlockchain(domain)).readDomain(domain, f);
         res.json(ret);
     } catch (err) {
         console.error(err);
@@ -63,19 +63,20 @@ async function getAllItems(para,forceFull=false,from=null) {
     //check ,
     let items = []
     const domains = para.split(',')
+    
     domains.forEach(domain => {
         const his = domain.split('/') //check '/'
         if (his.length == 1) items.push(domain)
         else {
             const moreHis = his[1].split('-') //check '-'
             if (moreHis.length == 1) {
-                if (his[1] == '0') items.push(his[0])
-                else if (his[1] == 'all') {
-                    const count = bsv_resolver.getDomainHistoryLen(his[0])
-                    items.push(his[0])
+                if (his[1] == 'all') {
+                    const resolver = indexers.resolver(Util.getBlockchain(his[0]))
+                    const count = resolver.getDomainHistoryLen(his[0])
                     for (let i = 1; i <= count; i++) {
                         items.push(his[0] + "/" + i)
                     }
+                    items.push(his[0])
                 } else items.push(domain)
             }
             else {
@@ -89,7 +90,8 @@ async function getAllItems(para,forceFull=false,from=null) {
     for(const item of items){
         if (item === '') continue;
         const dd = item.split('/')
-        const result = await bsv_resolver.readDomain(dd[0], forceFull, dd[1])
+        const resolver = indexers.resolver(Util.getBlockchain(dd[0]))
+        const result = await resolver.readDomain(dd[0], forceFull, dd[1])
         if(from&&result.obj.ts<=from)continue
         ret.push(result)
     }
@@ -146,17 +148,18 @@ app.post('/sendTx', async function (req, res) {
     const obj = req.body;
     let blockchain = 'bsv'
     if(obj.blockchain=='ar')blockchain = 'ar'
-    let ret = Parser.getParser(blockchain).parseRaw({rawtx:obj.rawtx, height:-1, verify:true});
+    let ret = await (Parser.getParser(blockchain).parseRaw({rawtx:obj.rawtx, height:-1, verify:true}));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
         return
     }
     ret = await Util.sendRawtx(obj.rawtx,blockchain);
     if(ret.code==0){
-        if(blockchain=='ar'){
+        indexers.get(blockchain)._onMempoolTransaction(ret.txid,obj.rawtx)
+        /*if(blockchain=='ar'){
             indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
         }else
-            indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)
+            indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)*/
         Nodes.notifyPeers({cmd:"newtx",data:JSON.stringify({txid:ret.txid,blockchain:blockchain})})
     }
     res.json(ret);

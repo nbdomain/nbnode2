@@ -43,27 +43,54 @@ if (myArgs) {
 // ------------------------------------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------------------------------------
-let indexers = null, server=null
+let indexers = null, server = null;
+let apiAR = null, apiBSV = null;
+class Indexers{
+  static init(){
+    this.bsv = new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG)
+    this.ar = new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG)
+  }
+  static async start(){
+    await this.ar.start()
+    await this.bsv.start()
+  }
+  static async stop(){
+    await this.ar.stop();
+    await this.bsv.stop();
+  }
+  static resolver(blockchain){
+    return this.get(blockchain).resolver
+  }
+  static get(blockchain){
+    switch (blockchain) {
+      case 'bsv':
+        return this.bsv
+      case 'ar':
+        return this.ar
+      default:
+        break;
+    }
+    return null
+  }
+}
 async function main() {
-  
-  let apiAR=null,apiBSV=null;
+
   switch (API.bsv) {
-    case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, logger);break
+    case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, logger); break
     //default: throw new Error(`Unknown API: ${API}`)
   }
   switch (API.ar) {
-    case 'arnode': apiAR = new AWNode("", logger);break
+    case 'arnode': apiAR = new AWNode("", logger); break
     //default: throw new Error(`Unknown API: ${API}`)
   }
   //bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
-  
+
   //const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
-  indexers = { bsv: new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG) }
+  Indexers.init()
 
-  server = new Server(indexers, logger)
+  server = new Server(Indexers, logger)
 
-  indexers.ar && await indexers.ar.start()
-  indexers.bsv && await indexers.bsv.start()
+  await Indexers.start()
   server.start()
   const seedNode = await Nodes.init()
 }
@@ -74,8 +101,7 @@ async function main() {
 
 async function shutdown() {
   server.stop()
-  indexers.ar&&await indexers.ar.stop()
-  indexers.bsv&&await indexers.bsv.stop()
+  await Indexers.stop()
   process.exit(0)
 }
 

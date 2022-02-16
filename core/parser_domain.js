@@ -2,23 +2,23 @@
 const { Util, CMD_BASE } = require("./util.js");
 const { CMD, DEF } = require("./def")
 //const DomainTool = require('./domainTool')
-let bsvdb = null;
+
 class Parser_Domain {
     constructor(blockchain) {
         this.blockchain = blockchain
     }
     init(db) {
         this.db = db;
-        bsvdb = db;
     }
     parse(rtx) {
         let ret = {
             code: -1, msg: ""
         }
         try {
-            const handler = this.getAllCommands()[rtx.command]
-            if (handler)
+            const handler = this.getHandler(rtx.command)
+            if (handler){
                 rtx.output = handler.parseTX(rtx)
+            }
             if (!rtx.output) {
                 ret.msg = `Not a valid output: ${rtx.txid}`;
                 return ret;
@@ -35,7 +35,15 @@ class Parser_Domain {
         ret.obj = rtx;
         return ret;
     }
-    static getAllCommands() {
+    getHandler(command){
+       const handler = this.getAllCommands()[command]
+       if(handler){
+        handler.parser = this
+        return handler
+       }
+       return null
+    }
+    getAllCommands() {
         return {
             [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_KEYUSER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER,
             [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC
@@ -60,7 +68,7 @@ class CMD_MAKE_PUBLIC {
     }
 }
 class CMD_REGISTER {
-    static parseTX(rtx) {
+    static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
             // Suppose the output array has a fixed order.
@@ -86,18 +94,18 @@ class CMD_REGISTER {
         }
 
         try {
-            Util.getAddressFromPublicKey(output.owner_key);
+            let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain);
+            let authorsities = Util.getAdmins(output.protocol, rtx.height);
+            if (!authorsities.includes(addr)) {
+                output.err = "Input address not in authorities.";
+            }
         } catch (err) {
             output.err = "Invalid format for RegisterOutput class2."
         }
-        let addr = Util.getAddressFromPublicKey(rtx.publicKey);
-        let authorsities = Util.getAdmins(output.protocol, rtx.height);
-        if (!authorsities.includes(addr)) {
-            output.err = "Input address not in authorities.";
-        }
+        
         return output
     }
-    static fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx) {
         try {
             if (nidObj.owner_key) {
                 rtx.output.err = nidObj.domain + ": Already registered"
@@ -105,7 +113,7 @@ class CMD_REGISTER {
             }//can't register twice
             nidObj.nid = rtx.output.nid;
             nidObj.owner_key = rtx.output.owner_key;
-            nidObj.owner = Util.getAddressFromPublicKey(nidObj.owner_key)
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,rtx.blockchain);
             nidObj.txid = rtx.txid;
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
@@ -118,7 +126,7 @@ class CMD_REGISTER {
     }
 }
 class CMD_BUY {
-    static parseTX(rtx) {
+    static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
             var extra = JSON.parse(rtx.out[0].s6);
@@ -130,7 +138,7 @@ class CMD_BUY {
             output.err = "Invalid format for BuyOutput class."
             return output
         }
-        let addr = Util.getAddressFromPublicKey(rtx.publicKey);
+        let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain) //Util.getAddressFromPublicKey(rtx.publicKey);
         let authorsities = Util.getAdmins(
             output.protocol,
             rtx.height
@@ -141,7 +149,7 @@ class CMD_BUY {
         }
         return output
     }
-    static fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null) return null
         if (nidObj.status == DEF.STATUS_TRANSFERING && nidObj.sell_info) {
             //TODO validate
@@ -149,10 +157,11 @@ class CMD_BUY {
                 if (rtx.txTime != -1 && rtx.txTime * 1000 > Number(nidObj.sell_info.expire)) return null //expired
                 let clearData = nidObj.sell_info.clear_data;
                 if (nidObj.sell_info.buyer != 'any') { //check if it's the right buyer
-                    if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
+                    //if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
+                    if (await Util.addressFromPublickey(rtx.output.owner_key,rtx.blockchain) != nidObj.sell_info.buyer)
                         return null
                 }
-                nidObj = Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData);
+                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData,rtx.blockchain);
             }
         }
         return nidObj
@@ -173,7 +182,7 @@ class CMD_SELL {
         }
         return output
     }
-    static fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null) return null
         if (nidObj.owner_key == rtx.publicKey && nidObj.status != DEF.STATUS_PUBLIC) { //cannot sell public domain
             nidObj.status = DEF.STATUS_TRANSFERING
@@ -184,7 +193,7 @@ class CMD_SELL {
                 expire: rtx.output.expire,
                 note: rtx.output.note,
                 clear_data: rtx.output.clear_data,
-                seller: Util.getAddressFromPublicKey(rtx.publicKey).toString(),
+                seller:  await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain), //Util.getAddressFromPublicKey(rtx.publicKey).toString(),
                 sell_txid: rtx.txid
             };
             nidObj.tf_update_tx = rtx.txid;
@@ -203,13 +212,14 @@ class CMD_NOP {
     }
 }
 class CMD_TRANSER {
-    static parseTX(rtx) {
+    static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
             output.owner_key = rtx.out[0].s5.toLowerCase();
             output.transfer_fee = rtx.out[3].e.v;
             output.payment_addr = rtx.out[3].e.a;
-            Util.getAddressFromPublicKey(output.owner_key) //test public key
+            //Util.getAddressFromPublicKey(output.owner_key) //test public key
+            await Util.addressFromPublickey(output.owner_key,rtx.blockchain)
         } catch (err) {
             output.err = "Invalid format for Transfer command."
             return output
@@ -225,13 +235,13 @@ class CMD_TRANSER {
         }
         return output
     }
-    static fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null) return null
         try {
             if (nidObj.owner_key == rtx.publicKey && nidObj.status != DEF.STATUS_PUBLIC) { //can not transfer public domain
                 //nidObj = DomainTool.updateNidObjFromRX(nidObj, rtx)
                 nidObj.owner_key = rtx.output.owner_key;
-                nidObj.owner = Util.getAddressFromPublicKey(rtx.output.owner_key).toString();
+                nidObj.owner = await Util.addressFromPublickey(rtx.output.owner_key)//Util.getAddressFromPublicKey(rtx.output.owner_key).toString();
             }
         } catch (e) {
             console.error("fillObj: Transfer command invalid")
@@ -297,7 +307,7 @@ class CMD_KEYUSER {
         if (key == "todomain") return false//'todomain' is not a key
         const oldvalue = obj.keys[key];
         if (oldvalue) {
-            bsvdb.saveKeyHistory(obj, key, oldvalue);
+            this.parser.db.saveKeyHistory(obj, key, oldvalue);
         }
         let newKey = { value: newValue, txid: output.txid };
         if (output.ts) newKey.ts = output.ts;
@@ -309,7 +319,7 @@ class CMD_KEYUSER {
         obj.keys[key] = newKey
         return true
     }
-    static fillObj(nidObj, rtx, objMap) {
+    static async fillObj(nidObj, rtx, objMap) {
         if (nidObj.owner_key == null) {
             rtx.output.err = "No owner"
             return null
@@ -319,7 +329,7 @@ class CMD_KEYUSER {
             rtx.output.err = "unAuthorized owner"
             for (var name in nidObj.admins) {
                 var adminAddress = nidObj.admins[name];
-                if (adminAddress == Util.getAddressFromPublicKey(rtx.publicKey)) {
+                if (adminAddress == await Util.addressFromPublickey(rtx.publicKey)) {
                     authorized = true;
                     rtx.output.err = null;
                 }
@@ -332,7 +342,7 @@ class CMD_KEYUSER {
             if (rtx.output.value.toDomain) {
                 let obj = objMap[rtx.output.value.toDomain]
                 if (!obj) {
-                    obj = bsvdb.loadDomain(rtx.output.value.toDomain)
+                    obj = this.parser.db.loadDomain(rtx.output.value.toDomain)
                     objMap[rtx.output.value.toDomain] = obj
                 }
                 if (obj && obj.status == DEF.STATUS_PUBLIC) {

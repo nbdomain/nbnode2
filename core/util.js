@@ -5,12 +5,14 @@
 
 const bsv = require('bsv');
 const { CONFIG } = require('./config');
-const axios = require('axios');
 const cp = require('child_process');
 const nbpay = require('nbpay')
 const AWNode = require('./arweave')
+const CoinFly = require('coinfly')
 nbpay.auto_config();
-
+let arLib = null, bsvLib = null;
+CoinFly.create('ar').then(lib=>arLib = lib)
+CoinFly.create('bsv').then(lib=>bsvLib = lib)
 const SUB_PROTOCOL_MAP = CONFIG.tld_config
 
 class CMD_BASE {
@@ -28,11 +30,32 @@ class CMD_BASE {
 };
 
 class Util {
+    static getBlockchain(domain){
+        let tld = null
+        if(domain){
+            tld = domain.slice(domain.lastIndexOf('.')+1)
+        }
+        if(tld){
+            for (let t in SUB_PROTOCOL_MAP) {
+                if(tld==t)return SUB_PROTOCOL_MAP[t].blockchain?SUB_PROTOCOL_MAP[t].blockchain:'bsv'
+            }
+        }
+        return null
+    }
+    static async addressFromPublickey(sPublic,blockchain='bsv'){
+        const lib = await CoinFly.create(blockchain)
+        return await lib.getAddress(sPublic)
+    }
     static  downloadFile(uri, filename){
         console.log("downloading file from:",uri)
-        let command = `curl -o ${filename}  '${uri}'`;
-        let result = cp.execSync(command,{stdio: 'inherit'});
-        return result
+        let command = `curl -f -o ${filename}  '${uri}'`;
+        try{
+            let result = cp.execSync(command,{stdio: 'inherit'});
+            return result
+        }catch(e){
+            console.error(e.message)
+            return false
+        }
     }
     /**
      * Reset NidObject to initial state.
@@ -40,10 +63,10 @@ class Util {
      * @param {!string} newOwner 
      * @param {!Number} newStatus 
      */
-    static resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData = true) {
+    static async resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData,blockchain) {
         nidObj.owner_key = newOwner;
         if (newOwner != null) {
-            nidObj.owner = Util.getAddressFromPublicKey(nidObj.owner_key);
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,blockchain);
             nidObj.txid = newOnwerTxid;
         } else {
             nidObj.owner = null;
@@ -64,7 +87,9 @@ class Util {
     static async sendRawtx(rawtx,blockchain='bsv') 
     {   
         let ret = {code:1}
-        if(blockchain=='bsv'){
+        const lib = await CoinFly.create(blockchain)
+        return await lib.send({rawtx:rawtx})
+        /*if(blockchain=='bsv'){
             const res =  await nbpay.send({tx:rawtx})
             ret = {code:res.err?1:0,...res}
             return ret
@@ -72,7 +97,7 @@ class Util {
         if(blockchain=='ar'){
             const res =  await AWNode.sendRawTx(rawtx)
             return res
-        }
+        }*/
         throw("sendRawtx:unsupported blockchain")
     }
     static tsNowTime() {
@@ -198,4 +223,52 @@ class Util {
     }
 };
 
-module.exports = { Util, CMD_BASE }
+class ArUtil{
+    static decode(str){
+        return this.fromB64Url(str)
+    }
+    static decodeTags(tags){
+        let ts = {}
+        try{
+            for(let tag of tags){
+                const t = ArUtil.utf8DecodeTag(tag)
+                ts[t.name] = t.value
+            }
+            return ts
+        }catch(e){
+            return tags
+        }
+    }
+    static fromB64Url(input) {
+        const paddingLength = input.length % 4 === 0 ? 0 : 4 - (input.length % 4);
+    
+        const base64 = input
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
+            .concat('='.repeat(paddingLength));
+    
+        return Buffer.from(base64, 'base64');
+    }
+    static isValidUTF8(buffer) {
+        return Buffer.compare(Buffer.from(buffer.toString(), 'utf8'), buffer) === 0;
+    };
+    static utf8DecodeTag(tag) {
+        let name;
+        let value;
+        try {
+            const nameBuffer = ArUtil.fromB64Url(tag.name);
+            if (ArUtil.isValidUTF8(nameBuffer)) {
+                name = nameBuffer.toString('utf8');
+            }
+            const valueBuffer = ArUtil.fromB64Url(tag.value);
+            if (ArUtil.isValidUTF8(valueBuffer)) {
+                value = valueBuffer.toString('utf8');
+            }
+        } catch (error) { }
+        return {
+            name,
+            value,
+        };
+    };
+}
+module.exports = { ArUtil,Util, CMD_BASE }
