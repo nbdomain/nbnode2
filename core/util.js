@@ -7,7 +7,7 @@ const bsv = require('bsv');
 const { CONFIG } = require('./config');
 const cp = require('child_process');
 const nbpay = require('nbpay')
-const AWNode = require('./arweave')
+const arweave = require('arweave')
 const CoinFly = require('coinfly')
 nbpay.auto_config();
 let arLib = null, bsvLib = null;
@@ -224,6 +224,9 @@ class Util {
 };
 
 class ArUtil{
+    static async getTxData(txid){
+        return await arweave.transactions.getData(txid, {decode: true, string: true})
+    }
     static decode(str){
         return this.fromB64Url(str)
     }

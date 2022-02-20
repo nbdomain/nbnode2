@@ -23,6 +23,7 @@ class AWNode {
     this.logger = logger
     this.mempoolTimerID = 0
     this.lastCrawlHeight = 0
+    this.lastCrawHash = null
     this.recrawlInterveral = 30000
 
     this.txs = []
@@ -63,7 +64,7 @@ class AWNode {
   async queryTx(tags, block) {
     const variables = { tags: tags, block: block }
     const query = `query Transactions($tags: [TagFilter!], $block: BlockFilter){
-        transactions(tags: $tags, block:$block) {
+        transactions(tags: $tags, block:$block,sort: HEIGHT_ASC) {
           pageInfo {
             hasNextPage
           }
@@ -127,7 +128,6 @@ class AWNode {
     for (let item of txs.edges) {
       let height = item.node.block.height
       let time = item.node.block.timestamp
-      if (this.lastCrawlHeight < height) this.lastCrawlHeight = height
       let block = this.txs.find(bl => bl.height === height)
       if (!block) {
         block = { height: height, time:time, hash: item.node.block.id, txids: [], txhexs: [] }
@@ -138,7 +138,7 @@ class AWNode {
       item.node.tags.forEach(tag => tags[tag.name] = tag.value)
       item.node.tags = tags
       if(!tags.cmd){
-        const data = await this.arweave.transactions.getData(item.node.id,{decode:true,string:true})
+        const data = await this.arweave.transactions.getData(item.node.id,{decode:false,string:true})
         if(data)item.node.data = data
         console.log(data)
       }
@@ -146,12 +146,18 @@ class AWNode {
       block.txids.push(item.node.id)
       block.txhexs.push(JSON.stringify(item.node))
     }
-
+    const current = await this.arweave.blocks.getCurrent();
+    if(current){
+      this.lastCrawlHeight = current.height
+      this.lastCrawHash = current.hash
+    }
   }
   async getNextBlock(currHeight, currHash) {
-    const height = currHeight + 1
     try {
-      return this.txs.pop()
+      if(this.txs.length>0)
+        return this.txs.shift()
+
+      return {height:this.lastCrawlHeight,hash:this.lastCrawHash,txids:[],txhexs:[]}
     } catch (e) {
       console.log(e)
       throw e

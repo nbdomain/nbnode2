@@ -42,14 +42,18 @@ class Database {
   open() {
     let noTxdb = false;
     if (!g_txdb) {
+      if (!fs.existsSync(this.path + "." + VER_TXDB)) {
+        if (fs.existsSync(this.path)) {
+          fs.unlinkSync(this.path)
+          fs.unlinkSync(this.dmpath)
+        }
+        fs.writeFileSync(this.path + "." + VER_TXDB, "do not delete this file");
+      }
       if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
         if (fs.existsSync(this.dmpath)) fs.unlinkSync(this.dmpath)
         fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       }
-      if (!fs.existsSync(this.path + "." + VER_TXDB)) {
-        if (fs.existsSync(this.path)) fs.unlinkSync(this.path)
-        fs.writeFileSync(this.path + "." + VER_TXDB, "do not delete this file");
-      }
+      
       if (!fs.existsSync(this.path)) {
         const result = Util.downloadFile(`https://tnode.nbdomain.com/files/txs.db`, this.path)
         console.log(result)
@@ -196,7 +200,16 @@ class Database {
   getRawTransaction(txid) {
     const sql = `SELECT bytes AS raw FROM ${this.blockchain}_tx WHERE txid = ?`
     const row = g_txdb.prepare(sql).raw(true).get(txid)
-    return row && row[0]
+    const data = row && row[0]
+    if(!data)return null
+    if(this.blockchain=='bsv'){
+      return data.toString('hex')
+    }
+    if(this.blockchain=='ar'){
+      return data.toString()
+    }
+    console.error("database.js getRawTransaction: unsupported blockchain")
+    return null
   }
 
   getTransactionTime(txid) {

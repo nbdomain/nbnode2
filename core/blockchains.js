@@ -13,7 +13,16 @@ class ARChain {
             let tags = ArUtil.decodeTags(tx.tags)
             const nbdata = JSON.parse(tags.nbdata)
             const ts = JSON.parse(nbdata[1]).ts
-            const cmd = tags.cmd ? JSON.parse(tags.cmd):JSON.parse(ArUtil.decode(tx.data))
+            let cmd = null
+            try{
+                cmd =  JSON.parse(tags.cmd)
+            }catch(e){}
+            if(!cmd){
+                if(typeof tx.data !=undefined) cmd = JSON.parse(ArUtil.decode(tx.data))
+                else{
+                    cmd = await ArUtil.getTxData(tx.id)
+                }
+            }
             let out = [], out0 = {e:{}}, i = 0
             for (; i < nbdata.length; i++) {
                 out0['s' + i] = nbdata[i]

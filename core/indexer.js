@@ -108,9 +108,6 @@ class Indexer {
   rawtx (txid) {
     txid = this._parseTxid(txid)
     const ret = this.database.getRawTransaction(txid)
-    if(this.blockchain=='bsv'){
-      return ret.toString('hex')
-    }
     return ret
   }
 
