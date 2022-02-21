@@ -231,7 +231,6 @@ function get_pr(id, isNotify) {
     return null;
 }
 app.get('/relay/get/:id', (req, res) => {
-    let path = __dirname + req.path;
     const notify = req.query.notify ? true : false;
     let id = req.params['id'];
     let data = get_pr(id, notify);
@@ -244,7 +243,7 @@ app.get('/relay/get/:id', (req, res) => {
 
 app.post('/relay/notify', async (req, res) => {
     const result = req.body;
-    //log("got notify,result=",result);
+    console.log("got notify,result=",result);
     save_pr(req.body, true);
     if (result.ack_url) res.end("200");
     else res.json({ code: 0, message: "ok" });

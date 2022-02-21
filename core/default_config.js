@@ -75,6 +75,15 @@ const CONFIG = {
         "admin": "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ",
         "other_admins": []
       },
+    },
+    "a": {
+      "blockchain":"ar",
+      "address": {
+        "payment": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
+        "protocol": "ardomaina",
+        "admin": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
+        "other_admins": []
+      },
     }
   }
 }
