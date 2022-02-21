@@ -69,7 +69,7 @@ app.get('/', async function (req, res, next) {
         return;
     }
     try {
-        const ret = await indexers.resolver(Util.getBlockchain(domain)).readDomain(domain, f);
+        const ret = await indexers.resolver(Util.getchain(domain)).readDomain(domain, f);
         res.json(ret);
     } catch (err) {
         console.error(err);
@@ -88,7 +88,7 @@ async function getAllItems(para, forceFull = false, from = null) {
             const moreHis = his[1].split('-') //check '-'
             if (moreHis.length == 1) {
                 if (his[1] == 'all') {
-                    const resolver = indexers.resolver(Util.getBlockchain(his[0]))
+                    const resolver = indexers.resolver(Util.getchain(his[0]))
                     const count = resolver.getDomainHistoryLen(his[0])
                     for (let i = 1; i <= count; i++) {
                         items.push(his[0] + "/" + i)
@@ -107,7 +107,7 @@ async function getAllItems(para, forceFull = false, from = null) {
     for (const item of items) {
         if (item === '') continue;
         const dd = item.split('/')
-        const resolver = indexers.resolver(Util.getBlockchain(dd[0]))
+        const resolver = indexers.resolver(Util.getchain(dd[0]))
         const result = await resolver.readDomain(dd[0], forceFull, dd[1])
         if (from && result.obj.ts <= from) continue
         ret.push(result)
@@ -163,32 +163,32 @@ app.get('/util/verify', async function (req, res) {
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
-    let blockchain = 'bsv'
-    if (obj.blockchain == 'ar') blockchain = 'ar'
-    let ret = await (Parser.getParser(blockchain).parseRaw({ rawtx: obj.rawtx, height: -1, verify: true }));
+    let chain = 'bsv'
+    if (obj.chain == 'ar') chain = 'ar'
+    let ret = await (Parser.getParser(chain).parseRaw({ rawtx: obj.rawtx, height: -1, verify: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
         return
     }
-    ret = await Util.sendRawtx(obj.rawtx, blockchain);
+    ret = await Util.sendRawtx(obj.rawtx, chain);
     if (ret.code == 0) {
-        indexers.get(blockchain)._onMempoolTransaction(ret.txid, obj.rawtx)
-        /*if(blockchain=='ar'){
+        indexers.get(chain)._onMempoolTransaction(ret.txid, obj.rawtx)
+        /*if(chain=='ar'){
             indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
         }else
             indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)*/
-        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret.txid, blockchain: blockchain }) })
+        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret.txid, chain: chain }) })
     }
     res.json(ret);
 });
 async function handleNewTx(para, from) {
     let db = bsv_resolver.db, indexer = indexers.bsv;
-    if (para.blockchain == "ar") {
+    if (para.chain == "ar") {
         db = ar_resolver.db
         indexer = indexers.ar
     }
     if (!db.hasTransaction(para.txid)) {
-        const url = from + "/api/p2p/gettx?txid=" + para.txid + "&blockchain=" + para.blockchain
+        const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + para.chain
         const res = await axios.get(url)
         if (res.data) {
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
@@ -280,7 +280,7 @@ app.get('/p2p/:cmd/', function (req, res) { //sever to server command
     }
     if (cmd === 'gettx') {
         let indexer = indexers.bsv
-        if (req.query['blockchain'] == 'ar') indexer = indexers.ar
+        if (req.query['chain'] == 'ar') indexer = indexers.ar
         ret.rawtx = indexer.rawtx(req.query['txid'])
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
@@ -325,7 +325,7 @@ app.get('/queryTX', (req, res) => {
     res.json(bsv_resolver.readNBTX(fromHeight ? fromHeight : 0, toHeight ? toHeight : -1))
 })
 app.get('/test', (req, res) => {
-    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", blockchain: 'bsv' }) })
+    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
 })
 app.get(`/find_domain`, function (req, res) {
     try {

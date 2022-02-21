@@ -52,7 +52,7 @@ const CONFIG = {
   "tld_config": {
     "test": {
       "testing": true,
-      "blockchain":"bsv",
+      "chain":"bsv",
       "address": {
         "payment": "19fLpT5LpaMGKuLfUVqmNdXkVceq2rbjyn",
         "protocol": "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5",
@@ -68,7 +68,7 @@ const CONFIG = {
     },
     "b": {
       "testing": false,
-      "blockchain":"bsv",
+      "chain":"bsv",
       "address": {
         "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",
         "protocol": "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ",
@@ -77,7 +77,7 @@ const CONFIG = {
       },
     },
     "a": {
-      "blockchain":"ar",
+      "chain":"ar",
       "address": {
         "payment": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
         "protocol": "ardomaina",

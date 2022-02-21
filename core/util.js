@@ -30,20 +30,20 @@ class CMD_BASE {
 };
 
 class Util {
-    static getBlockchain(domain){
+    static getchain(domain){
         let tld = null
         if(domain){
             tld = domain.slice(domain.lastIndexOf('.')+1)
         }
         if(tld){
             for (let t in SUB_PROTOCOL_MAP) {
-                if(tld==t)return SUB_PROTOCOL_MAP[t].blockchain?SUB_PROTOCOL_MAP[t].blockchain:'bsv'
+                if(tld==t)return SUB_PROTOCOL_MAP[t].chain?SUB_PROTOCOL_MAP[t].chain:'bsv'
             }
         }
         return null
     }
-    static async addressFromPublickey(sPublic,blockchain='bsv'){
-        const lib = await CoinFly.create(blockchain)
+    static async addressFromPublickey(sPublic,chain='bsv'){
+        const lib = await CoinFly.create(chain)
         return await lib.getAddress(sPublic)
     }
     static  downloadFile(uri, filename){
@@ -63,10 +63,10 @@ class Util {
      * @param {!string} newOwner 
      * @param {!Number} newStatus 
      */
-    static async resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData,blockchain) {
+    static async resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData,chain) {
         nidObj.owner_key = newOwner;
         if (newOwner != null) {
-            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,blockchain);
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,chain);
             nidObj.txid = newOnwerTxid;
         } else {
             nidObj.owner = null;
@@ -84,21 +84,21 @@ class Util {
         nidObj.sell_info = null;
         return nidObj;
     }
-    static async sendRawtx(rawtx,blockchain='bsv') 
+    static async sendRawtx(rawtx,chain='bsv') 
     {   
         let ret = {code:1}
-        const lib = await CoinFly.create(blockchain)
+        const lib = await CoinFly.create(chain)
         return await lib.send({rawtx:rawtx})
-        /*if(blockchain=='bsv'){
+        /*if(chain=='bsv'){
             const res =  await nbpay.send({tx:rawtx})
             ret = {code:res.err?1:0,...res}
             return ret
         }
-        if(blockchain=='ar'){
+        if(chain=='ar'){
             const res =  await AWNode.sendRawTx(rawtx)
             return res
         }*/
-        throw("sendRawtx:unsupported blockchain")
+        throw("sendRawtx:unsupported chain")
     }
     static tsNowTime() {
         return Number(new Date().getTime());

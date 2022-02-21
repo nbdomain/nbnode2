@@ -4,8 +4,8 @@ const { CMD, DEF } = require("./def")
 //const DomainTool = require('./domainTool')
 
 class Parser_Domain {
-    constructor(blockchain) {
-        this.blockchain = blockchain
+    constructor(chain) {
+        this.chain = chain
     }
     init(db) {
         this.db = db;
@@ -94,7 +94,7 @@ class CMD_REGISTER {
         }
 
         try {
-            let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain);
+            let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.chain);
             let authorsities = Util.getAdmins(output.protocol, rtx.height);
             if (!authorsities.includes(addr)) {
                 output.err = "Input address not in authorities.";
@@ -113,7 +113,7 @@ class CMD_REGISTER {
             }//can't register twice
             nidObj.nid = rtx.output.nid;
             nidObj.owner_key = rtx.output.owner_key;
-            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,rtx.blockchain);
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,rtx.chain);
             nidObj.txid = rtx.txid;
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
@@ -138,7 +138,7 @@ class CMD_BUY {
             output.err = "Invalid format for BuyOutput class."
             return output
         }
-        let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain) //Util.getAddressFromPublicKey(rtx.publicKey);
+        let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.chain) //Util.getAddressFromPublicKey(rtx.publicKey);
         let authorsities = Util.getAdmins(
             output.protocol,
             rtx.height
@@ -158,10 +158,10 @@ class CMD_BUY {
                 let clearData = nidObj.sell_info.clear_data;
                 if (nidObj.sell_info.buyer != 'any') { //check if it's the right buyer
                     //if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
-                    if (await Util.addressFromPublickey(rtx.output.owner_key,rtx.blockchain) != nidObj.sell_info.buyer)
+                    if (await Util.addressFromPublickey(rtx.output.owner_key,rtx.chain) != nidObj.sell_info.buyer)
                         return null
                 }
-                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData,rtx.blockchain);
+                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData,rtx.chain);
             }
         }
         return nidObj
@@ -193,7 +193,7 @@ class CMD_SELL {
                 expire: rtx.output.expire,
                 note: rtx.output.note,
                 clear_data: rtx.output.clear_data,
-                seller:  await Util.addressFromPublickey(rtx.publicKey,rtx.blockchain), //Util.getAddressFromPublicKey(rtx.publicKey).toString(),
+                seller:  await Util.addressFromPublickey(rtx.publicKey,rtx.chain), //Util.getAddressFromPublicKey(rtx.publicKey).toString(),
                 sell_txid: rtx.txid
             };
             nidObj.tf_update_tx = rtx.txid;
@@ -219,7 +219,7 @@ class CMD_TRANSER {
             output.transfer_fee = rtx.out[3].e.v;
             output.payment_addr = rtx.out[3].e.a;
             //Util.getAddressFromPublicKey(output.owner_key) //test public key
-            await Util.addressFromPublickey(output.owner_key,rtx.blockchain)
+            await Util.addressFromPublickey(output.owner_key,rtx.chain)
         } catch (err) {
             output.err = "Invalid format for Transfer command."
             return output

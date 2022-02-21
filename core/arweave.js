@@ -46,8 +46,8 @@ class AWNode {
     return {code:1,message:"arnode not initialized"}
   }
 
-  async connect(height, blockchain) {
-    if (blockchain !== 'ar') throw new Error(`blockchain not supported with NbNode: ${network}`)
+  async connect(height, chain) {
+    if (chain !== 'ar') throw new Error(`chain not supported with NbNode: ${network}`)
 
     this.lastCrawlHeight = height
 

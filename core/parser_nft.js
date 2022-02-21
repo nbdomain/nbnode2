@@ -19,8 +19,8 @@ class Parser_NFT {
             [CMD.NFT_REFILL]: CMD_NFT_REFILL, [CMD.NFT_SELL]: CMD_NFT_SELL
         }
     }
-    constructor(blockchain){
-        this.blockchain = blockchain
+    constructor(chain){
+        this.chain = chain
     }
     init(db) {
         this.db = db

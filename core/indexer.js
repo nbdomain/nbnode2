@@ -19,7 +19,7 @@ const process = require('process')
 // ------------------------------------------------------------------------------------------------
 
 class Indexer {
-  constructor (txdb,dmdb, api, blockchain, numParallelDownloads, numParallelExecutes, logger, startHeight, mempoolExpiration,reOrg) {
+  constructor (txdb,dmdb, api, chain, numParallelDownloads, numParallelExecutes, logger, startHeight, mempoolExpiration,reOrg) {
     this.logger = logger || {}
     this.logger.info = this.logger.info || (() => {})
     this.logger.warn = this.logger.warn || (() => {})
@@ -34,19 +34,19 @@ class Indexer {
     this.onReorg = null
 
     this.api = api
-    this.blockchain = blockchain
+    this.chain = chain
     this.startHeight = startHeight
     this.mempoolExpiration = mempoolExpiration
     this.reorg = reOrg
 
     const fetchFunction = this.api.fetch ? this.api.fetch.bind(this.api) : null
 
-    this.database = new Database(blockchain,txdb,dmdb, this.logger)
+    this.database = new Database(chain,txdb,dmdb, this.logger)
     this.downloader = new Downloader(fetchFunction, numParallelDownloads)
     
     this.crawler = new Crawler(api)
-    this.resolver = new Resolver(this.blockchain,this.database)
-    Parser.getParser(this.blockchain).init(this.database)
+    this.resolver = new Resolver(this.chain,this.database)
+    Parser.getParser(this.chain).init(this.database)
 
     this.database.onAddTransaction = this._onAddTransaction.bind(this)
     this.database.onDeleteTransaction = this._onDeleteTransaction.bind(this)
@@ -75,7 +75,7 @@ class Indexer {
       height -= this.reorg
       hash = null
     }
-    if (this.api.connect) await this.api.connect(height, this.blockchain)
+    if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload().forEach(txid => this.downloader.add(txid))
     this.crawler.start(height, hash)
     this.resolver.start()
@@ -227,7 +227,7 @@ class Indexer {
       const block_time = this.database.getTransactionTime(txid);
       let meta = null
       try{
-        meta = await Parser.getParser(this.blockchain).verify(rawtx,height,block_time);
+        meta = await Parser.getParser(this.chain).verify(rawtx,height,block_time);
         if(meta.code!=0){
           this.logger.warn(txid,":"+meta.msg);
           this.database.deleteTransaction(txid);

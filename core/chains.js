@@ -42,10 +42,10 @@ class ARChain {
                 out: out,
             };
             rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
-            if(rtx.inputAddress==tx.target){ // ar blockchain does not allow send to self
+            if(rtx.inputAddress==tx.target){ // ar chain does not allow send to self
                 return null
             }
-            rtx.blockchain = 'ar'
+            rtx.chain = 'ar'
             return rtx
         } catch (e) {
             console.error(e)
@@ -121,7 +121,7 @@ class BSVChain {
         }
         tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
         BSVChain._reArrage(rtx)
-        rtx.blockchain = 'bsv'
+        rtx.chain = 'bsv'
         return rtx
     }
 }

@@ -1,36 +1,36 @@
 const { Parser_Domain } = require('./parser_domain')
 const { Parser_NFT } = require('./parser_nft');
-const {ARChain, BSVChain} = require('./blockchains.js')
+const {ARChain, BSVChain} = require('./chains.js')
 
 const parsers = {}
 class Parser {
-    static getParser(blockchain){
-        if(blockchain=='bsv'){
+    static getParser(chain){
+        if(chain=='bsv'){
             if(!parsers.bsv)parsers.bsv = new Parser('bsv')
             return parsers.bsv
         }
-        if(blockchain=='ar'){
+        if(chain=='ar'){
             if(!parsers.ar)parsers.ar = new Parser('ar')
             return parsers.ar
         }
-        throw("Unsupported blockchain")
+        throw("Unsupported chain")
     }
-    constructor(blockchain){
-        this.blockchain = blockchain
-        this.parser_domain = new Parser_Domain(blockchain)
-        this.parser_nft = new Parser_NFT(blockchain)
+    constructor(chain){
+        this.chain = chain
+        this.parser_domain = new Parser_Domain(chain)
+        this.parser_nft = new Parser_NFT(chain)
     }
     init(db) {
         this.parser_domain.init(db)
         this.parser_nft.init(db)
     }
     async verify(rawtx, height,block_time) {
-        if(this.blockchain==='ar')return await ARChain.verify(rawtx,height,block_time);
-        if(this.blockchain==='bsv')return await BSVChain.verify(rawtx,height,block_time);
-        throw "Unsupported blockchain"
+        if(this.chain==='ar')return await ARChain.verify(rawtx,height,block_time);
+        if(this.chain==='bsv')return await BSVChain.verify(rawtx,height,block_time);
+        throw "Unsupported chain"
     }
     domainParser(){
-        /*switch(this.blockchain){
+        /*switch(this.chain){
             case 'bsv': return Parser_Domain
             case 'ar': return AR_Parser_Domain
         }
@@ -38,7 +38,7 @@ class Parser {
         return this.parser_domain
     }
     nftParser(){
-       /* switch(this.blockchain){
+       /* switch(this.chain){
             case 'bsv': return Parser_NFT
             case 'ar': return null
         }*/
@@ -46,7 +46,7 @@ class Parser {
     }
     async parseRaw({rawtx, height,time,verify=false}) {
         
-        let rtx = ( this.blockchain==='ar'? await ARChain.raw2rtx({rawtx,height,time}): await BSVChain.raw2rtx({rawtx,height,time}) )
+        let rtx = ( this.chain==='ar'? await ARChain.raw2rtx({rawtx,height,time}): await BSVChain.raw2rtx({rawtx,height,time}) )
         try {
             if(verify&&height==-1){ //p2p rawtx
                 const tspan = Date.now()/1000 - rtx.ts

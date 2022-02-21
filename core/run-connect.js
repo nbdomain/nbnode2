@@ -11,7 +11,7 @@ const axios = require('axios')
 // ------------------------------------------------------------------------------------------------
 
 class RunConnectFetcher {
-  async connect(height, blockchain) {
+  async connect(height, chain) {
     this.network = "main"
   }
 

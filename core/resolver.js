@@ -60,8 +60,8 @@ class NIDObject {
 }
 
 class Resolver {
-    constructor(blockchain, database) {
-        this.blockchain = blockchain
+    constructor(chain, database) {
+        this.chain = chain
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
@@ -193,7 +193,7 @@ class Resolver {
                             }
                         }
                         //const obj = DomainTool.fillNIDFromTX(g_nidObjMap[domain], rtx)
-                        const obj = await (Parser.getParser(this.blockchain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
+                        const obj = await (Parser.getParser(this.chain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
                         if (obj) {
                             g_nidObjMap[domain] = obj
                             g_nidObjMap[domain].dirty = true

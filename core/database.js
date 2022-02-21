@@ -27,8 +27,8 @@ let g_txdb = null, g_dmdb = null
 // ------------------------------------------------------------------------------------------------
 
 class Database {
-  constructor(blockchain, txpath, dmpath, logger) {
-    this.blockchain = blockchain
+  constructor(chain, txpath, dmpath, logger) {
+    this.chain = chain
     this.path = txpath
     this.dmpath = dmpath
     this.logger = logger
@@ -140,9 +140,9 @@ class Database {
     g_txdb.pragma('synchronous = NORMAL')
     }
 
-    //this.getHeightStmt = g_txdb.prepare(`SELECT height FROM ${this.blockchain}_config WHERE role = \'tip\'`)
-    //this.getHashStmt = g_txdb.prepare(`SELECT hash FROM ${this.blockchain}_config WHERE role = \'tip\'`)
-    //this.setHeightAndHashStmt = g_txdb.prepare(`UPDATE ${this.blockchain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
+    //this.getHeightStmt = g_txdb.prepare(`SELECT height FROM ${this.chain}_config WHERE role = \'tip\'`)
+    //this.getHashStmt = g_txdb.prepare(`SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`)
+    //this.setHeightAndHashStmt = g_txdb.prepare(`UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
 
     this.getPayTxStmt = g_txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
     this.setPayTxStmt = g_txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
@@ -173,53 +173,53 @@ class Database {
   addNewTransaction(txid) {
     if (this.hasTransaction(txid)) return
 
-    const sql = `INSERT OR IGNORE INTO ${this.blockchain}_tx (txid, height, time, bytes) VALUES (?, null, ?, null)`
+    const sql = `INSERT OR IGNORE INTO ${this.chain}_tx (txid, height, time, bytes) VALUES (?, null, ?, null)`
     g_txdb.prepare(sql).run(txid, 9999999999)
 
     if (this.onAddTransaction) this.onAddTransaction(txid)
   }
 
   saveTransaction(txid, rawtx, txTime) {
-    const bytes = (this.blockchain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-    const sql = `UPDATE ${this.blockchain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`
+    const bytes = (this.chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
+    const sql = `UPDATE ${this.chain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`
     g_txdb.prepare(sql).run(bytes, txTime, txid)
   }
   setTransactionResolved(txid) {
-    g_txdb.prepare(`UPDATE ${this.blockchain}_tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
+    g_txdb.prepare(`UPDATE ${this.chain}_tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
   }
   setTransactionHeight(txid, height) {
-    const sql = `UPDATE ${this.blockchain}_tx SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
+    const sql = `UPDATE ${this.chain}_tx SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
     g_txdb.prepare(sql).run(height, txid)
   }
 
   setTransactionTime(txid, time) {
-    const sql = `UPDATE ${this.blockchain}_tx SET time = ? WHERE txid = ?`
+    const sql = `UPDATE ${this.chain}_tx SET time = ? WHERE txid = ?`
     g_txdb.prepare(sql).run(time, txid)
   }
 
   getRawTransaction(txid) {
-    const sql = `SELECT bytes AS raw FROM ${this.blockchain}_tx WHERE txid = ?`
+    const sql = `SELECT bytes AS raw FROM ${this.chain}_tx WHERE txid = ?`
     const row = g_txdb.prepare(sql).raw(true).get(txid)
     const data = row && row[0]
     if(!data)return null
-    if(this.blockchain=='bsv'){
+    if(this.chain=='bsv'){
       return data.toString('hex')
     }
-    if(this.blockchain=='ar'){
+    if(this.chain=='ar'){
       return data.toString()
     }
-    console.error("database.js getRawTransaction: unsupported blockchain")
+    console.error("database.js getRawTransaction: unsupported chain")
     return null
   }
 
   getTransactionTime(txid) {
-    const sql = `SELECT time FROM ${this.blockchain}_tx WHERE txid = ?`
+    const sql = `SELECT time FROM ${this.chain}_tx WHERE txid = ?`
     const row = g_txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
   getTransactionHeight(txid) {
-    const sql = `SELECT height FROM ${this.blockchain}_tx WHERE txid = ?`
+    const sql = `SELECT height FROM ${this.chain}_tx WHERE txid = ?`
     const row = g_txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
@@ -227,40 +227,40 @@ class Database {
   deleteTransaction(txid) {
 
     this.transaction(() => {
-      const sql = `DELETE FROM ${this.blockchain}_tx WHERE txid = ?`
+      const sql = `DELETE FROM ${this.chain}_tx WHERE txid = ?`
       g_txdb.prepare(sql).run(txid)
       if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
     })
   }
 
   unconfirmTransaction(txid) {
-    const sql = `UPDATE ${this.blockchain}_tx SET height = ${HEIGHT_MEMPOOL} WHERE txid = ?`
+    const sql = `UPDATE ${this.chain}_tx SET height = ${HEIGHT_MEMPOOL} WHERE txid = ?`
     g_txdb.prepare(sql).run(txid)
   }
 
 
   hasTransaction(txid) {
-    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE txid = ?`
+    const sql = `SELECT txid FROM ${this.chain}_tx WHERE txid = ?`
     return !!g_txdb.prepare(sql).get(txid)
   }
   isTransactionDownloaded(txid) {
-    const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${this.blockchain}_tx WHERE txid = ?`
+    const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${this.chain}_tx WHERE txid = ?`
     return !!g_txdb.prepare(sql).raw(true).get(txid)[0]
   }
   getTransactionsAboveHeight(height) {
-    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE height > ?`
+    const sql = `SELECT txid FROM ${this.chain}_tx WHERE height > ?`
     return g_txdb.prepare(sql).raw(true).all(height).map(row => row[0])
   }
   getMempoolTransactionsBeforeTime(time) {
-    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE height = ${HEIGHT_MEMPOOL} AND txTime < ?`
+    const sql = `SELECT txid FROM ${this.chain}_tx WHERE height = ${HEIGHT_MEMPOOL} AND txTime < ?`
     return g_txdb.prepare(sql).raw(true).all(time).map(row => row[0])
   }
   getTransactionsToDownload() {
-    const sql = `SELECT txid FROM ${this.blockchain}_tx WHERE bytes IS NULL`
+    const sql = `SELECT txid FROM ${this.chain}_tx WHERE bytes IS NULL`
     return g_txdb.prepare(sql).raw(true).all().map(row => row[0])
   }
   getDownloadedCount() {
-    const sql = 'SELECT COUNT(*) AS count FROM ${this.blockchain}_tx WHERE bytes IS NOT NULL'
+    const sql = 'SELECT COUNT(*) AS count FROM ${this.chain}_tx WHERE bytes IS NOT NULL'
     return g_txdb.prepare(sql).get().count
   }
   getIndexedCount() { return this.getTransactionsIndexedCountStmt.get().count }
@@ -272,19 +272,19 @@ class Database {
   // --------------------------------------------------------------------------
 
   getHeight() {
-    const sql = `SELECT height FROM ${this.blockchain}_config WHERE role = \'tip\'`
+    const sql = `SELECT height FROM ${this.chain}_config WHERE role = \'tip\'`
     const row = g_txdb.prepare(sql).raw(true).all()[0]
     return row && row[0]
   }
 
   getHash() {
-    const sql = `SELECT hash FROM ${this.blockchain}_config WHERE role = \'tip\'`
+    const sql = `SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`
     const row = g_txdb.prepare(sql).raw(true).all()[0]
     return row && row[0]
   }
 
   setHeightAndHash(height, hash) {
-    const sql = `UPDATE ${this.blockchain}_config SET height = ?, hash = ? WHERE role = \'tip\'`
+    const sql = `UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`
     g_txdb.prepare(sql).run(height, hash)
   }
 
@@ -305,12 +305,12 @@ class Database {
   }
   async getUnresolvedTX(count) {
     let list = [];
-    if (this.blockchain == 'bsv') {
-      const sql = `SELECT * FROM ${this.blockchain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+    if (this.chain == 'bsv') {
+      const sql = `SELECT * FROM ${this.chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
       list = g_txdb.prepare(sql).raw(false).all(count);
     }
     if (list.length == 0) { //no more old format tx
-      const sql = `SELECT * FROM ${this.blockchain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+      const sql = `SELECT * FROM ${this.chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
       const list1 = g_txdb.prepare(sql).raw(false).all(count);
       list = list.concat(list1)
     }
@@ -321,8 +321,8 @@ class Database {
           list.splice(i)
           break;
         }
-        const rawtx = (this.blockchain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
-        const res = await (Parser.getParser(this.blockchain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
+        const rawtx = (this.chain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
+        const res = await (Parser.getParser(this.chain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
         if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
         else {
           list[i].output = { err: res.msg }

@@ -49,8 +49,11 @@ class Nodes{
     async notifyPeers({cmd,data}){
         for (const peer of this.peers) {
             const url = peer+"/api/p2p/"+cmd+"?data="+(data)+"&&from="+(this.endpoint)
-            console.log(url)
-            axios.get(url)
+            try{
+                axios.get(url)
+            }catch(e){
+                console.log("error getting: ",url)
+            }
         }
     }
     static Instance(){

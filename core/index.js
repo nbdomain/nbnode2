@@ -58,11 +58,11 @@ class Indexers{
     await this.ar.stop();
     await this.bsv.stop();
   }
-  static resolver(blockchain){
-    return this.get(blockchain).resolver
+  static resolver(chain){
+    return this.get(chain).resolver
   }
-  static get(blockchain){
-    switch (blockchain) {
+  static get(chain){
+    switch (chain) {
       case 'bsv':
         return this.bsv
       case 'ar':
