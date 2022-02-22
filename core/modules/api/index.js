@@ -248,12 +248,14 @@ app.post('/relay/notify', async (req, res) => {
     if (result.ack_url) res.end("200");
     else res.json({ code: 0, message: "ok" });
 })
-
+app.get('/nodes',(_,res)=>{
+    res.json(Nodes.getNodes())
+})
 app.get('/sub/:domain/', async (req, res) => {
     const domain = req.params['domain']
     const session = await createSession(req, res);
     let db = bsv_resolver.db;
-    if (domain.indexOf('.c') != -1) {
+    if (domain.indexOf('.a') != -1) {
         db = ar_resolver.db
     }
     db.subscribe(domain, session)
@@ -320,9 +322,11 @@ app.get(`/tld`, function (req, res) {
     res.json(CONFIG.tld_config);
 });
 app.get('/queryTX', (req, res) => {
-    const fromHeight = req.query['from']
-    const toHeight = req.query['to']
-    res.json(bsv_resolver.readNBTX(fromHeight ? fromHeight : 0, toHeight ? toHeight : -1))
+    const fromTime = req.query['from']
+    const toTime = req.query['to']
+    const chain = req.query['chain']
+    const resolver = indexers.get(chain).resolver
+    res.json(resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', (req, res) => {
     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })

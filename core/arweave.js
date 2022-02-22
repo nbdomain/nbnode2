@@ -123,7 +123,7 @@ class AWNode {
   async _crawl() {
     let height = this.lastCrawlHeight + 1
     const txs = await this.queryTx({ name: "nbprotocol", values: ["nbd"] }, { min: height })
-    console.log(txs);
+    //console.log(txs);
 
     for (let item of txs.edges) {
       let height = item.node.block.height

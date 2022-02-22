@@ -157,11 +157,8 @@ class Resolver {
     getDomainHistoryLen(domain) {
         return this.db.readKeyHistoryLen(domain)
     }
-    readNBTX(fromHeight, toHeight) {
-        if (toHeight == -1) {
-            toHeight = this.db.getHeight()
-        }
-        return this.db.queryTX(fromHeight, toHeight)
+    readNBTX(fromTime, toTime) {
+        return this.db.queryTX(fromTime, toTime)
     }
     async resolveNextBatch() {
         if (!this.started) return

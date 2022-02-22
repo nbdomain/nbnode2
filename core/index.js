@@ -86,13 +86,14 @@ async function main() {
   //bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
 
   //const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
+  const seedNode = await Nodes.init()
   Indexers.init()
 
   server = new Server(Indexers, logger)
 
   await Indexers.start()
   server.start()
-  const seedNode = await Nodes.init()
+  
 }
 
 // ------------------------------------------------------------------------------------------------

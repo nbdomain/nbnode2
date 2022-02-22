@@ -1,63 +1,97 @@
-const config = require('./config')
+const config = require('./config').CONFIG
 const axios = require('axios')
+const rwc = require("random-weighted-choice")
 let node = null
-class Nodes{
-    async sleep(seconds){
-        return new Promise(resolve=>{
-            setTimeout(resolve, seconds*1000);
+class Nodes {
+    constructor() {
+        this.nodes = []
+    }
+    async sleep(seconds) {
+        return new Promise(resolve => {
+            setTimeout(resolve, seconds * 1000);
         })
     }
-    async selectNode(nodes,count=1){
-        return new Promise(async resolve=>{
-            let i=1,selected_nodes=[],j=1;
-            for(const node of nodes){
-                axios.get(node+"/api/p2p/ping").then(res=>{
-                    if(res.data&&res.data.msg=="pong"){
+    async selectNode(nodes, count = 1) {
+        return new Promise(async resolve => {
+            let i = 1, selected_nodes = [], j = 1;
+            for (const node of nodes) {
+                axios.get(node + "/api/p2p/ping").then(res => {
+                    if (res.data && res.data.msg == "pong") {
                         selected_nodes.push(node)
                         ++i
                     }
-                }).catch(e=>{
+                }).catch(e => {
                     console.log(e)
-                }).finally(()=>j++)
+                }).finally(() => j++)
             }
-            while(i<=count&&j<=nodes.length){
+            while (i <= count && j <= nodes.length) {
                 await this.sleep(1)
             }
-            resolve(selected_nodes.length==0?[]:selected_nodes)
+            resolve(selected_nodes.length == 0 ? [] : selected_nodes)
         })
     }
-    async init(){
-        this.endpoint = (config.CONFIG.node_info.https?"https://":"http://")+config.CONFIG.node_info.domain
-        if(!config.CONFIG.node_info.https)this.endpoint+=":"+config.CONFIG.node_info.port
-        setTimeout(this.refreshPeers.bind(this),5000)
+    get() {
+        const node = rwc(this.nodes)
+        //log("choose:",node)
         return node
     }
-    async refreshPeers(){
-        const port = config.CONFIG.node_info.port
-        const res = await axios.get("http://localhost:"+port+"/api/queryKeys?tags=nbnode")
-        let peers2test=[]
-        if(res.data){
-            //peers2test = res.data
+    cool(url) {
+        const node = this.nodes.find(node => node.id == url)
+        if (node) {
+            node.weight--
         }
-        if(config.CONFIG.peers.length)
-            peers2test  = peers2test.concat(config.CONFIG.peers)
-        this.peers = await this.selectNode(peers2test,50)
-        console.log(`found ${this.peers.length} peers`)
-        
-        setTimeout(this.refreshPeers.bind(this),60000)
     }
-    async notifyPeers({cmd,data}){
-        for (const peer of this.peers) {
-            const url = peer+"/api/p2p/"+cmd+"?data="+(data)+"&&from="+(this.endpoint)
-            try{
+    warm(url) {
+        const node = this.nodes.find(node => node.id == url)
+        if (node) {
+            node.weight++
+        }
+    }
+    async init() {
+        this.endpoint = (config.node_info.https ? "https://" : "http://") + config.node_info.domain
+        if (!config.node_info.https) this.endpoint += ":" + config.node_info.port
+        this.refreshPeers(true)
+        return true
+    }
+    async refreshPeers(onlyLocal=false) {
+        const port = config.node_info.port
+        let peers2test = []
+        if(!onlyLocal){
+            try {
+                const res = await axios.get("http://localhost:" + port + "/api/queryKeys?tags=nbnode")
+                if (res.data && res.data.length > 0) {
+                    //peers2test = res.data
+                }
+            } catch (e) {}
+        }
+        if (config.peers.length)
+            peers2test = peers2test.concat(config.peers)
+        peers2test = peers2test.filter(item => item.indexOf(config.node_info.domain) == -1)
+        //this.peers = await this.selectNode(peers2test,50)
+        for (const node of peers2test) {
+            if (this.nodes.find(item => item.id == node)) continue;
+            console.log("Adding node:",node)
+            this.nodes.push({ id: node, weight: 50 })
+        }
+        //console.log(`found ${this.peers.length} peers`)
+
+        setTimeout(this.refreshPeers.bind(this), 60000)
+    }
+    getNodes() {
+        return this.nodes
+    }
+    async notifyPeers({ cmd, data }) {
+        for (const peer of this.nodes) {
+            const url = peer + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
+            try {
                 axios.get(url)
-            }catch(e){
-                console.log("error getting: ",url)
+            } catch (e) {
+                console.log("error getting: ", url)
             }
         }
     }
-    static Instance(){
-        if(node==null){
+    static Instance() {
+        if (node == null) {
             node = new Nodes
         }
         return node

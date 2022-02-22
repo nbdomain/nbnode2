@@ -178,7 +178,11 @@ class Database {
 
     if (this.onAddTransaction) this.onAddTransaction(txid)
   }
-
+  getLatestTxTime(){
+    const sql = `SELECT txTime from ${this.chain}_tx ORDER BY txTime DESC`
+    const res = g_txdb.prepare(sql).get()
+    return res ? res.txTime : 0
+  }
   saveTransaction(txid, rawtx, txTime) {
     const bytes = (this.chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
     const sql = `UPDATE ${this.chain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`
@@ -510,15 +514,13 @@ class Database {
       this.logger.error(e)
     }
   }
-  queryTX(fromHeight, toHeight) {
-    let sql = 'SELECT * from tx where height >= ? AND height <= ?'
-    if (fromHeight == -1) {
-      toHeight = null
-      sql = 'SELECT * from tx where height == ? AND ? IS NULL'
-    }
-    const ret = g_txdb.prepare(sql).all(fromHeight, toHeight)
+  queryTX(fromTime, toTime) {
+    if(toTime==-1)toTime = 9999999999
+    let sql = `SELECT * from ${this.chain}_tx where txTime >= ? AND txTime < ?`
+
+    const ret = g_txdb.prepare(sql).all(fromTime, toTime)
     ret.forEach(item => {
-      const rawtx = Buffer.from(item.bytes).toString('hex')
+      const rawtx = this.chain=='bsv' ? Buffer.from(item.bytes).toString('hex') :Buffer.from(item.bytes).toString()
       item.rawtx = rawtx
       delete item.bytes
     })
