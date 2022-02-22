@@ -75,9 +75,10 @@ class Indexer {
     const url = apiURL + "/api/queryTX?from=" + latestTime+"&chain="+this.chain
     try{
       const res = await axios.get(url)
-      console.log(res)
+      //console.log(res)
       for(const tx of res.data){
         this.add(tx.txid,tx.rawtx,tx.height,tx.time)
+        console.log("syncFromNode: Adding ",tx.txid)
       }
     }catch(e){
       console.error("syncFromNode "+apiURL+": "+e.message)
