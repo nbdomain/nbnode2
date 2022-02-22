@@ -517,7 +517,7 @@ class Database {
   queryTX(fromTime, toTime) {
     if(toTime==-1)toTime = 9999999999
     let sql = `SELECT * from ${this.chain}_tx where txTime > ? AND txTime < ?`
-    console.log(sql)
+    console.log(sql,fromTime,toTime)
     const ret = g_txdb.prepare(sql).all(fromTime, toTime)
     console.log(ret)
     ret.forEach(item => {
