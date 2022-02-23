@@ -111,6 +111,7 @@ class BSVChain {
             output: null,
             in: tx.in,
             out: tx.out,
+            ts: 0,
         };
         if (tx.out[0].s2 == "nbd" && tx.out[0].s3 != "1") {
             try {

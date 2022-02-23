@@ -150,8 +150,14 @@ class Database {
     if (noTxdb) {
       this.saveLastResolvedId(0)
     }
+    this.preDealData()
   }
-
+  preDealData(){
+    //change txTime from NULL to 0
+    const sql = `UPDATE ${this.chain}_tx SET txTime = 0 where txTime is NULL`
+    const ret = g_txdb.prepare(sql).run()
+    return ret
+  }
   close() {
     if (g_txdb) {
       g_txdb.close()
