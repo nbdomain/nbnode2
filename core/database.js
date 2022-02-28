@@ -107,7 +107,7 @@ class Database {
     this.setLastResolvedIdStmt = g_dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedId\'')
     this.setLastResolvedCursorStmt = g_dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedCursor\'')
     this.getDomainStmt = g_dmdb.prepare('SELECT * from nidObj where domain = ?')
-    this.queryDomainsStmt = g_dmdb.prepare('SELECT * FROM nidobj WHERE owner = ? ')
+    
 
     //-------------------------------NFT-------------------------------------------
     this.getNFTStmt = g_dmdb.prepare('SELECT * from nfts where symbol=?')
@@ -483,11 +483,9 @@ class Database {
     }
 
   }
-  queryDomains(field, value) {
-    if (field != null) {
-      return this.queryDomainsStmt.all(value);
-    }
-    return null;
+  queryDomains(address) { 
+    const sql =  'SELECT domain FROM nidobj WHERE owner = ? '
+    return g_dmdb.prepare(sql).all(address);
   }
   nftCreate(nft) {
     this.addNFTStmt.run(nft.symbol, JSON.stringify(nft.attributes), JSON.stringify(nft.data), JSON.stringify(nft.attributes), JSON.stringify(nft.data))

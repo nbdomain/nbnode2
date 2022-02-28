@@ -331,15 +331,10 @@ app.get('/queryTX', (req, res) => {
 app.get('/test', (req, res) => {
     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
 })
-app.get(`/find_domain`, function (req, res) {
+app.get(`/findDomain`, function (req, res) {
     try {
-        if (!auth(req, res)) {
-            return;
-        }
-        var q = url.parse(req.url, true).query;
-        var addr = q.address;
-        let f = (q.full == 'true');
-        let result = bsv_resolver.findDomain('owner', addr, !f);
+        var addr = req.query.address;
+        let result = bsv_resolver.db.queryDomains(addr);
         res.json({
             code: 0,
             message: "OK",
