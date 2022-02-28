@@ -82,7 +82,7 @@ class Nodes {
     }
     async notifyPeers({ cmd, data }) {
         for (const peer of this.nodes) {
-            const url = peer + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
+            const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
             try {
                 axios.get(url)
             } catch (e) {
