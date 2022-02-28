@@ -5,7 +5,7 @@
  */
 
 const axios = require('axios')
-global.EventSource = require('eventsource')
+//global.EventSource = require('eventsource')
 const { default: ReconnectingEventSource } = require('reconnecting-eventsource')
 const Arweave = require('arweave');
 
@@ -97,7 +97,7 @@ class AWNode {
     const response = await this.arweave.api.post('graphql', {
       query, variables
     });
-    console.log(response.data)
+//    console.log(response.data)
     return response.data.data ? response.data.data.transactions : null
   }
   async fetch(txid) {
@@ -140,7 +140,7 @@ class AWNode {
       if(!tags.cmd){
         const data = await this.arweave.transactions.getData(item.node.id,{decode:false,string:true})
         if(data)item.node.data = data
-        console.log(data)
+        //console.log(data)
       }
       //if (item.node.block&&(item.node.block.timestamp * 1000 < tags.ts)) continue //ts must before block time
       block.txids.push(item.node.id)

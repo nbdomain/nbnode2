@@ -187,7 +187,7 @@ class Database {
   getLatestTxTime(){
     const sql = `SELECT txTime from ${this.chain}_tx ORDER BY txTime DESC`
     const res = g_txdb.prepare(sql).get()
-    return res ? res.txTime : 0
+    return res ? res.txTime : -1
   }
   saveTransaction(txid, rawtx, txTime) {
     const bytes = (this.chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))

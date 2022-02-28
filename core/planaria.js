@@ -14,7 +14,8 @@ const AbortController = require('abort-controller')
 const es = require('event-stream')
 global.EventSource = require('eventsource')
 const { default: ReconnectingEventSource } = require('reconnecting-eventsource')
-const RunConnectFetcher = require('./run-connect')
+const axios = require('axios')
+//const RunConnectFetcher = require('./run-connect')
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -22,7 +23,7 @@ const RunConnectFetcher = require('./run-connect')
 
 const NBD_PREFIX = 'nbd'
 const NBD_VERSION = '01'
-let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5","14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ","nbd"];//Util.getAllRegProtocols();
+let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5", "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ", "nbd"];//Util.getAllRegProtocols();
 
 // ------------------------------------------------------------------------------------------------
 // Planaria
@@ -37,7 +38,7 @@ class Planaria {
         this.abortController = new AbortController()
         this.recrawlInterveral = 30000
         this.maxReorgDepth = 10
-        this.runConnectFetcher = new RunConnectFetcher()
+        //this.runConnectFetcher = new RunConnectFetcher()
 
         this.txns = []
         this.network = null
@@ -48,9 +49,9 @@ class Planaria {
     }
 
     async connect(height, network) {
-       // if (network !== 'main') throw new Error(`Network not supported with Planaria: ${network}`)
+        // if (network !== 'main') throw new Error(`Network not supported with Planaria: ${network}`)
 
-        this.runConnectFetcher.connect(height, network)
+        //this.runConnectFetcher.connect(height, network)
 
         this.network = "main"
         this.lastCrawlHeight = height
@@ -70,8 +71,22 @@ class Planaria {
     }
 
     async fetch(txid) {
-        // Planaria doesn't have a fetch endpoint, so we use RUN Connect
-        return await this.runConnectFetcher.fetch(txid)
+        let response;
+        //const response = await axios.get(`https://api.run.network/v1/${this.network}/tx/${txid}`)
+        let hex;
+        try {
+            response = await axios.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/tx/${txid}/hex`)
+            hex = response.data
+        } catch (e) {
+            response = await axios.get(`https://api.run.network/v1/${this.network}/tx/${txid}`)
+            hex = response.data.hex
+        }
+        if (!hex) {
+            console.error("Download rawtx failed");
+        }
+        const height = typeof response.data.blockheight === 'number' ? response.data.blockheight : null
+        const time = typeof response.data.blocktime === 'number' ? response.data.blocktime : null
+        return { hex, height, time }
     }
 
     async getNextBlock(currHeight, currHash) {
@@ -205,7 +220,7 @@ class Planaria {
 
                     const addTx = json => {
                         if (!json.length) return
-                       // console.log(json);
+                        // console.log(json);
                         const data = JSON.parse(json)
 
                         // If there are pending transactions, check if we are on a new block

@@ -6,7 +6,7 @@ require("dotenv").config();
 const nbMgr = require("./nbweb_mgr.js");
 //const bitfs = require("./bitfs.js");
 const ipfs = require("./ipfs.js");
-let global_env = {};
+
 app.use(express.static("public"));
 
 /*app.get("/bitfs/*", async (req, res) => {
@@ -57,7 +57,6 @@ app.get("/*", async (req, res) => {
 
 // listen for requests :)
 module.exports = function(env) {
-  global_env = env;
   nbMgr.init(env);
 //  console.log("get env:",env);
   return new Promise( (resolve)=>{
