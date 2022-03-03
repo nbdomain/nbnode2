@@ -338,12 +338,17 @@ app.get('/test', (req, res) => {
 app.get('/find_domain',(req,res)=>{
     var addr = req.query.address;
     let result = bsv_resolver.db.queryDomains(addr);
+    const arr = []
+    result.forEach(item=>{
+        arr.push(item.domain)
+    })
+    
     res.json({
         code: 0,
         message: "OK",
-        obj: result
+        obj: arr
     })
-    
+
 })
 app.get(`/findDomain`, function (req, res) {
     try {
