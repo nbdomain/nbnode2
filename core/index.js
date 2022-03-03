@@ -58,7 +58,7 @@ class Indexers{
     await this.bsv.stop();
   }
   static resolver(chain){
-    return this.get(chain).resolver
+    return this.get(chain)?.resolver
   }
   static get(chain){
     switch (chain) {

@@ -222,7 +222,7 @@ class Indexer {
       })
 
       txids.forEach(async (txid, i) => {
-        const downloaded = this.database.isTransactionDownloaded(txid)
+        let downloaded = this.database.isTransactionDownloaded(txid)
         if (downloaded) return
 
         const hex = txhexs && txhexs[i]

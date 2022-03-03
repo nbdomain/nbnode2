@@ -108,6 +108,7 @@ async function getAllItems(para, forceFull = false, from = null) {
         if (item === '') continue;
         const dd = item.split('/')
         const resolver = indexers.resolver(Util.getchain(dd[0]))
+        if(!resolver) continue;
         const result = await resolver.readDomain(dd[0], forceFull, dd[1])
         if (from && result.obj.ts <= from) continue
         ret.push(result)
@@ -128,7 +129,10 @@ app.get('/qf/*', async function (req, res) {
 })
 app.get('/t/addtx/:txid', (req, res) => {
     const txid = req.params['txid']
-    indexers.bsv.add(txid)
+    const chain = req.query['chain']
+    if(!chain)chain='bsv'
+    const indexer = indexers.get(chain)
+    if(indexer)indexer.add(txid)
 })
 app.get('/address/:address/balance', async function (req, res) {
     const address = req.params['address']
@@ -330,6 +334,16 @@ app.get('/queryTX', (req, res) => {
 })
 app.get('/test', (req, res) => {
     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
+})
+app.get('/find_domain',(req,res)=>{
+    var addr = req.query.address;
+    let result = bsv_resolver.db.queryDomains(addr);
+    res.json({
+        code: 0,
+        message: "OK",
+        obj: result
+    })
+    
 })
 app.get(`/findDomain`, function (req, res) {
     try {
