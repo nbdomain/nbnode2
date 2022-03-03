@@ -340,7 +340,8 @@ app.get('/find_domain',(req,res)=>{
     let result = bsv_resolver.db.queryDomains(addr);
     const arr = []
     result.forEach(item=>{
-        arr.push(item.domain)
+        const dd = item.domain.split('.')
+        arr.push({nid:dd[0],tld:dd[1]})
     })
     
     res.json({
