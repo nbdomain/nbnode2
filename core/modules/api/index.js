@@ -341,7 +341,7 @@ app.get('/find_domain',(req,res)=>{
     const arr = []
     result.forEach(item=>{
         const dd = item.domain.split('.')
-        arr.push({nid:dd[0],tld:dd[1]})
+        arr.push({nid:dd[0],tld:dd[1],domain:item.domain})
     })
     
     res.json({
