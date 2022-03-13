@@ -2,8 +2,13 @@ const TXO = require("./txo.js");
 const { DEF } = require("./def");
 const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
+const ARAPI = require('./arapi')
+
 class ARChain {
     static async verify(rawtx, height) {
+        const v = await ARAPI.verifyTx(rawtx)
+        if(!v)return { code: 1, msg:"can not verify" }
+        
         const rtx = await ARChain.raw2rtx({ rawtx, height })
         return { code: rtx ? 0 : 1, txTime: rtx.ts }
     }

@@ -137,8 +137,12 @@ app.get('/t/addtx/:txid', (req, res) => {
 app.get('/address/:address/balance', async function (req, res) {
     const address = req.params['address']
     const url = `https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`;
-    const json = (await axios.get(url)).data;
-    res.json(json);
+    try{
+        const json = (await axios.get(url)).data;
+        res.json(json);
+    }catch(e){
+        res.json({confirmed:0})
+    }
 })
 app.get('/util/verify', async function (req, res) {
     try {
@@ -164,7 +168,13 @@ app.get('/util/verify', async function (req, res) {
         res.json({ code: -1, message: e.message })
     }
 })
-
+app.post('/postTx',async (req,res)=>{
+    const obj = req.body;
+    let chain = 'bsv'
+    if (obj.chain == 'ar') chain = 'ar'
+    ret = await Util.sendRawtx(obj.rawtx, chain);
+    res.json(ret)
+})
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
     let chain = 'bsv'
@@ -191,7 +201,7 @@ async function handleNewTx(para, from) {
         db = ar_resolver.db
         indexer = indexers.ar
     }
-    if (!db.hasTransaction(para.txid)) {
+    if (!db.hasTransaction(para.txid,this.chain)) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + para.chain
         const res = await axios.get(url)
         if (res.data) {

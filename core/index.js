@@ -6,6 +6,7 @@
 
 const Indexer = require('./indexer')
 const Server = require('./server')
+const Database = require('./database')
 const Nodes = require('./nodes')
 const {
   API, TXDB, DMDB, FETCH_LIMIT, WORKERS, PLANARIA_TOKEN, START_HEIGHT,
@@ -17,7 +18,7 @@ const Planaria = require('./planaria')
 //const BitcoinNodeConnection = require('./bitcoin-node-connection')
 const parseArgs = require('minimist')
 const fs = require('fs')
-const AWNode = require('./arweave')
+const AWNode = require('./arapi')
 //const BitcoinRpc = require('./bitcoin-rpc')
 //const BitcoinZmq = require('./bitcoin-zmq')
 
@@ -46,8 +47,9 @@ let indexers = null, server = null;
 let apiAR = null, apiBSV = null;
 class Indexers{
   static init(){
-    this.bsv = new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG)
-    this.ar = new Indexer(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT, MEMPOOL_EXPIRATION, REORG)
+    this.db =  new Database(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, logger)
+    this.bsv = new Indexer(this.db, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.bsv, MEMPOOL_EXPIRATION, REORG)
+    this.ar = new Indexer(this.db, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.ar, MEMPOOL_EXPIRATION, REORG)
   }
   static async start(){
     await this.ar.start()
@@ -82,16 +84,14 @@ async function main() {
     case 'arnode': apiAR = new AWNode("", logger); break
     //default: throw new Error(`Unknown API: ${API}`)
   }
-  //bsv:new Indexer(__dirname+"/db/"+TXDB,__dirname+"/db/"+DMDB, api, "bsv", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG),
-
-  //const indexers = {ar:new Indexer(__dirname+"/db/"+"artx.db",__dirname+"/db/"+"ardomains.db", apiAR, "ar", FETCH_LIMIT, WORKERS, logger,START_HEIGHT, MEMPOOL_EXPIRATION,REORG)}
   const seedNode = await Nodes.init()
   Indexers.init()
 
   server = new Server(Indexers, logger)
+  server.start()
 
   await Indexers.start()
-  server.start()
+  
   
 }
 

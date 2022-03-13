@@ -158,11 +158,11 @@ class Resolver {
         return this.db.readKeyHistoryLen(domain)
     }
     readNBTX(fromTime, toTime) {
-        return this.db.queryTX(fromTime, toTime)
+        return this.db.queryTX(fromTime, toTime,this.chain)
     }
     async resolveNextBatch() {
         if (!this.started) return
-        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT,this.chain)
 
         try {
             if (rtxArray == null || rtxArray.length == 0) {
@@ -177,7 +177,7 @@ class Resolver {
                 // Add transaction to Nid one by one in their creation order
                 try {
                     for (const rtx of rtxArray) {
-                        this.db.setTransactionResolved(rtx.txid)
+                        this.db.setTransactionResolved(rtx.txid,this.chain)
                         if (!rtx.output || !rtx.output.domain) continue
                         if (rtx.command == CMD.REGISTER && rtx.output.err) continue
                         let domain = rtx.output.domain

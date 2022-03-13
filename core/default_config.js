@@ -14,11 +14,12 @@ const API = {
   }  // 'planaria','mattercloud','urchain','nbnode'
 const PLANARIA_TOKEN = ""
 const NODEKEY = "" //base64ed private key of the nbdomain in node_info. Used to verify the node
-const NETWORK = 'main'
 const TXDB = 'txs.db'
 const DMDB = 'domains.db'
 const FETCH_LIMIT =  20
-const START_HEIGHT = 613645
+const START_HEIGHT = {
+  bsv:0,ar:0
+}
 const TIMEOUT = 10000
 const MEMPOOL_EXPIRATION =  60 * 60 * 24
 
