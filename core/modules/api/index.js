@@ -179,7 +179,7 @@ app.post('/sendTx', async function (req, res) {
     const obj = req.body;
     let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
-    console.log("got rawtx:",obj.rawtx)
+    console.log("got obj:",obj)
     let ret = await (Parser.getParser(chain).parseRaw({ rawtx: obj.rawtx, height: -1, verify: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
