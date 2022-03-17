@@ -57,6 +57,8 @@ class ARChain {
             return rtx
         } catch (e) {
             console.error(e)
+            console.log("error rawtx:")
+            console.log(rawtx)
             return null
         }
     }
