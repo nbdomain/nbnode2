@@ -6,9 +6,9 @@ const ARAPI = require('./arapi')
 
 class ARChain {
     static async verify(rawtx, height) {
-        const v = await ARAPI.verifyTx(rawtx)
-        if(!v)return { code: 1, msg:"can not verify" }
-        
+        //const v = await ARAPI.verifyTx(rawtx)
+        //if(!v)return { code: 1, msg:"can not verify" }
+
         const rtx = await ARChain.raw2rtx({ rawtx, height })
         return { code: rtx ? 0 : 1, txTime: rtx.ts }
     }

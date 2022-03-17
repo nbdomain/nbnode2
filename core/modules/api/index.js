@@ -201,8 +201,9 @@ async function handleNewTx(para, from) {
         db = ar_resolver.db
         indexer = indexers.ar
     }
-    if (!db.hasTransaction(para.txid,this.chain)) {
-        const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + para.chain
+    const chain = para.chain?para.chain:'bsv'
+    if (!db.hasTransaction(para.txid,chain)) {
+        const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data) {
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)

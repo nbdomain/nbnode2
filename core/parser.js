@@ -48,6 +48,9 @@ class Parser {
         
         let rtx = ( this.chain==='ar'? await ARChain.raw2rtx({rawtx,height,time}): await BSVChain.raw2rtx({rawtx,height,time}) )
         try {
+            if(!rtx){
+                return {code:1,msg:"invalid rawtx format"}
+            }
             if(verify&&height==-1){ //p2p rawtx
                 const tspan = Date.now()/1000 - rtx.ts
                 if(tspan>60||tspan<-1){

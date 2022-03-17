@@ -48,8 +48,13 @@ class AWNode {
   static async verifyTx(rawtx){
     if(ar_node){
       const jsonTx = JSON.parse(rawtx)
-      const tx = await ar_node.arweave.createTransaction(jsonTx)
-      return await ar_node.arweave.transactions.verify(tx);
+      try{
+        const tx = await ar_node.arweave.transactions.fromRaw(jsonTx)
+        return await ar_node.arweave.transactions.verify(tx);
+      }catch(e){
+        //console.error("verifyTx failed ar tx:",jsonTx.id)
+        return false
+      }
     }
     return false
   }
