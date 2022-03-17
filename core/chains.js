@@ -16,6 +16,9 @@ class ARChain {
         try {
             const tx = JSON.parse(rawtx);
             let tags = ArUtil.decodeTags(tx.tags)
+            if(!tags){
+                console.error("tags is missing")
+            }
             const nbdata = JSON.parse(tags.nbdata)
             const ts = JSON.parse(nbdata[1]).ts
             let cmd = null
