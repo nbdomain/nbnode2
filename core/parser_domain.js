@@ -339,7 +339,7 @@ class CMD_KEYUSER {
         }
         //const ts = rtx.txTime ? rtx.txTime : rtx.time
         if (rtx.command == CMD.KEY) {
-            if (rtx.output.value.toDomain) {
+            if (rtx.output?.value?.toDomain) {
                 let obj = objMap[rtx.output.value.toDomain]
                 if (!obj) {
                     obj = this.parser.db.loadDomain(rtx.output.value.toDomain)

@@ -54,8 +54,8 @@ class Database {
       }
       
       if (!fs.existsSync(this.path)) {
-        const result = Util.downloadFile(`https://tnode.nbdomain.com/files/txs.db`, this.path)
-        console.log(result)
+        //const result = Util.downloadFile(`https://tnode.nbdomain.com/files/txs.db`, this.path)
+        //console.log(result)
         if (!fs.existsSync(this.path))
           fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.path);
         // noTxdb = true;
