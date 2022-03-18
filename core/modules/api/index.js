@@ -350,6 +350,7 @@ app.get('/test', (req, res) => {
     let sql = "select * from ar_tx"
     const ret = indexers.db.txdb.prepare(sql).all()
     console.log(ret)
+    console.log("count:",ret.length)
     res.end("ok")
 })
 app.get('/find_domain',(req,res)=>{
