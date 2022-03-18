@@ -251,7 +251,7 @@ class Planaria {
                             }
                         }
 
-                        pending.push({ height: data.blk.i, hash: data.blk.h, time: data.blk.t, txid: data.tx.h })
+                        pending.push({ height: data.blk?.i, hash: data.blk?.h, time: data.blk?.t, txid: data.tx.h })
                     }
 
                     const finish = () => {
