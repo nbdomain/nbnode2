@@ -12,7 +12,7 @@
 const API = {
   bsv:"planaria",ar:'arnode'
   }  // 'planaria','mattercloud','urchain','nbnode'
-const PLANARIA_TOKEN = ""
+const PLANARIA_TOKEN = "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiIxQzc5M0RkVjI0Q3NORTJFUDZNbVZmckhqVlNGVmc2dU4iLCJpc3N1ZXIiOiJnZW5lcmljLWJpdGF1dGgifQ.SUJlYUc2TGNGdFlZaGk3amxwa3ZoRGZJUEpFcGhObWhpdVNqNXVBbkxORTdLMWRkaGNESC81SWJmM2J1N0V5SzFuakpKTWFPNXBTcVJlb0ZHRm5uSi9VPQ"
 const NODEKEY = "" //base64ed private key of the nbdomain in node_info. Used to verify the node
 const TXDB = 'txs.db'
 const DMDB = 'domains.db'

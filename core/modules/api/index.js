@@ -345,7 +345,11 @@ app.get('/queryTX', (req, res) => {
     res.json(resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', (req, res) => {
-    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
+    //Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
+    let sql = "select * from nidobj where tld=?"
+    const ret = indexers.db.dmdb.prepare(sql).all('a')
+    console.log(ret)
+    res.end("ok")
 })
 app.get('/find_domain',(req,res)=>{
     var addr = req.query.address;
