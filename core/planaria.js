@@ -32,6 +32,7 @@ let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5", "14PML1XzZqs5JvJCGy2AJ2
 class Planaria {
     constructor(token, logger) {
         this.token = token
+        if(!token) throw("Planaria token missing")
         this.logger = logger
         this.db = null
 
@@ -250,7 +251,7 @@ class Planaria {
                                 this.txns = this.txns.slice(0, this.txns.findIndex(tx => tx.height === data.blk.h))
                             }
                         }
-                        console.log(data)
+                        //console.log(data)
                         pending.push({ height: data.blk?.i, hash: data.blk?.h, time: data.blk?.t, txid: data.tx.h })
                     }
 
