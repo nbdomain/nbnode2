@@ -250,7 +250,7 @@ class Planaria {
                                 this.txns = this.txns.slice(0, this.txns.findIndex(tx => tx.height === data.blk.h))
                             }
                         }
-
+                        console.log(data)
                         pending.push({ height: data.blk?.i, hash: data.blk?.h, time: data.blk?.t, txid: data.tx.h })
                     }
 
