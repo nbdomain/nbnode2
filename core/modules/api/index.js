@@ -346,8 +346,9 @@ app.get('/queryTX', (req, res) => {
 })
 app.get('/test', (req, res) => {
     //Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: "e86c316bb4739e0c6f043f6cc73cd9f445939acda04b5585f46b7edfc8f9a951", chain: 'bsv' }) })
-    let sql = "select * from nidobj where tld=?"
-    const ret = indexers.db.dmdb.prepare(sql).all('a')
+    //let sql = "select * from nidobj where tld=?"
+    let sql = "select * from ar_tx"
+    const ret = indexers.db.txdb.prepare(sql).all()
     console.log(ret)
     res.end("ok")
 })
