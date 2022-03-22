@@ -8,6 +8,7 @@ const axios = require('axios')
 //global.EventSource = require('eventsource')
 const { default: ReconnectingEventSource } = require('reconnecting-eventsource')
 const Arweave = require('arweave');
+const CoinFly = require('coinfly')
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -17,6 +18,7 @@ const Arweave = require('arweave');
 // NbNode
 // ------------------------------------------------------------------------------------------------
 let ar_node = null
+const NumOfRecords = 100
 class AWNode {
   constructor(apiKey, logger) {
     this.suffix = apiKey ? `?api_key=${apiKey}` : ''
@@ -35,23 +37,23 @@ class AWNode {
     ar_node = this
     //setTimeout(this._crawl.bind(this), 30000)
   }
-  static async sendRawTx(rawtx){
-    if(ar_node){
+  static async sendRawTx(rawtx) {
+    if (ar_node) {
       const jsonTx = JSON.parse(rawtx)
       const tx = await ar_node.arweave.createTransaction(jsonTx)
       console.log("ar sending...")
       const response = await ar_node.arweave.transactions.post(tx);
-      return {code:response.status==200?0:1,txid:jsonTx.id,msg:response.statusText}
+      return { code: response.status == 200 ? 0 : 1, txid: jsonTx.id, msg: response.statusText }
     }
-    return {code:1,message:"arnode not initialized"}
+    return { code: 1, message: "arnode not initialized" }
   }
-  static async verifyTx(rawtx){
-    if(ar_node){
+  static async verifyTx(rawtx) {
+    if (ar_node) {
       const jsonTx = JSON.parse(rawtx)
-      try{
+      try {
         const tx = await ar_node.arweave.transactions.fromRaw(jsonTx)
         return await ar_node.arweave.transactions.verify(tx);
-      }catch(e){
+      } catch (e) {
         //console.error("verifyTx failed ar tx:",jsonTx.id)
         return false
       }
@@ -61,7 +63,8 @@ class AWNode {
 
   async connect(height, chain) {
     if (chain !== 'ar') throw new Error(`chain not supported with NbNode: ${network}`)
-
+    this.lib = await CoinFly.create('ar')
+    this.arweave = this.lib.ar
     this.lastCrawlHeight = height
 
     this.logger.info('Crawling for new blocks via arweave')
@@ -77,7 +80,7 @@ class AWNode {
   async queryTx(tags, block) {
     const variables = { tags: tags, block: block }
     const query = `query Transactions($tags: [TagFilter!], $block: BlockFilter){
-        transactions(tags: $tags, block:$block,sort: HEIGHT_ASC) {
+        transactions(tags: $tags, block:$block,first:${NumOfRecords},sort: HEIGHT_ASC) {
           pageInfo {
             hasNextPage
           }
@@ -110,13 +113,13 @@ class AWNode {
     const response = await this.arweave.api.post('graphql', {
       query, variables
     });
-//    console.log(response.data)
+    //    console.log(response.data)
     return response.data.data ? response.data.data.transactions : null
   }
   async fetch(txid) {
     //const tx = await this.arweave.transactions.get(txid)
-    console.log("ar: fetching ",txid," return null")
-    return {hex:"{}",height:0,time:0}
+    console.log("ar: fetching ", txid, " return null")
+    return { hex: "{}", height: 0, time: 0 }
   }
   async _recrawl() {
     const scheduleRecrawl = () => {
@@ -137,40 +140,49 @@ class AWNode {
     let height = this.lastCrawlHeight + 1
     const txs = await this.queryTx({ name: "nbprotocol", values: ["nbd"] }, { min: height })
     //console.log(txs);
-
+    let bigHeight = height;
     for (let item of txs.edges) {
       let height = item.node.block.height
       let time = item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
+      if (height > bigHeight) { bigHeight = height}
       if (!block) {
-        block = { height: height, time:time, hash: item.node.block.id, txids: [], txhexs: [] }
+        block = { height: height, time: time, hash: item.node.block.id, txids: [], txhexs: [] }
         this.txs.push(block)
       }
 
       let tags = {}
       item.node.tags.forEach(tag => tags[tag.name] = tag.value)
       item.node.tags = tags
-      if(!tags.cmd){
-        const data = await this.arweave.transactions.getData(item.node.id,{decode:false,string:true})
-        if(data)item.node.data = data
+      if (!tags.cmd) {
+        const data = await this.lib.getData(item.node.id, { decode: false, string: true })
+        if (data) item.node.data = data
         //console.log(data)
       }
-      //if (item.node.block&&(item.node.block.timestamp * 1000 < tags.ts)) continue //ts must before block time
       block.txids.push(item.node.id)
       block.txhexs.push(JSON.stringify(item.node))
     }
-    const current = await this.arweave.blocks.getCurrent();
-    if(current){
-      this.lastCrawlHeight = current.height
-      this.lastCrawHash = current.hash
+    try{
+      const current = await this.arweave.blocks.getCurrent();
+      if (current) {
+        this.lastCrawlHeight = bigHeight + NumOfRecords
+        this.lastCrawHash = "unknown"
+        if (this.lastCrawlHeight > current.height) {
+          this.lastCrawlHeight = current.height
+          this.lastCrawHash = current.hash
+        }
+      }
+    }catch(e){
+      console.error(e.code)
+      this.lib.changeNode();
     }
   }
   async getNextBlock(currHeight, currHash) {
     try {
-      if(this.txs.length>0)
+      if (this.txs.length > 0)
         return this.txs.shift()
 
-      return {height:this.lastCrawlHeight,hash:this.lastCrawHash,txids:[],txhexs:[]}
+      return { height: this.lastCrawlHeight, hash: this.lastCrawHash, txids: [], txhexs: [] }
     } catch (e) {
       console.log(e)
       throw e
@@ -178,11 +190,11 @@ class AWNode {
   }
 
   async listenForMempool(mempoolTxCallback) {
-  /*  const txs = await this.queryTx({ name: "protocol", values: ["nbtest2"] }, { max: 0 })
-    console.log(txs);
-    for (let item of txs.edges) {
-      mempoolTxCallback(item.node.id, item.node)
-    }*/
+    /*  const txs = await this.queryTx({ name: "protocol", values: ["nbtest2"] }, { max: 0 })
+      console.log(txs);
+      for (let item of txs.edges) {
+        mempoolTxCallback(item.node.id, item.node)
+      }*/
   }
 }
 

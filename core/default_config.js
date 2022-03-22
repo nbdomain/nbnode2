@@ -18,7 +18,7 @@ const TXDB = 'txs.db'
 const DMDB = 'domains.db'
 const FETCH_LIMIT =  20
 const START_HEIGHT = {
-  bsv:0,ar:0
+  bsv:608410,ar:858281
 }
 const TIMEOUT = 10000
 const MEMPOOL_EXPIRATION =  60 * 60 * 24

@@ -18,8 +18,8 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 2
-const VER_TXDB = 2
+const VER_DMDB = 4
+const VER_TXDB = 4
 
 // ------------------------------------------------------------------------------------------------
 // Database
@@ -158,7 +158,7 @@ class Database {
     //return ret
     try{
       let sql = `CREATE TABLE IF NOT EXISTS config([key] TEXT PRIMARY KEY NOT NULL UNIQUE, value TEXT )`
-      this.txdb.exec(sql);
+      this.txdb.prepare(sql).run();
       sql = 'INSERT OR IGNORE INTO config (key, value) VALUES( ?, ?) '
       this.txdb.prepare(sql).run("bsv_tip",null);
       this.txdb.prepare(sql).run("ar_tip",null);
@@ -544,9 +544,9 @@ class Database {
   queryTX(fromTime, toTime,chain) {
     if(toTime==-1)toTime = 9999999999
     let sql = `SELECT * from ${chain}_tx where txTime > ? AND txTime < ?`
-    console.log(sql,fromTime,toTime)
+    //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime)
-    console.log(ret)
+    //console.log(ret)
     ret.forEach(item => {
       const rawtx = chain=='bsv' ? Buffer.from(item.bytes).toString('hex') :Buffer.from(item.bytes).toString()
       item.rawtx = rawtx
