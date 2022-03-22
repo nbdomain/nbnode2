@@ -7,7 +7,7 @@
 const axios = require('axios')
 //global.EventSource = require('eventsource')
 const { default: ReconnectingEventSource } = require('reconnecting-eventsource')
-const Arweave = require('arweave');
+
 const CoinFly = require('coinfly')
 
 // ------------------------------------------------------------------------------------------------
@@ -29,11 +29,7 @@ class AWNode {
     this.recrawlInterveral = 30000
 
     this.txs = []
-    this.arweave = Arweave.init({
-      host: 'arweave.net',
-      port: 443,
-      protocol: 'https'
-    });
+   
     ar_node = this
     //setTimeout(this._crawl.bind(this), 30000)
   }
@@ -110,7 +106,7 @@ class AWNode {
         }
       }`;
 
-    const response = await this.arweave.api.post('graphql', {
+    const response = await this.lib.graphQL({
       query, variables
     });
     //    console.log(response.data)
