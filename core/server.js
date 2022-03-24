@@ -250,9 +250,9 @@ class Server {
   async getAll(req, res, next) {
     try {
       const host = req.get("host");
-      console.log(host);
+      //console.log(host);
       if (isAPICall(host)) {
-        console.log("got local call, ignore...");
+        //console.log("got local call, ignore...");
         next();
         return;
       }

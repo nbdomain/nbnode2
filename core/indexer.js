@@ -66,7 +66,7 @@ class Indexer {
   }
   async restart() {
     await this.stop();
-    fs.copyFileSync(this.database.path, __dirname + "/public/txs.db");
+    //fs.copyFileSync(this.database.path, __dirname + "/public/txs.db");
     //fs.copyFileSync(this.database.dmpath,__dirname+"/public/domains.db");
     process.kill(process.pid, 'SIGINT')
   }

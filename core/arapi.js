@@ -29,7 +29,7 @@ class AWNode {
     this.recrawlInterveral = 30000
 
     this.txs = []
-   
+
     ar_node = this
     //setTimeout(this._crawl.bind(this), 30000)
   }
@@ -135,13 +135,14 @@ class AWNode {
   async _crawl() {
     let height = this.lastCrawlHeight + 1
     const txs = await this.queryTx({ name: "nbprotocol", values: ["nbd"] }, { min: height })
-    //console.log(txs);
+    if (!txs) return;
+
     let bigHeight = height;
     for (let item of txs.edges) {
       let height = item.node.block.height
       let time = item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
-      if (height > bigHeight) { bigHeight = height}
+      if (height > bigHeight) { bigHeight = height }
       if (!block) {
         block = { height: height, time: time, hash: item.node.block.id, txids: [], txhexs: [] }
         this.txs.push(block)
@@ -151,24 +152,32 @@ class AWNode {
       item.node.tags.forEach(tag => tags[tag.name] = tag.value)
       item.node.tags = tags
       if (!tags.cmd) {
-        const data = await this.lib.getData(item.node.id, { decode: false, string: true })
-        if (data) item.node.data = data
-        //console.log(data)
+        try {
+          const data = await this.lib.getData(item.node.id, { decode: false, string: true })
+          if (data) item.node.data = data
+        } catch (e) {
+          console.error(e.message)
+        }
+
       }
       block.txids.push(item.node.id)
       block.txhexs.push(JSON.stringify(item.node))
     }
-    try{
+    try {
       const current = await this.arweave.blocks.getCurrent();
       if (current) {
-        this.lastCrawlHeight = bigHeight + NumOfRecords
         this.lastCrawHash = "unknown"
-        if (this.lastCrawlHeight > current.height) {
-          this.lastCrawlHeight = current.height
-          this.lastCrawHash = current.hash
+        if (current.height < bigHeight) {
+          this.lastCrawHash = bigHeight
+        } else {
+          this.lastCrawlHeight = bigHeight + NumOfRecords
+          if (this.lastCrawlHeight > current.height) {
+            this.lastCrawlHeight = current.height
+            this.lastCrawHash = current.hash
+          }
         }
       }
-    }catch(e){
+    } catch (e) {
       console.error(e.code)
       this.lib.changeNode();
     }
