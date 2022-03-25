@@ -156,7 +156,7 @@ class AWNode {
           const data = await this.lib.getData(item.node.id, { decode: false, string: true })
           if (data) item.node.data = data
         } catch (e) {
-          console.error(e.message)
+          console.error(e.message+" txid:",item.node.id)
         }
 
       }
