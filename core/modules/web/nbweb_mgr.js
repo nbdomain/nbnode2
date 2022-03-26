@@ -50,9 +50,9 @@ class nbweb_mgr {
 
         let obj = {};
         try {
-          obj = JSON.parse(res_content.obj);
+          obj = JSON.parse(res_content.obj.value);
         } catch (e) {
-          this.output_md(res, res_content)
+          this.output_md(res, res_content.obj.value)
           return;
         }
 
