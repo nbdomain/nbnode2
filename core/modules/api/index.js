@@ -16,6 +16,7 @@ const Nodes = require('../../nodes')
 var app = express();
 const { createSession } = require("better-sse");
 const { bsv } = require('nbpay');
+const { add } = require('bsv/lib/networks');
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -388,10 +389,22 @@ app.get(`/findDomain`, function (req, res) {
         return;
     }
 });
-app.get('/util/balance/',(req,res)=>{
-    
-})
 
+//-----------------------Blockchain tools---------------------------------//
+app.get('/tools/:chain/balance/:address',async (req,res)=>{
+    const address = req.params['address']
+    const chain = req.params['chain']
+    let addr = Util.parseJson(address)
+    if(!addr) addr = address
+    const ret = await Util.getBalance(addr,chain)
+    res.json(ret)
+})
+app.get('/tools/:chain/status/:txid',async (req,res)=>{
+    const txid = req.params['txid']
+    const chain = req.params['chain']
+    const ret = await Util.getTxStatus(txid,chain)
+    res.json(ret)
+})
 
 module.exports = function (env) {
     indexers = env.indexers;

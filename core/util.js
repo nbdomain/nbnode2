@@ -30,6 +30,13 @@ class CMD_BASE {
 };
 
 class Util {
+    static parseJson(str){
+        try{
+            return JSON.parse(str)
+        }catch(e){
+        }
+        return null
+    }
     static getchain(domain){
         let tld = null
         if(domain){
@@ -45,6 +52,14 @@ class Util {
     static async addressFromPublickey(sPublic,chain='bsv'){
         const lib = await CoinFly.create(chain)
         return await lib.getAddress(sPublic)
+    }
+    static async getBalance(address,chain){
+        const lib = chain=="bsv"?bsvLib:arLib
+        return await lib.getBalance(address)
+    }
+    static async getTxStatus(txid,chain){
+        const lib = chain=="bsv"?bsvLib:arLib
+        return await lib.getTxStatus(txid)
     }
     static  downloadFile(uri, filename){
         console.log("downloading file from:",uri)
