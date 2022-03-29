@@ -53,7 +53,7 @@ class Parser {
             }
             if(verify&&height==-1){ //p2p rawtx
                 const tspan = Date.now()/1000 - rtx.ts
-                if(tspan>60||tspan<-1){
+                if(tspan>120||tspan<-1){
                     console.error("invalid timestamp")
                     return {code:1,msg:"invalid timestamp"}
                 }
