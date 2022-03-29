@@ -28,7 +28,7 @@ class ARChain {
                 cmd =  JSON.parse(tags.cmd)
             }catch(e){}
             if(!cmd){
-                if(typeof tx.data !=undefined) cmd = JSON.parse(ArUtil.decode(tx.data))
+                if(typeof tx.data !='undefined') cmd = JSON.parse(ArUtil.decode(tx.data))
                 else{
                     cmd = await ArUtil.getTxData(tx.id)
                 }
