@@ -52,9 +52,11 @@ class Parser {
                 return {code:1,msg:"invalid rawtx format"}
             }
             if(verify&&height==-1){ //p2p rawtx
-                const tspan = Date.now()/1000 - rtx.ts
+                const tsNow = Date.now()/1000 
+                const tspan = tsNow- rtx.ts
                 if(tspan>120||tspan<-1){
-                    console.error("invalid timestamp")
+
+                    console.error("invalid timestamp:tspan=",tspan," tsNow:",tsNow," ts:",rtx.ts)
                     return {code:1,msg:"invalid timestamp"}
                 }
             }
