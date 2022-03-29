@@ -15,7 +15,7 @@ class ARChain {
     static async raw2rtx({ rawtx, height }) {
         try {
             const tx = JSON.parse(rawtx);
-            let tags = null
+            let tags = tx.tags
             if(!tx.tags.nbprotocol)
                 tags = ArUtil.decodeTags(tx.tags)
             if(!tags){
