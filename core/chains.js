@@ -15,7 +15,9 @@ class ARChain {
     static async raw2rtx({ rawtx, height }) {
         try {
             const tx = JSON.parse(rawtx);
-            let tags = ArUtil.decodeTags(tx.tags)
+            let tags = null
+            if(!tx.tags.nbprotocol)
+                tags = ArUtil.decodeTags(tx.tags)
             if(!tags){
                 console.error("tags is missing")
             }
@@ -127,7 +129,9 @@ class BSVChain {
             try {
                 const attrib = JSON.parse(tx.out[0].s3)
                 rtx.ts = +attrib.ts
-            } catch (e) { }
+            } catch (e) { 
+                console.error("timestamp not found")
+            }
 
         }
         tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
