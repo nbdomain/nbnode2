@@ -388,6 +388,11 @@ app.get(`/findDomain`, function (req, res) {
         return;
     }
 });
+app.get('/util/balance/',(req,res)=>{
+    
+})
+
+
 module.exports = function (env) {
     indexers = env.indexers;
     bsv_resolver = indexers.bsv ? indexers.bsv.resolver : null;

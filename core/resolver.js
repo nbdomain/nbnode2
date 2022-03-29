@@ -146,7 +146,8 @@ class Resolver {
             }
             let ret = await DomainTool.fetchDomainAvailibility(fullDomain);
             ret.domain = fullDomain;
-            return ret;
+
+            return ret.code==0?{...ret,code:100}:ret;
         }
         const ret = this.readSubdomain(fullDomain, history);
         if (ret) return ret;
