@@ -90,11 +90,32 @@ class Nodes {
             }
         }
     }
-    static Instance() {
+    async getTx(txid,chain){
+        for(const node of this.getNodes()){
+            const url = node.id + "/api/p2p/gettx?txid=" + txid +"&chain="+chain
+            const res = await axios.get(url)
+            if (res.data) {
+                if(res.data.code==0) return res.data.rawtx
+            }
+        }
+        return null
+    }
+    async getData(txid,chain){
+        for(const node of this.getNodes()){
+            const url = node.id + "/api/p2p/gettx?txid=" + txid +"&chain="+chain
+            const res = await axios.get(url)
+            if (res.data&&res.data.code==0&&chain=='ar') {
+                const d = JSON.parse(res.data.rawtx)
+                if(d.data) return d.data
+            }
+        }
+        return null
+    }
+    static inst() {
         if (node == null) {
             node = new Nodes
         }
         return node
     }
 }
-module.exports = Nodes.Instance()
+module.exports = Nodes.inst()

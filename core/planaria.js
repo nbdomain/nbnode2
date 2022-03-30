@@ -30,11 +30,11 @@ let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5", "14PML1XzZqs5JvJCGy2AJ2
 // ------------------------------------------------------------------------------------------------
 
 class Planaria {
-    constructor(token, logger) {
+    constructor(token, db,logger) {
         this.token = token
         if(!token) throw("Planaria token missing")
         this.logger = logger
-        this.db = null
+        this.db = db
 
         this.abortController = new AbortController()
         this.recrawlInterveral = 30000
@@ -222,7 +222,12 @@ class Planaria {
                     const addTx = json => {
                         if (!json.length) return
                         // console.log(json);
-                        const data = JSON.parse(json)
+                        let data = null
+                        try{
+                            data = JSON.parse(json)
+                        }catch(e){
+                            console.error("bitbus error. ret=",json)
+                        }
 
                         // If there are pending transactions, check if we are on a new block
                         if (pending.length && data.blk.i > pending[0].height) {

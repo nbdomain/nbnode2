@@ -30,6 +30,7 @@ class CMD_BASE {
 };
 
 class Util {
+   
     static parseJson(str){
         try{
             return JSON.parse(str)
@@ -104,16 +105,6 @@ class Util {
         let ret = {code:1}
         const lib = await CoinFly.create(chain)
         return await lib.send({rawtx:rawtx})
-        /*if(chain=='bsv'){
-            const res =  await nbpay.send({tx:rawtx})
-            ret = {code:res.err?1:0,...res}
-            return ret
-        }
-        if(chain=='ar'){
-            const res =  await AWNode.sendRawTx(rawtx)
-            return res
-        }*/
-        throw("sendRawtx:unsupported chain")
     }
     static tsNowTime() {
         return Number(new Date().getTime());

@@ -48,6 +48,15 @@ let apiAR = null, apiBSV = null;
 class Indexers{
   static init(){
     this.db =  new Database(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, logger)
+    switch (API.bsv) {
+      case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, this.db,logger); break
+      //default: throw new Error(`Unknown API: ${API}`)
+    }
+    switch (API.ar) {
+      case 'arnode': apiAR = new AWNode("", this.db,logger); break
+      //default: throw new Error(`Unknown API: ${API}`)
+    }
+    
     this.bsv = new Indexer(this.db, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.bsv, MEMPOOL_EXPIRATION, REORG)
     this.ar = new Indexer(this.db, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.ar, MEMPOOL_EXPIRATION, REORG)
   }
@@ -76,14 +85,6 @@ class Indexers{
 }
 async function main() {
 
-  switch (API.bsv) {
-    case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, logger); break
-    //default: throw new Error(`Unknown API: ${API}`)
-  }
-  switch (API.ar) {
-    case 'arnode': apiAR = new AWNode("", logger); break
-    //default: throw new Error(`Unknown API: ${API}`)
-  }
   const seedNode = await Nodes.init()
   Indexers.init()
 

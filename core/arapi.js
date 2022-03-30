@@ -9,6 +9,8 @@ const axios = require('axios')
 const { default: ReconnectingEventSource } = require('reconnecting-eventsource')
 
 const CoinFly = require('coinfly')
+const Nodes = require("./nodes")
+const {Util} = require('./util')
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -20,13 +22,14 @@ const CoinFly = require('coinfly')
 let ar_node = null
 const NumOfRecords = 100
 class AWNode {
-  constructor(apiKey, logger) {
+  constructor(apiKey, db,logger) {
     this.suffix = apiKey ? `?api_key=${apiKey}` : ''
     this.logger = logger
     this.mempoolTimerID = 0
     this.lastCrawlHeight = 0
     this.lastCrawHash = null
     this.recrawlInterveral = 30000
+    this.db = db
 
     this.txs = []
 
@@ -139,6 +142,11 @@ class AWNode {
 
     let bigHeight = height;
     for (let item of txs.edges) {
+      const rawtx = this.db.getRawTransaction(item.node.id,'ar')
+      if(rawtx){
+        const tx = JSON.parse(rawtx)
+        if(tx.data||tx.tags.cmd) continue
+      }
       let height = item.node.block.height
       let time = item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
@@ -156,7 +164,11 @@ class AWNode {
           const data = await this.lib.getData(item.node.id, { decode: false, string: true })
           if (data) item.node.data = data
         } catch (e) {
-          console.error(e.message+" txid:",item.node.id)
+          const d = await Nodes.getData(item.node.id,'ar')
+          if(d){
+            item.node.data = d
+          }else
+            console.error(e.message+" txid:",item.node.id)
         }
 
       }
