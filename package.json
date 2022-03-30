@@ -33,6 +33,7 @@
     "nbpay": "latest",
     "node-cron": "^2.0.3",
     "node-fetch": "^2.6.7",
+    "node-localstorage": "^2.2.1",
     "p-limit": "3.1.0",
     "random-weighted-choice": "^0.1.4",
     "reconnecting-eventsource": "^1.3.0",

@@ -8,67 +8,149 @@ const { CONFIG } = require('./config');
 const cp = require('child_process');
 const nbpay = require('nbpay')
 const arweave = require('arweave')
-const CoinFly = require('coinfly')
+const CoinFly = require('coinfly');
+const { default: axios } = require('axios');
+const  LocalStorage = require('node-localstorage').LocalStorage;
+Storage = new LocalStorage('./storage');
 nbpay.auto_config();
 let arLib = null, bsvLib = null;
-CoinFly.create('ar').then(lib=>arLib = lib)
-CoinFly.create('bsv').then(lib=>bsvLib = lib)
+CoinFly.create('ar').then(lib => arLib = lib)
+CoinFly.create('bsv').then(lib => bsvLib = lib)
 const SUB_PROTOCOL_MAP = CONFIG.tld_config
+
+class ArNodes {
+    async _getPeers(seed) {
+        const url = seed + '/peers';
+        const res = await axios.get(url);
+        if (res.data) {
+            let peers = res.data;
+            return peers;
+        }
+        return []
+    }
+    async init(seed) {
+        this.nodes = [];
+        let peers = JSON.parse(Storage.getItem("arPeers"))
+        if (peers) {
+            this.nodes = this.nodes.concat(peers);
+            console.log("useable nodes:", this.nodes)
+            return;
+        }
+        const data = await this._getPeers(seed);
+        data.forEach((node) => {
+            if (!node.startsWith('http')) node = 'http://' + node;
+            this.nodes.push({ id: node, weight: 10 });
+        });
+        await this.detectFastest()
+        this.nodes.push({ id: "https://arweave.net", weight: 10 })
+        console.log("useable nodes:", this.nodes)
+        Storage.setItem("arPeers", JSON.stringify(this.nodes))
+    }
+    async detectFastest() {
+        return new Promise(resolve => {
+            let newNodes = [], useable = 0, all = 0
+            for (const node of this.nodes) {
+                axios.get(node.id + "/info").then(res => {
+                    if (res.data) {
+                        newNodes.push(node)
+                        if (useable++ > 10) {
+                            this.nodes = newNodes
+                            resolve(true)
+                        }
+                    }
+                }).catch(e => { console.log(e.code) })
+                    .finally(() => { if (all++ >= this.nodes.length) resolve(false) })
+            }
+        })
+
+    }
+    get() {
+        const node = rwc(this.nodes);
+        Storage.setItem("arAPI", node);
+        return node;
+    }
+    cool(url) {
+        const node = this.nodes.find((node) => node.id == url);
+        if (node) {
+            node.weight--;
+        }
+    }
+    warm(url) {
+        const node = this.nodes.find((node) => node.id == url);
+        if (node) {
+            node.weight++;
+        }
+    }
+}
+const arNodes = new ArNodes()
+arNodes.init("https://www.arweave.net")
 
 class CMD_BASE {
     static parseTX(rtx) {
         let output = {}
-        
-            output.protocol = rtx.out[0].s2;
-            output.nid = rtx.out[0].s3.toLowerCase();
-            output.domain = output.nid + "." + Util.getTLDFromRegisterProtocol(output.protocol)[0];
-            if (output.nid.indexOf('.') != -1 || output.nid.indexOf('@') != -1)
-                output.err = "Invalid NID"
-            return output;
-        
+
+        output.protocol = rtx.out[0].s2;
+        output.nid = rtx.out[0].s3.toLowerCase();
+        output.domain = output.nid + "." + Util.getTLDFromRegisterProtocol(output.protocol)[0];
+        if (output.nid.indexOf('.') != -1 || output.nid.indexOf('@') != -1)
+            output.err = "Invalid NID"
+        return output;
+
     }
 };
 
 class Util {
-   
-    static parseJson(str){
-        try{
+
+    static parseJson(str) {
+        try {
             return JSON.parse(str)
-        }catch(e){
+        } catch (e) {
         }
         return null
     }
-    static getchain(domain){
+    static getchain(domain) {
         let tld = null
-        if(domain){
-            tld = domain.slice(domain.lastIndexOf('.')+1)
+        if (domain) {
+            tld = domain.slice(domain.lastIndexOf('.') + 1)
         }
-        if(tld){
+        if (tld) {
             for (let t in SUB_PROTOCOL_MAP) {
-                if(tld==t)return SUB_PROTOCOL_MAP[t].chain?SUB_PROTOCOL_MAP[t].chain:'bsv'
+                if (tld == t) return SUB_PROTOCOL_MAP[t].chain ? SUB_PROTOCOL_MAP[t].chain : 'bsv'
             }
         }
         return null
     }
-    static async addressFromPublickey(sPublic,chain='bsv'){
+    static async addressFromPublickey(sPublic, chain = 'bsv') {
         const lib = await CoinFly.create(chain)
         return await lib.getAddress(sPublic)
     }
-    static async getBalance(address,chain){
-        const lib = chain=="bsv"?bsvLib:arLib
-        return await lib.getBalance(address)
+    static async getBalance(address, chain) {
+        const lib = await CoinFly.create(chain)
+        if(chain=='bsv')
+            return await lib.getBalance(address)
+        if(chain=='ar'){
+            try{
+                return await lib.getBalance(address)
+            }catch(e){
+                const newAPI = arNodes.get()
+                console.log("change ar api to:",newAPI)
+                lib.changeNode(newAPI)
+                return await lib.getBalance(address)
+            }
+        }
+        return "wrong chain:"+chain
     }
-    static async getTxStatus(txid,chain){
-        const lib = chain=="bsv"?bsvLib:arLib
+    static async getTxStatus(txid, chain) {
+        const lib = chain == "bsv" ? bsvLib : arLib
         return await lib.getTxStatus(txid)
     }
-    static  downloadFile(uri, filename){
-        console.log("downloading file from:",uri)
+    static downloadFile(uri, filename) {
+        console.log("downloading file from:", uri)
         let command = `curl -f -o ${filename}  '${uri}'`;
-        try{
-            let result = cp.execSync(command,{stdio: 'inherit'});
+        try {
+            let result = cp.execSync(command, { stdio: 'inherit' });
             return result
-        }catch(e){
+        } catch (e) {
             console.error(e.message)
             return false
         }
@@ -79,10 +161,10 @@ class Util {
      * @param {!string} newOwner 
      * @param {!Number} newStatus 
      */
-    static async resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData,chain) {
+    static async resetNid(nidObj, newOwner, newOnwerTxid, newStatus, clearData, chain) {
         nidObj.owner_key = newOwner;
         if (newOwner != null) {
-            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,chain);
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key, chain);
             nidObj.txid = newOnwerTxid;
         } else {
             nidObj.owner = null;
@@ -100,11 +182,10 @@ class Util {
         nidObj.sell_info = null;
         return nidObj;
     }
-    static async sendRawtx(rawtx,chain='bsv') 
-    {   
-        let ret = {code:1}
+    static async sendRawtx(rawtx, chain = 'bsv') {
+        let ret = { code: 1 }
         const lib = await CoinFly.create(chain)
-        return await lib.send({rawtx:rawtx})
+        return await lib.send({ rawtx: rawtx })
     }
     static tsNowTime() {
         return Number(new Date().getTime());
@@ -229,33 +310,33 @@ class Util {
     }
 };
 
-class ArUtil{
-    static async getTxData(txid){
-        return await arweave.transactions.getData(txid, {decode: true, string: true})
+class ArUtil {
+    static async getTxData(txid) {
+        return await arweave.transactions.getData(txid, { decode: true, string: true })
     }
-    static decode(str){
+    static decode(str) {
         return this.fromB64Url(str)
     }
-    static decodeTags(tags){
+    static decodeTags(tags) {
         let ts = {}
-        try{
-            for(let tag of tags){
+        try {
+            for (let tag of tags) {
                 const t = ArUtil.utf8DecodeTag(tag)
                 ts[t.name] = t.value
             }
             return ts
-        }catch(e){
+        } catch (e) {
             return tags
         }
     }
     static fromB64Url(input) {
         const paddingLength = input.length % 4 === 0 ? 0 : 4 - (input.length % 4);
-    
+
         const base64 = input
             .replace(/-/g, '+')
             .replace(/_/g, '/')
             .concat('='.repeat(paddingLength));
-    
+
         return Buffer.from(base64, 'base64');
     }
     static isValidUTF8(buffer) {
@@ -280,4 +361,4 @@ class ArUtil{
         };
     };
 }
-module.exports = { ArUtil,Util, CMD_BASE }
+module.exports = { ArUtil, Util, CMD_BASE }

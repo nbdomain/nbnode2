@@ -70,7 +70,11 @@ app.get('/', async function (req, res, next) {
         return;
     }
     try {
-        const ret = await indexers.resolver(Util.getchain(domain)).readDomain(domain, f);
+        const resolver = indexers.resolver(Util.getchain(domain))
+        if(!resolver){
+            throw "unsupported domain:"+domain
+        }
+        const ret = await resolver.readDomain(domain, f);
         res.json(ret);
     } catch (err) {
         console.error(err);
