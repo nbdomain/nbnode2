@@ -166,6 +166,7 @@ class AWNode {
         } catch (e) {
           const d = await Nodes.getData(item.node.id,'ar')
           if(d){
+            console.log("got from peers")
             item.node.data = d
           }else
             console.error(e.message+" txid:",item.node.id)
