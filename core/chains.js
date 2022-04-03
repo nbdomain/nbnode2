@@ -169,7 +169,7 @@ class BSVChain {
                 rtx.oHash = attrib.hash
                 rtx.command = cmd[2]
                 let j = 0, i = 4;
-                for (j < cmd.length; j++, i++;) {
+                for (; j < cmd.length; j++, i++) {
                     rtx.out[0]['s' + i] = cmd[j]
                 }
                 rtx.out[0].len += j
