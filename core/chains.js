@@ -151,8 +151,19 @@ class BSVChain {
                 rtx.command = tx.out[0].s6
             }
             if (attrib.v === 3) {
-                if (!oData) { //TODO: got oData from hash
+                if (!oData) {
                     oData = db.readData(attrib.hash).raw
+                    if (!oData) { //read from other peer
+                        const d = await Nodes.getOData(attrib.hash, { string: true })
+                        oData = d.raw
+                        if (oData) {
+                            db.saveData(oData, d.owner)
+                        }
+                    }
+                }
+                if (!oData) {
+                    console.error("Cannot get OData hash:", attrib.hash)
+                    return null
                 }
                 let cmd = Util.parseJson(oData)
                 rtx.oHash = attrib.hash

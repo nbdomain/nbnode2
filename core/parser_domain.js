@@ -16,7 +16,7 @@ class Parser_Domain {
         }
         try {
             const handler = this.getHandler(rtx.command)
-            if (handler){
+            if (handler) {
                 rtx.output = handler.parseTX(rtx)
             }
             if (!rtx.output) {
@@ -35,13 +35,13 @@ class Parser_Domain {
         ret.obj = rtx;
         return ret;
     }
-    getHandler(command){
-       const handler = this.getAllCommands()[command]
-       if(handler){
-        handler.parser = this
-        return handler
-       }
-       return null
+    getHandler(command) {
+        const handler = this.getAllCommands()[command]
+        if (handler) {
+            handler.parser = this
+            return handler
+        }
+        return null
     }
     getAllCommands() {
         return {
@@ -74,13 +74,14 @@ class CMD_REGISTER {
             // Suppose the output array has a fixed order.
             // output 0 - OP_RETURN.
             output.owner_key = rtx.out[0].s5;
-            if(rtx.out[0].s6){
+            if (rtx.out[0].s6) {
+                console.log(rtx.out[0].s6)
                 var extra = JSON.parse(rtx.out[0].s6);
                 output.payTx = extra["pay_txid"];
             }
-            try{
-                if (rtx.out[0].s7)output.agent = rtx.out[0].s7;
-            }catch(e){}
+            try {
+                if (rtx.out[0].s7) output.agent = rtx.out[0].s7;
+            } catch (e) { }
         } catch (err) {
             console.error(rtx.txid)
             console.log(err)
@@ -94,7 +95,7 @@ class CMD_REGISTER {
         }
 
         try {
-            let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.chain);
+            let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain);
             let authorsities = Util.getAdmins(output.protocol, rtx.height);
             if (!authorsities.includes(addr)) {
                 output.err = "Input address not in authorities.";
@@ -102,7 +103,7 @@ class CMD_REGISTER {
         } catch (err) {
             output.err = "Invalid format for RegisterOutput class2."
         }
-        
+
         return output
     }
     static async fillObj(nidObj, rtx) {
@@ -113,7 +114,7 @@ class CMD_REGISTER {
             }//can't register twice
             nidObj.nid = rtx.output.nid;
             nidObj.owner_key = rtx.output.owner_key;
-            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key,rtx.chain);
+            nidObj.owner = await Util.addressFromPublickey(nidObj.owner_key, rtx.chain);
             nidObj.txid = rtx.txid;
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
@@ -138,7 +139,7 @@ class CMD_BUY {
             output.err = "Invalid format for BuyOutput class."
             return output
         }
-        let addr = await Util.addressFromPublickey(rtx.publicKey,rtx.chain) //Util.getAddressFromPublicKey(rtx.publicKey);
+        let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain) //Util.getAddressFromPublicKey(rtx.publicKey);
         let authorsities = Util.getAdmins(
             output.protocol,
             rtx.height
@@ -158,10 +159,10 @@ class CMD_BUY {
                 let clearData = nidObj.sell_info.clear_data;
                 if (nidObj.sell_info.buyer != 'any') { //check if it's the right buyer
                     //if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
-                    if (await Util.addressFromPublickey(rtx.output.owner_key,rtx.chain) != nidObj.sell_info.buyer)
+                    if (await Util.addressFromPublickey(rtx.output.owner_key, rtx.chain) != nidObj.sell_info.buyer)
                         return null
                 }
-                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData,rtx.chain);
+                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData, rtx.chain);
             }
         }
         return nidObj
@@ -193,7 +194,7 @@ class CMD_SELL {
                 expire: rtx.output.expire,
                 note: rtx.output.note,
                 clear_data: rtx.output.clear_data,
-                seller:  await Util.addressFromPublickey(rtx.publicKey,rtx.chain), //Util.getAddressFromPublicKey(rtx.publicKey).toString(),
+                seller: await Util.addressFromPublickey(rtx.publicKey, rtx.chain), //Util.getAddressFromPublicKey(rtx.publicKey).toString(),
                 sell_txid: rtx.txid
             };
             nidObj.tf_update_tx = rtx.txid;
@@ -219,7 +220,7 @@ class CMD_TRANSER {
             output.transfer_fee = rtx.out[3].e.v;
             output.payment_addr = rtx.out[3].e.a;
             //Util.getAddressFromPublicKey(output.owner_key) //test public key
-            await Util.addressFromPublickey(output.owner_key,rtx.chain)
+            await Util.addressFromPublickey(output.owner_key, rtx.chain)
         } catch (err) {
             output.err = "Invalid format for Transfer command."
             return output
@@ -280,7 +281,7 @@ class CMD_KEYUSER {
             try {
                 tags = JSON.parse(rtx.out[0].s6).tags;
                 if (tags)
-                rtx.command == "key"
+                    rtx.command == "key"
                         ? (output.tags = tags)
                         : (output.utags = tags);
             } catch (e) { }
@@ -324,7 +325,7 @@ class CMD_KEYUSER {
             rtx.output.err = "No owner"
             return null
         }
-        if ( (nidObj.owner_key != rtx.publicKey) ) { //different owner
+        if ((nidObj.owner_key != rtx.publicKey)) { //different owner
             let authorized = false; //check admin
             rtx.output.err = "unAuthorized owner"
             for (var name in nidObj.admins) {
@@ -346,7 +347,7 @@ class CMD_KEYUSER {
                     objMap[rtx.output.value.toDomain] = obj
                 }
                 if (obj && obj.status == DEF.STATUS_PUBLIC) {
-                    
+
                     for (const key in rtx.output.value) {
                         let newKey = key.toLowerCase()
                         let newValue = rtx.output.value[key]
