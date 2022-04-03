@@ -306,9 +306,9 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
             const obj = await (Parser.getParser(chain).parseRaw({ rawtx: ret.rawtx, height: -1, verify: true }));
             if (obj.oHash) {
                 ret.oData = indexer.db.readData(obj.oHash).raw
+                console.log("get oData", ret.oData)
             }
-            console.log(obj)
-            console.log(ret)
+
         }
     }
     if (cmd === 'getdata') {
