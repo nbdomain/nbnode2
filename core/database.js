@@ -610,7 +610,7 @@ class Database {
   readData(hash, option = { string: true }) {
     let sql = 'SELECT * from data where hash = ?'
     const ret = this.txdb.prepare(sql).get(hash)
-    if (!ret) return null
+    if (!ret) return {}
     if (ret.raw) {
       if (option.string) ret.raw = ret.raw.toString()
     }

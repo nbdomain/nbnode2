@@ -305,13 +305,13 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         } else {
             const obj = await (Parser.getParser(chain).parseRaw({ rawtx: ret.rawtx, height: -1, verify: true }));
             if (obj.oHash) {
-                ret.oData = indexer.db.readData(obj.oHash)
+                ret.oData = indexer.db.readData(obj.oHash).raw
             }
         }
     }
     if (cmd === 'getdata') {
         ret = await indexers.db.readData(req.query['hash'], { string: req.query['string'] })
-        if (ret) ret.code = 0
+        if (ret.raw) ret.code = 0
         else ret = { code: 1, msg: "not found" }
     }
     res.json(ret)

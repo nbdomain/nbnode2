@@ -119,7 +119,7 @@ class Nodes {
                 return res.data
             }
         }
-        return null
+        return {}
     }
     static inst() {
         if (node == null) {

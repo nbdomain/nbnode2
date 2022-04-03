@@ -44,10 +44,9 @@ class ARChain {
             }
             if (attrib.v === 3) {
                 if (!oData) {
-                    let d = db.readData(attrib.hash)
-                    if (d) oData = d.raw
-                    else { //read from other peer
-                        d = await Nodes.getOData(attrib.hash, { string: true })
+                    oData = db.readData(attrib.hash).raw
+                    if (!oData) { //read from other peer
+                        const d = await Nodes.getOData(attrib.hash, { string: true })
                         oData = d.raw
                     }
                 }
@@ -150,7 +149,7 @@ class BSVChain {
             }
             if (attrib.v === 3) {
                 if (!oData) { //TODO: got oData from hash
-                    oData = db.readData(attrib.hash)
+                    oData = db.readData(attrib.hash).raw
                 }
                 let cmd = Util.parseJson(oData)
                 rtx.oHash = attrib.hash
