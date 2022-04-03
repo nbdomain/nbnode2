@@ -168,7 +168,8 @@ class BSVChain {
                 let cmd = Util.parseJson(oData)
                 rtx.oHash = attrib.hash
                 rtx.command = cmd[2]
-                for (let j = 0, i = 4; j < cmd.length; j++, i++) {
+                let j = 0, i = 4;
+                for (j < cmd.length; j++, i++) {
                     rtx.out[0]['s' + i] = cmd[j]
                 }
                 rtx.out[0].len += j
