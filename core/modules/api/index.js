@@ -183,19 +183,19 @@ app.post('/sendTx', async function (req, res) {
         return
     }
 
-    ret = await Util.sendRawtx(obj.rawtx, chain);
-    if (ret.code == 0) {
-        if (ret.obj.oHash) {
+    const ret1 = await Util.sendRawtx(obj.rawtx, chain);
+    if (ret1.code == 0) {
+        if (ret.obj && ret.obj.oHash) {
             await indexers.db.saveData(obj.oData, ret.obj.output.domain)
         }
-        indexers.get(chain)._onMempoolTransaction(ret.txid, obj.rawtx)
+        indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
         /*if(chain=='ar'){
             indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
         }else
             indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)*/
-        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret.txid, chain: chain }) })
+        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
     }
-    res.json(ret);
+    res.json(ret1);
 });
 async function handleNewTx(para, from) {
     let db = bsv_resolver.db, indexer = indexers.bsv;
