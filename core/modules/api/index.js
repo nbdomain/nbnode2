@@ -189,18 +189,13 @@ app.post('/sendTx', async function (req, res) {
             await indexers.db.saveData(obj.oData, ret.obj.output.domain)
         }
         indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
-        /*if(chain=='ar'){
-            indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
-        }else
-            indexers.bsv._onMempoolTransaction(ret.txid,obj.rawtx)*/
         Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
     }
     res.json(ret1);
 });
 async function handleNewTx(para, from) {
-    let db = bsv_resolver.db, indexer = indexers.bsv;
+    let db = indexers.db, indexer = indexers.bsv;
     if (para.chain == "ar") {
-        db = ar_resolver.db
         indexer = indexers.ar
     }
     const chain = para.chain ? para.chain : 'bsv'
@@ -208,6 +203,10 @@ async function handleNewTx(para, from) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data) {
+            if (res.data.oData) {
+                const obj = await (Parser.getParser(chain).parseRaw({ rawtx: res.data.rawtx, height: -1, verify: true }));
+                await indexer.db.saveData(res.data.oData, obj.obj.output.domain)
+            }
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
         }
     }
@@ -281,7 +280,7 @@ app.get('/sub/:domain/', async (req, res) => {
         console.log("one sub closed")
     })
 })
-app.get('/p2p/:cmd/', function (req, res) { //sever to server command
+app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     const cmd = req.params['cmd']
     let ret = { code: 0 }
     console.log("get p2p cmd:", cmd, " params:", req.query)
@@ -298,11 +297,16 @@ app.get('/p2p/:cmd/', function (req, res) { //sever to server command
         handleNewTx(para, from)
     }
     if (cmd === 'gettx') {
-        let indexer = indexers.bsv
-        if (req.query['chain'] == 'ar') indexer = indexers.ar
+        let chain = req.query['chain'] ? req.query['chain'] : 'bsv'
+        let indexer = chain == 'bsv' ? indexers.bsv : indexers.ar
         ret.rawtx = indexer.rawtx(req.query['txid'])
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
+        } else {
+            const obj = await (Parser.getParser(chain).parseRaw({ rawtx: ret.rawtx, height: -1, verify: true }));
+            if (obj.oHash) {
+                ret.oData = indexer.db.readData(obj.oHash)
+            }
         }
     }
     res.json(ret)

@@ -15,6 +15,12 @@ class ARChain {
     static async raw2rtx({ rawtx, height, oData, db }) {
         try {
             const tx = JSON.parse(rawtx);
+            let rtx = {
+                height: height,
+                txid: tx.id,
+                publicKey: tx.owner.key ? tx.owner.key : tx.owner,
+                output: null,
+            };
             let tags = tx.tags
             if (!tx.tags.nbprotocol)
                 tags = ArUtil.decodeTags(tx.tags)
@@ -23,7 +29,7 @@ class ARChain {
             }
             const nbdata = JSON.parse(tags.nbdata)
             const attrib = JSON.parse(nbdata[1])
-            const ts = attrib.ts
+            rtx.ts = attrib.ts
             let cmd = null
             if (attrib.v === 2) {
                 cmd = Util.parseJson(tags.cmd)
@@ -33,14 +39,17 @@ class ARChain {
                         cmd = await ArUtil.getTxData(tx.id)
                     }
                 }
+                rtx.command = cmd[0]
             }
             if (attrib.v === 3) {
                 if (!oData) { //TODO: got oData from hash
                     oData = db.readData(attrib.hash)
                 }
                 cmd = Util.parseJson(oData)
+                rtx.command = cmd[2]
+                rtx.oHash = attrib.hash
             }
-            let out = [], out0 = { e: {} }, i = 0
+            let out = [], out0 = { e: { a: tx.target, v: Math.floor(+tx.quantity / 10000) } }, i = 0
             for (; i < nbdata.length; i++) {
                 out0['s' + i] = nbdata[i]
             }
@@ -48,18 +57,10 @@ class ARChain {
                 out0['s' + i] = cmd[j]
             }
             out.push(out0)
-            tx.tags = tags
-            let rtx = {
-                height: height,
-                ts: +ts,
-                txid: tx.id,
-                publicKey: tx.owner.key ? tx.owner.key : tx.owner,
-                command: cmd[0],
-                output: null,
-                out: out,
-            };
+            rtx.out = out
             rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
             if (rtx.inputAddress == tx.target) { // ar chain does not allow send to self
+                console.error("ar chain does not allow send to self")
                 return null
             }
             rtx.chain = 'ar'
