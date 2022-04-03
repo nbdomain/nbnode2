@@ -311,6 +311,8 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     if (cmd === 'getdata') {
         ret = await indexers.db.readData(req.query['hash'], { string: req.query['string'] })
+        if (ret) ret.code = 0
+        else ret = { code: 1, msg: "not found" }
     }
     res.json(ret)
 })
