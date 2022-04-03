@@ -73,9 +73,10 @@ class CMD_REGISTER {
         try {
             // Suppose the output array has a fixed order.
             // output 0 - OP_RETURN.
+            console.log("out:", rtx.out[0])
             output.owner_key = rtx.out[0].s5;
             if (rtx.out[0].s6) {
-                console.log(rtx.out[0].s6)
+
                 var extra = JSON.parse(rtx.out[0].s6);
                 output.payTx = extra["pay_txid"];
             }
