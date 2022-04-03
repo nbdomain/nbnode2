@@ -73,20 +73,20 @@ class Indexer {
   async syncFromNode() {
     const apiURL = Nodes.get()
     const latestTime = this.database.getLatestTxTime(this.chain)
-    const url = apiURL + "/api/queryTX?from=" + latestTime+"&chain="+this.chain
-    try{
+    const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + this.chain
+    try {
       const res = await axios.get(url)
       //console.log(res)
-      for(const tx of res.data){
-        this.add(tx.txid,tx.rawtx,tx.height,tx.time)
-        console.log("syncFromNode: Adding ",tx.txid)
+      for (const tx of res.data) {
+        this.add(tx.txid, tx.rawtx, tx.height, tx.time)
+        console.log("syncFromNode: Adding ", tx.txid)
       }
-    }catch(e){
-      console.error("syncFromNode "+apiURL+": "+e.message)
+    } catch (e) {
+      console.error("syncFromNode " + apiURL + ": " + e.message)
     }
   }
   async start() {
-    this.database.open()
+
     let height = this.database.getHeight(this.chain) || this.startHeight
     let hash = this.database.getHash(this.chain)
     if (this.reorg) {
@@ -94,7 +94,7 @@ class Indexer {
       hash = null
     }
     await this.syncFromNode()
-  
+
     if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))
     this.crawler.start(height, hash)
@@ -120,20 +120,20 @@ class Indexer {
   remove(txid) {
     txid = this._parseTxid(txid)
     this.downloader.remove(txid)
-    this.database.deleteTransaction(txid,this.chain)
+    this.database.deleteTransaction(txid, this.chain)
   }
 
 
 
   rawtx(txid) {
     txid = this._parseTxid(txid)
-    const ret = this.database.getRawTransaction(txid,this.chain)
+    const ret = this.database.getRawTransaction(txid, this.chain)
     return ret
   }
 
   time(txid) {
     txid = this._parseTxid(txid)
-    return this.database.getTransactionTime(txid,this.chain)
+    return this.database.getTransactionTime(txid, this.chain)
   }
   status() {
     return {
@@ -145,8 +145,8 @@ class Indexer {
 
   async _onDownloadTransaction(txid, hex, height, time) {
     this.logger.info(`Downloaded ${txid} (${this.downloader.remaining()} remaining)`)
-    if (!this.database.hasTransaction(txid,this.chain)) return
-    if (height) this.database.setTransactionHeight(txid, height,this.chain)
+    if (!this.database.hasTransaction(txid, this.chain)) return
+    if (height) this.database.setTransactionHeight(txid, height, this.chain)
     if (time) this.database.setTransactionTime(txid, time)
     await this._parseAndStoreTransaction(txid, hex)
     if (this.onDownload) this.onDownload(txid)
@@ -181,14 +181,14 @@ class Indexer {
   _onCrawlBlockTransactions(height, hash, time, txids, txhexs) {
     this.logger.info(`Crawled block ${height} for ${txids.length} transactions`)
     this._addTransactions(txids, txhexs, height, time)
-    this.database.setHeightAndHash(height, hash,this.chain)
+    this.database.setHeightAndHash(height, hash, this.chain)
     if (this.onBlock) this.onBlock(height)
   }
 
   _onRewindBlocks(newHeight) {
     this.logger.info(`Rewinding to block ${newHeight}`)
 
-    const txids = this.database.getTransactionsAboveHeight(newHeight,this.chain)
+    const txids = this.database.getTransactionsAboveHeight(newHeight, this.chain)
 
     this.database.transaction(() => {
       // Put all transactions back into the mempool. This is better than deleting them, because
@@ -196,7 +196,7 @@ class Indexer {
       // If they don't make it into a block, then they will be expired in time.
       txids.forEach(txid => this.database.unconfirmTransaction(txid))
 
-      this.database.setHeightAndHash(newHeight, null,this.chain)
+      this.database.setHeightAndHash(newHeight, null, this.chain)
     })
 
     if (this.onReorg) this.onReorg(newHeight)
@@ -209,7 +209,7 @@ class Indexer {
   _onExpireMempoolTransactions() {
     const expirationTime = Math.round(Date.now() / 1000) - this.mempoolExpiration
 
-    const expired = this.database.getMempoolTransactionsBeforeTime(expirationTime,this.chain)
+    const expired = this.database.getMempoolTransactionsBeforeTime(expirationTime, this.chain)
     const deleted = new Set()
     this.database.transaction(() => expired.forEach(txid => this.database.deleteTransaction(txid, this.chain)))
   }
@@ -217,13 +217,13 @@ class Indexer {
   _addTransactions(txids, txhexs, height, time) {
     this.database.transaction(() => {
       txids.forEach((txid, i) => {
-        this.database.addNewTransaction(txid,this.chain)
-        if (height) this.database.setTransactionHeight(txid, height,this.chain)
-        if (time) this.database.setTransactionTime(txid, time,this.chain)
+        this.database.addNewTransaction(txid, this.chain)
+        if (height) this.database.setTransactionHeight(txid, height, this.chain)
+        if (time) this.database.setTransactionTime(txid, time, this.chain)
       })
 
       txids.forEach(async (txid, i) => {
-        let downloaded = this.database.isTransactionDownloaded(txid,this.chain)
+        let downloaded = this.database.isTransactionDownloaded(txid, this.chain)
         if (downloaded) return
 
         const hex = txhexs && txhexs[i]
@@ -237,29 +237,29 @@ class Indexer {
   }
 
   async _parseAndStoreTransaction(txid, rawtx) {
-    if (this.database.isTransactionDownloaded(txid,this.chain)) return
+    if (this.database.isTransactionDownloaded(txid, this.chain)) return
 
     if (!rawtx) {
       this.logger.warn(txid, ":", "no rawtx");
       return
     }
-    const height = this.database.getTransactionHeight(txid,this.chain);
-    const block_time = this.database.getTransactionTime(txid,this.chain);
+    const height = this.database.getTransactionHeight(txid, this.chain);
+    const block_time = this.database.getTransactionTime(txid, this.chain);
     let meta = null
     try {
       meta = await Parser.getParser(this.chain).verify(rawtx, height, block_time);
       if (meta.code != 0) {
         this.logger.warn(txid, ":" + meta.msg);
-        this.database.deleteTransaction(txid,this.chain);
+        this.database.deleteTransaction(txid, this.chain);
         return;
       }
     } catch (e) {
       console.error(e);
-      this.database.deleteTransaction(txid,this.chain);
+      this.database.deleteTransaction(txid, this.chain);
       return;
     }
     //this.database.setTransaction(txid, meta.obj)
-    this.database.saveTransaction(txid, rawtx, meta.txTime,this.chain)
+    this.database.saveTransaction(txid, rawtx, meta.txTime, this.chain)
     return
 
 

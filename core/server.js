@@ -73,7 +73,7 @@ function isAPICall(host) {
   return (
     host.indexOf("localhost") != -1 ||
     host.indexOf("127.0.0.1") != -1 ||
-    host.indexOf(CONFIG.node_info.domain) != -1
+    host.indexOf(CONFIG.server.domain) != -1
   );
 }
 
@@ -94,7 +94,7 @@ class Server {
 
     if (this.logger) app.use(morgan('tiny'))
 
-    
+
     app.get("/", (req, res, next) => {
       if (!isAPICall(req.get("host"))) {
         next();
@@ -102,7 +102,7 @@ class Server {
       }
       res.sendFile(__dirname + "/public/index.html");
     });
-    app.use('/files/',express.static(__dirname+'/public'))
+    app.use('/files/', express.static(__dirname + '/public'))
 
     app.get('/nblink/add/', this.addNBlink.bind(this))
     app.get('/nodeInfo', this.getNodeInfo.bind(this))
@@ -118,55 +118,55 @@ class Server {
     }, 60 * 1000);
 
     this.startProxyServer(app);
-    if(CONFIG.node_info.domain)
-        this.startWebServer();
+    if (CONFIG.server.domain)
+      this.startWebServer();
   }
   async startWebServer() {
     //Start HTTPS server
-    if (CONFIG.node_info.domain&&CONFIG.node_info.https) {
-        var appSSL = express();
-        const localAPI = "http://localhost:" + CONFIG.node_info.port;
-        appSSL.use(createProxyMiddleware("**", { target: localAPI }));
-        let domainError = {};
-        greenlock = require("@root/greenlock").create({
-          packageRoot: __dirname+"/../",
-          configDir: SSLDir,
-          maintainerEmail: CONFIG.node_info.contact,
-          notify: async function (event, details) {
-            if ("error" === event) {
-              // `details` is an error object in this case
-             /*gr console.error("GL Error, subject:", details);
-              console.log("DE:", domainError);
-              !domainError[details.subject] && (domainError[details.subject] = 0);
-              //if (++domainError[details.subject] > 2) {
-              console.log("GL remove, subject:", details.subject);
-              // const res = await greenlock.sites.get({ subject: details.subject });
-              // console.log("get result:",res);
-              greenlock.remove({ subject: details.subject });
-              */
-            }
-          },
-        });
-        const res = await greenlock.sites.add({
-          subject: CONFIG.node_info.domain,
-          altnames: [CONFIG.node_info.domain],
-        });
-        console.log("sites.add", res);
-        const green = require("greenlock-express").init(() => {
-          return {
-            greenlock,
-            cluster: false,
-          };
-        });
-        // Serves on 80 and 443
-        // Get's SSL certificates magically!
-        green.serve(appSSL);
+    if (CONFIG.server.domain && CONFIG.server.https) {
+      var appSSL = express();
+      const localAPI = "http://localhost:" + CONFIG.server.port;
+      appSSL.use(createProxyMiddleware("**", { target: localAPI }));
+      let domainError = {};
+      greenlock = require("@root/greenlock").create({
+        packageRoot: __dirname + "/../",
+        configDir: SSLDir,
+        maintainerEmail: CONFIG.node_info.contact,
+        notify: async function (event, details) {
+          if ("error" === event) {
+            // `details` is an error object in this case
+            /*gr console.error("GL Error, subject:", details);
+             console.log("DE:", domainError);
+             !domainError[details.subject] && (domainError[details.subject] = 0);
+             //if (++domainError[details.subject] > 2) {
+             console.log("GL remove, subject:", details.subject);
+             // const res = await greenlock.sites.get({ subject: details.subject });
+             // console.log("get result:",res);
+             greenlock.remove({ subject: details.subject });
+             */
+          }
+        },
+      });
+      const res = await greenlock.sites.add({
+        subject: CONFIG.server.domain,
+        altnames: [CONFIG.server.domain],
+      });
+      console.log("sites.add", res);
+      const green = require("greenlock-express").init(() => {
+        return {
+          greenlock,
+          cluster: false,
+        };
+      });
+      // Serves on 80 and 443
+      // Get's SSL certificates magically!
+      green.serve(appSSL);
     }
   }
   startProxyServer(app) {
     const self = this;
-    this.listener = app.listen(CONFIG.node_info.port, async function () {
-      console.log(`NBnode server started on port ${CONFIG.node_info.port}...`);
+    this.listener = app.listen(CONFIG.server.port, async function () {
+      console.log(`NBnode server started on port ${CONFIG.server.port}...`);
 
       var proxyPassConfig = CONFIG.proxy_map;
 
@@ -275,7 +275,7 @@ class Server {
     } catch (e) { next(e) }
   }
 
-  
+
 }
 
 // ------------------------------------------------------------------------------------------------

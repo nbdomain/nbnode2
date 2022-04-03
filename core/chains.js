@@ -12,28 +12,35 @@ class ARChain {
         const rtx = await ARChain.raw2rtx({ rawtx, height })
         return { code: rtx ? 0 : 1, txTime: rtx.ts }
     }
-    static async raw2rtx({ rawtx, height }) {
+    static async raw2rtx({ rawtx, height, oData, db }) {
         try {
             const tx = JSON.parse(rawtx);
             let tags = tx.tags
-            if(!tx.tags.nbprotocol)
+            if (!tx.tags.nbprotocol)
                 tags = ArUtil.decodeTags(tx.tags)
-            if(!tags){
+            if (!tags) {
                 console.error("tags is missing")
             }
             const nbdata = JSON.parse(tags.nbdata)
-            const ts = JSON.parse(nbdata[1]).ts
+            const attrib = JSON.parse(nbdata[1])
+            const ts = attrib.ts
             let cmd = null
-            try{
-                cmd =  JSON.parse(tags.cmd)
-            }catch(e){}
-            if(!cmd){
-                if(typeof tx.data !='undefined') cmd = JSON.parse(ArUtil.decode(tx.data))
-                else{
-                    cmd = await ArUtil.getTxData(tx.id)
+            if (attrib.v === 2) {
+                cmd = Util.parseJson(tags.cmd)
+                if (!cmd) {
+                    if (typeof tx.data != 'undefined') cmd = JSON.parse(ArUtil.decode(tx.data))
+                    else {
+                        cmd = await ArUtil.getTxData(tx.id)
+                    }
                 }
             }
-            let out = [], out0 = {e:{}}, i = 0
+            if (attrib.v === 3) {
+                if (!oData) { //TODO: got oData from hash
+                    oData = db.readData(attrib.hash)
+                }
+                cmd = Util.parseJson(oData)
+            }
+            let out = [], out0 = { e: {} }, i = 0
             for (; i < nbdata.length; i++) {
                 out0['s' + i] = nbdata[i]
             }
@@ -52,7 +59,7 @@ class ARChain {
                 out: out,
             };
             rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
-            if(rtx.inputAddress==tx.target){ // ar chain does not allow send to self
+            if (rtx.inputAddress == tx.target) { // ar chain does not allow send to self
                 return null
             }
             rtx.chain = 'ar'
@@ -111,29 +118,41 @@ class BSVChain {
             }
         }
     }
-    static async raw2rtx({ rawtx, height, time }) {
+    static async raw2rtx({ rawtx, oData, height, time, db }) {
         const tx = TXO.fromRaw(rawtx);
         let rtx = {
             height: height,
             time: time,
             txid: tx.tx.h,
             publicKey: tx.in[0].h1.toString(),
-            command: tx.out[0].s2 == "nbd" ? tx.out[0].s6 : tx.out[0].s4,
-            // inputAddress: tx.in[0].e.a.toString(),
+
             output: null,
             in: tx.in,
             out: tx.out,
             ts: 0,
         };
-        if (tx.out[0].s2 == "nbd" && tx.out[0].s3 != "1") {
-            try {
-                const attrib = JSON.parse(tx.out[0].s3)
-                rtx.ts = +attrib.ts
-            } catch (e) { 
-                console.error("timestamp not found")
+        const attrib = Util.parseJson(tx.out[0].s3)
+        if (attrib) {
+            rtx.ts = +attrib.ts
+            if (attrib.v === 2) {
+                rtx.command = tx.out[0].s6
             }
+            if (attrib.v === 3) {
+                if (!oData) { //TODO: got oData from hash
+                    oData = db.readData(attrib.hash)
+                }
+                let cmd = Util.parseJson(oData)
+                rtx.oHash = attrib.hash
+                rtx.command = cmd[2]
+                rtx.out[0].s4 = cmd[0]
+                rtx.out[0].s5 = cmd[1]
+                rtx.out[0].s6 = cmd[2]
+                rtx.out[0].s7 = cmd[3]
+                rtx.out[0].len += 4
+            }
+        } else
+            rtx.command = tx.out[0].s2 == "nbd" ? tx.out[0].s6 : tx.out[0].s4
 
-        }
         tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
         BSVChain._reArrage(rtx)
         rtx.chain = 'bsv'

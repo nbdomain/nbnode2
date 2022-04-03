@@ -48,29 +48,29 @@ class Nodes {
         }
     }
     async init() {
-        this.endpoint = (config.node_info.https ? "https://" : "http://") + config.node_info.domain
-        if (!config.node_info.https) this.endpoint += ":" + config.node_info.port
+        this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
+        if (!config.server.https) this.endpoint += ":" + config.server.port
         this.refreshPeers(true)
         return true
     }
-    async refreshPeers(onlyLocal=false) {
-        const port = config.node_info.port
+    async refreshPeers(onlyLocal = false) {
+        const port = config.server.port
         let peers2test = []
-        if(!onlyLocal){
+        if (!onlyLocal) {
             try {
                 const res = await axios.get("http://localhost:" + port + "/api/queryKeys?tags=nbnode")
                 if (res.data && res.data.length > 0) {
                     //peers2test = res.data
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         if (config.peers.length)
             peers2test = peers2test.concat(config.peers)
-        peers2test = peers2test.filter(item => item.indexOf(config.node_info.domain) == -1)
+        peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
         //this.peers = await this.selectNode(peers2test,50)
         for (const node of peers2test) {
             if (this.nodes.find(item => item.id == node)) continue;
-            console.log("Adding node:",node)
+            console.log("Adding node:", node)
             this.nodes.push({ id: node, weight: 50 })
         }
         //console.log(`found ${this.peers.length} peers`)
@@ -90,23 +90,23 @@ class Nodes {
             }
         }
     }
-    async getTx(txid,chain){
-        for(const node of this.getNodes()){
-            const url = node.id + "/api/p2p/gettx?txid=" + txid +"&chain="+chain
+    async getTx(txid, chain) {
+        for (const node of this.getNodes()) {
+            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
             const res = await axios.get(url)
             if (res.data) {
-                if(res.data.code==0) return res.data.rawtx
+                if (res.data.code == 0) return res.data.rawtx
             }
         }
         return null
     }
-    async getData(txid,chain){
-        for(const node of this.getNodes()){
-            const url = node.id + "/api/p2p/gettx?txid=" + txid +"&chain="+chain
+    async getData(txid, chain) {
+        for (const node of this.getNodes()) {
+            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
             const res = await axios.get(url)
-            if (res.data&&res.data.code==0&&chain=='ar') {
+            if (res.data && res.data.code == 0 && chain == 'ar') {
                 const d = JSON.parse(res.data.rawtx)
-                if(d.data) return d.data
+                if (d.data) return d.data
             }
         }
         return null

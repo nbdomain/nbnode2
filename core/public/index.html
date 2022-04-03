@@ -122,72 +122,72 @@
 
 <body class="font-mono bg-green-100">
 	<div id="app">
-	<div id="tabscontainer" class="flex flex-row flex-wrap whitespace-nowrap m-5">
-		<input type="radio" id="radiofortab1" name="radiogroupfortabs" checked />
-		<label id="tab-label1" for="radiofortab1">Welcome</label>
-		<div id="tab-content1">
-			<div id="welcome">
-			</div>
-		</div>
-
-		<input type="radio" id="radiofortab2" name="radiogroupfortabs" class="hidden absolute order-2" />
-		<label id="tab-label2" for="radiofortab2">Info</label>
-		<div id="tab-content2">
-			<div id="infoPanel" align="center" class="flex flex-row">
-				<div class="flex-col flex m-2 font-bold">
-					<div>Version:</div>
-					<div>Domain:</div>
-					<div>Contact:</div>
-					<div>Endpoints:</div>
-					
+		<div id="tabscontainer" class="flex flex-row flex-wrap whitespace-nowrap m-5">
+			<input type="radio" id="radiofortab1" name="radiogroupfortabs" checked />
+			<label id="tab-label1" for="radiofortab1">Welcome</label>
+			<div id="tab-content1">
+				<div id="welcome">
 				</div>
-				<div class="flex-col flex m-2">
-					<div>{{nodeInfo.version}}</div>
-					<div>{{nodeInfo.domain}}</div>
-					<div>{{nodeInfo.contact}}</div>
-					<div>{{nodeInfo.endpoints.join(' ')}}</div>
-				</div>
-
 			</div>
-		</div>
 
-		<input type="radio" id="radiofortab3" name="radiogroupfortabs" class="hidden absolute order-3" />
-		<label id="tab-label3" for="radiofortab3">Services</label>
-		<div id="tab-content3">
-			<div v-if="hasDomain">
-			<div id="apply" class="text-md font-bold m-3">Host NBlink Domains <a href="https://"
-					class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600">Help</a></div>
-			<span id="name" class="m-3">Domain Name:</span><input id="elDomain"
-				class="focused:border-green py-2 border-2" />
-			<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mx-2 rounded"
-				onclick="applyDomain()">Apply
-			</button>
-			<div class="m-3 text-sm">Hosting price per NBlink domain: {{priceDomainHost}} Sat</div>
-			<div id="pay" style="width:250px;height:250px"></div>
-			<div id="status" style="color:red"></div>
-		</div>
-		<div v-else>Please assign a domain to this node and update config.js->node_info->domain</div>
+			<input type="radio" id="radiofortab2" name="radiogroupfortabs" class="hidden absolute order-2" />
+			<label id="tab-label2" for="radiofortab2">Info</label>
+			<div id="tab-content2">
+				<div id="infoPanel" align="center" class="flex flex-row">
+					<div class="flex-col flex m-2 font-bold">
+						<div>Version:</div>
+						<div>Domain:</div>
+						<div>Contact:</div>
+						<div>Endpoints:</div>
+
+					</div>
+					<div class="flex-col flex m-2">
+						<div>{{nodeInfo.version}}</div>
+						<div>{{nodeInfo.domain}}</div>
+						<div>{{nodeInfo.contact}}</div>
+						<div>{{nodeInfo.endpoints.join(' ')}}</div>
+					</div>
+
+				</div>
+			</div>
+
+			<input type="radio" id="radiofortab3" name="radiogroupfortabs" class="hidden absolute order-3" />
+			<label id="tab-label3" for="radiofortab3">Services</label>
+			<div id="tab-content3">
+				<div v-if="hasDomain">
+					<div id="apply" class="text-md font-bold m-3">Host NBlink Domains <a href="https://"
+							class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600">Help</a></div>
+					<span id="name" class="m-3">Domain Name:</span><input id="elDomain"
+						class="focused:border-green py-2 border-2" />
+					<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mx-2 rounded"
+						onclick="applyDomain()">Apply
+					</button>
+					<div class="m-3 text-sm">Hosting price per NBlink domain: {{priceDomainHost}} Sat</div>
+					<div id="pay" style="width:250px;height:250px"></div>
+					<div id="status" style="color:red"></div>
+				</div>
+				<div v-else>Please assign a domain to this node and update config.js->server->domain</div>
+			</div>
 		</div>
 	</div>
-</div>
 	<script>
 		const app = Vue.createApp({
-		data() {
-			return { 
-				hasDomain: false,
-				nodeInfo:{endpoints:[]},
-				welcome:"",
-				domain:"NULL",
-				contact:"NULL",
-				endpoints:"NULL",
-				payment:null,
-			}
-		},
-		computed:{
-			priceDomainHost(){
-				return this.nodeInfo.prices?this.nodeInfo.prices.domainHost:0
+			data() {
+				return {
+					hasDomain: false,
+					nodeInfo: { endpoints: [] },
+					welcome: "",
+					domain: "NULL",
+					contact: "NULL",
+					endpoints: "NULL",
+					payment: null,
+				}
 			},
-		}
+			computed: {
+				priceDomainHost() {
+					return this.nodeInfo.prices ? this.nodeInfo.prices.domainHost : 0
+				},
+			}
 		})
 
 		const vm = app.mount('#app');
@@ -205,18 +205,18 @@
 		})
 
 		opay.init({ containerID: "pay" });
-		function callApplyDomain(domain){
+		function callApplyDomain(domain) {
 			const applyURL = "/nblink/add/?domain=" + domain;
-				fetch(applyURL).then(res => res.json()).then(json => {
-					if (json.code != 0) {
-						alert(json.message)
-					}
-				});
+			fetch(applyURL).then(res => res.json()).then(json => {
+				if (json.code != 0) {
+					alert(json.message)
+				}
+			});
 		}
 		function applyDomain() {
 			const domain = document.querySelector("#elDomain").value.trim();
 			if (domain == "") return;
-			if(vm.nodeInfo.prices.domainHost==0){
+			if (vm.nodeInfo.prices.domainHost == 0) {
 				callApplyDomain(domain);
 				return;
 			}

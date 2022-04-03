@@ -71,8 +71,8 @@ app.get('/', async function (req, res, next) {
     }
     try {
         const resolver = indexers.resolver(Util.getchain(domain))
-        if(!resolver){
-            throw "unsupported domain:"+domain
+        if (!resolver) {
+            throw "unsupported domain:" + domain
         }
         const ret = await resolver.readDomain(domain, f);
         res.json(ret);
@@ -113,7 +113,7 @@ async function getAllItems(para, forceFull = false, from = null) {
         if (item === '') continue;
         const dd = item.split('/')
         const resolver = indexers.resolver(Util.getchain(dd[0]))
-        if(!resolver) continue;
+        if (!resolver) continue;
         const result = await resolver.readDomain(dd[0], forceFull, dd[1])
         if (from && result.obj.ts <= from) continue
         ret.push(result)
@@ -135,20 +135,11 @@ app.get('/qf/*', async function (req, res) {
 app.get('/t/addtx/:txid', (req, res) => {
     const txid = req.params['txid']
     const chain = req.query['chain']
-    if(!chain)chain='bsv'
+    if (!chain) chain = 'bsv'
     const indexer = indexers.get(chain)
-    if(indexer)indexer.add(txid)
+    if (indexer) indexer.add(txid)
 })
-app.get('/address/:address/balance', async function (req, res) {
-    const address = req.params['address']
-    const url = `https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`;
-    try{
-        const json = (await axios.get(url)).data;
-        res.json(json);
-    }catch(e){
-        res.json({confirmed:0})
-    }
-})
+
 app.get('/util/verify', async function (req, res) {
     try {
         const domain = req.query['domain']
@@ -173,25 +164,30 @@ app.get('/util/verify', async function (req, res) {
         res.json({ code: -1, message: e.message })
     }
 })
-app.post('/postTx',async (req,res)=>{
+app.post('/postTx', async (req, res) => {
     const obj = req.body;
     let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
     ret = await Util.sendRawtx(obj.rawtx, chain);
     res.json(ret)
 })
+
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
     let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
-    console.log("got obj:",obj)
-    let ret = await (Parser.getParser(chain).parseRaw({ rawtx: obj.rawtx, height: -1, verify: true }));
+    console.log("got obj:", obj)
+    let ret = await (Parser.getParser(chain).parseRaw({ rawtx: obj.rawtx, oData: obj.oData, height: -1, verify: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
         return
     }
+
     ret = await Util.sendRawtx(obj.rawtx, chain);
     if (ret.code == 0) {
+        if (ret.obj.oHash) {
+            await indexers.db.saveData(obj.oData, ret.obj.output.domain)
+        }
         indexers.get(chain)._onMempoolTransaction(ret.txid, obj.rawtx)
         /*if(chain=='ar'){
             indexers.ar._onMempoolTransaction(ret.txid,obj.rawtx)
@@ -207,8 +203,8 @@ async function handleNewTx(para, from) {
         db = ar_resolver.db
         indexer = indexers.ar
     }
-    const chain = para.chain?para.chain:'bsv'
-    if (!db.hasTransaction(para.txid,chain)) {
+    const chain = para.chain ? para.chain : 'bsv'
+    if (!db.hasTransaction(para.txid, chain)) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data) {
@@ -264,12 +260,12 @@ app.get('/relay/get/:id', (req, res) => {
 
 app.post('/relay/notify', async (req, res) => {
     const result = req.body;
-    console.log("got notify,result=",result);
+    console.log("got notify,result=", result);
     save_pr(req.body, true);
     if (result.ack_url) res.end("200");
     else res.json({ code: 0, message: "ok" });
 })
-app.get('/nodes',(_,res)=>{
+app.get('/nodes', (_, res) => {
     res.json(Nodes.getNodes())
 })
 app.get('/sub/:domain/', async (req, res) => {
@@ -350,21 +346,22 @@ app.get('/queryTX', (req, res) => {
     res.json(resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', async (req, res) => {
-/*    let sql = "select * from ar_tx"
-    const ret = indexers.db.txdb.prepare(sql).all()
-    console.log(ret)
-    console.log("count:",ret.length)
-    res.end("ok")*/
+    /*    let sql = "select * from ar_tx"
+        const ret = indexers.db.txdb.prepare(sql).all()
+        console.log(ret)
+        console.log("count:",ret.length)
+        res.end("ok")*/
+    res.json(indexers.db.getAllPaytx('register'))
 })
-app.get('/find_domain',(req,res)=>{
+app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
     let result = bsv_resolver.db.queryDomains(addr);
     const arr = []
-    result.forEach(item=>{
+    result.forEach(item => {
         const dd = item.domain.split('.')
-        arr.push({nid:dd[0],tld:dd[1],domain:item.domain})
+        arr.push({ nid: dd[0], tld: dd[1], domain: item.domain })
     })
-    
+
     res.json({
         code: 0,
         message: "OK",
@@ -393,18 +390,18 @@ app.get(`/findDomain`, function (req, res) {
 });
 
 //-----------------------Blockchain tools---------------------------------//
-app.get('/tools/:chain/balance/:address',async (req,res)=>{
+app.get('/tools/:chain/balance/:address', async (req, res) => {
     const address = req.params['address']
     const chain = req.params['chain']
     let addr = Util.parseJson(address)
-    if(!addr) addr = address
-    const ret = await Util.getBalance(addr,chain)
+    if (!addr) addr = address
+    const ret = await Util.getBalance(addr, chain)
     res.json(ret)
 })
-app.get('/tools/:chain/status/:txid',async (req,res)=>{
+app.get('/tools/:chain/status/:txid', async (req, res) => {
     const txid = req.params['txid']
     const chain = req.params['chain']
-    const ret = await Util.getTxStatus(txid,chain)
+    const ret = await Util.getTxStatus(txid, chain)
     res.json(ret)
 })
 

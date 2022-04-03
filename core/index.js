@@ -45,33 +45,37 @@ if (myArgs) {
 // ------------------------------------------------------------------------------------------------
 let indexers = null, server = null;
 let apiAR = null, apiBSV = null;
-class Indexers{
-  static init(){
-    this.db =  new Database(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, logger)
+class Indexers {
+  static init() {
+    this.db = new Database(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, logger)
+    this.db.open()
+    //this.db.saveData("Hello World", "nbdomain.a")
+    //this.db.saveData(Buffer.from([0, 1, 0, 0, 2, 0]), "nbdomain.a")
+    //console.log(this.db.readData("0cc84ab57c476d2385b899ca742a2790", { string: false }))
     switch (API.bsv) {
-      case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, this.db,logger); break
+      case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, this.db, logger); break
       //default: throw new Error(`Unknown API: ${API}`)
     }
     switch (API.ar) {
-      case 'arnode': apiAR = new AWNode("", this.db,logger); break
+      case 'arnode': apiAR = new AWNode("", this.db, logger); break
       //default: throw new Error(`Unknown API: ${API}`)
     }
-    
+
     this.bsv = new Indexer(this.db, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.bsv, MEMPOOL_EXPIRATION, REORG)
     this.ar = new Indexer(this.db, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.ar, MEMPOOL_EXPIRATION, REORG)
   }
-  static async start(){
+  static async start() {
     await this.ar.start()
     await this.bsv.start()
   }
-  static async stop(){
+  static async stop() {
     await this.ar.stop();
     await this.bsv.stop();
   }
-  static resolver(chain){
+  static resolver(chain) {
     return this.get(chain)?.resolver
   }
-  static get(chain){
+  static get(chain) {
     switch (chain) {
       case 'bsv':
         return this.bsv
@@ -92,8 +96,8 @@ async function main() {
   server.start()
 
   await Indexers.start()
-  
-  
+
+
 }
 
 // ------------------------------------------------------------------------------------------------
