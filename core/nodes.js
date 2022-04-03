@@ -111,6 +111,16 @@ class Nodes {
         }
         return null
     }
+    async getOData(hash, option = { string: true }) {
+        for (const node of this.getNodes()) {
+            const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
+            const res = await axios.get(url)
+            if (res.data && res.data.code == 0) {
+                return res.data
+            }
+        }
+        return null
+    }
     static inst() {
         if (node == null) {
             node = new Nodes

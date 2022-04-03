@@ -309,6 +309,9 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
             }
         }
     }
+    if (cmd === 'getdata') {
+        ret = await indexers.db.readData(req.query['hash'], { string: req.query['string'] })
+    }
     res.json(ret)
 })
 app.get('/queryKeys', function (req, res) {

@@ -3,6 +3,7 @@ const { DEF } = require("./def");
 const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
 const ARAPI = require('./arapi')
+const Nodes = require('./nodes')
 
 class ARChain {
     static async verify(rawtx, height, time, db) {
@@ -42,9 +43,17 @@ class ARChain {
                 rtx.command = cmd[0]
             }
             if (attrib.v === 3) {
-                if (!oData) { //TODO: got oData from hash
-                    const d = db.readData(attrib.hash)
+                if (!oData) {
+                    let d = db.readData(attrib.hash)
                     if (d) oData = d.raw
+                    else { //read from other peer
+                        d = await Nodes.getOData(attrib.hash, { string: true })
+                        oData = d.raw
+                    }
+                }
+                if (!oData) {
+                    console.error("Cannot get OData hash:", attrib.hash)
+                    return null
                 }
                 cmd = Util.parseJson(oData)
                 rtx.command = cmd[2]
