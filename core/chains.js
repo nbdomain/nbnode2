@@ -5,11 +5,11 @@ const BitID = require('bitidentity');
 const ARAPI = require('./arapi')
 
 class ARChain {
-    static async verify(rawtx, height) {
+    static async verify(rawtx, height, time, db) {
         //const v = await ARAPI.verifyTx(rawtx)
         //if(!v)return { code: 1, msg:"can not verify" }
 
-        const rtx = await ARChain.raw2rtx({ rawtx, height })
+        const rtx = await ARChain.raw2rtx({ rawtx, height, db })
         return { code: rtx ? 0 : 1, txTime: rtx.ts }
     }
     static async raw2rtx({ rawtx, height, oData, db }) {
@@ -43,7 +43,8 @@ class ARChain {
             }
             if (attrib.v === 3) {
                 if (!oData) { //TODO: got oData from hash
-                    oData = db.readData(attrib.hash)
+                    const d = db.readData(attrib.hash)
+                    if (d) oData = d.raw
                 }
                 cmd = Util.parseJson(oData)
                 rtx.command = cmd[2]
@@ -85,7 +86,7 @@ class BSVChain {
         }
         return null
     }
-    static async verify(rawtx, height, block_time) {
+    static async verify(rawtx, height, block_time, db) {
         let txTime = null
         if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
             const publicKey = BSVChain.verifySig(rawtx)
@@ -94,7 +95,7 @@ class BSVChain {
             }
         }
         if (block_time) { //check txtime
-            const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time })
+            const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
             txTime = rtx.ts
             if (rtx.ts && rtx.ts > block_time)
                 return { code: -1, msg: 'txTime invalid' }

@@ -26,8 +26,8 @@ class Parser {
         this.db = db
     }
     async verify(rawtx, height, block_time) {
-        if (this.chain === 'ar') return await ARChain.verify(rawtx, height, block_time);
-        if (this.chain === 'bsv') return await BSVChain.verify(rawtx, height, block_time);
+        if (this.chain === 'ar') return await ARChain.verify(rawtx, height, block_time, this.db);
+        if (this.chain === 'bsv') return await BSVChain.verify(rawtx, height, block_time, this.db);
         throw "Unsupported chain"
     }
     domainParser() {
