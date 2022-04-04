@@ -142,11 +142,8 @@ class AWNode {
 
     let bigHeight = height;
     for (let item of txs.edges) {
-      const rawtx = this.db.getRawTransaction(item.node.id, 'ar')
-      if (rawtx) {
-        const tx = JSON.parse(rawtx)
-        if (tx.data || tx.tags.cmd) continue
-      }
+      if (this.db.hasTransaction(item.node.id, 'ar')) continue
+
       let height = item.node.block && item.node.block.height
       let time = item.node.block && item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
