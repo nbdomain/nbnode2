@@ -11,7 +11,7 @@ class ARChain {
         //if(!v)return { code: 1, msg:"can not verify" }
 
         const rtx = await ARChain.raw2rtx({ rawtx, height, db })
-        return { code: rtx ? 0 : 1, txTime: rtx.ts }
+        return { code: rtx ? 0 : 1, txTime: rtx && rtx.ts }
     }
     static async raw2rtx({ rawtx, height, oData, db }) {
         try {
