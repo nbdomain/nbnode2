@@ -175,6 +175,7 @@ class Indexer {
 
 
   _onCrawlError(e) {
+    console.error(e)
     this.logger.error(`Crawl error: ${e.toString()}`)
   }
 
