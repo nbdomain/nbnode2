@@ -205,7 +205,7 @@ async function handleNewTx(para, from) {
         if (res.data) {
             if (res.data.oData) {
                 const obj = await (Parser.getParser(chain).parseRaw({ rawtx: res.data.rawtx, height: -1, verify: true }));
-                await indexer.db.saveData(res.data.oData, obj.obj.output.domain)
+                await indexers.db.saveData(res.data.oData, obj.obj.output.domain)
             }
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
         }
