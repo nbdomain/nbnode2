@@ -192,9 +192,9 @@ class Database {
          sql = "DROP table data"
          console.log("dropping data table from txdb")
          this.txdb.prepare(sql).run()
-    } catch (e) { }*/
+    } catch (e) { }
       sql = "ALTER TABLE data ADD attributes TEXT";
-      this.dtdb.prepare(sql).run()
+      this.dtdb.prepare(sql).run()*/
     } catch (e) {
       console.log(e)
     }
