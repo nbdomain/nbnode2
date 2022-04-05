@@ -609,16 +609,18 @@ class Database {
     fs.writeFileSync(Path.join(path, sub, hash), buf)
   }
   async saveData({ data, owner, time }) {
+    let hash = null
     try {
       let buf = data
       if (!Buffer.isBuffer(data)) {
         buf = Buffer.from(data, 'utf8')
       }
-      const hash = await blake3(buf, 128)
+      hash = await blake3(buf, 128)
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
       this.dtdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {
       console.error(e)
+      console.log("hash:", hash)
     }
   }
   readDataFromDisk(hash, option) {

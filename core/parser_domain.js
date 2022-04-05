@@ -229,10 +229,6 @@ class CMD_TRANSER {
             return output
         }
 
-        let adminAddr = Util.getTLDFromRegisterProtocol(output.protocol)[1];
-        if (output.payment_addr != adminAddr) {
-            output.err = "Payment failed, admin address is incorrect."
-        }
         return output
     }
     static async fillObj(nidObj, rtx) {
