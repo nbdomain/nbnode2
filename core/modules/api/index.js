@@ -177,7 +177,7 @@ app.post('/sendTx', async function (req, res) {
     let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
     console.log("got obj:", obj)
-    let ret = await (Parser.getParser(chain).parseRaw({ rawtx: obj.rawtx, oData: obj.oData, height: -1, verify: true }));
+    let ret = await (Parser.get(chain).parseRaw({ rawtx: obj.rawtx, oData: obj.oData, height: -1, verify: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         res.json({ code: -1, message: ret.msg })
         return
@@ -186,7 +186,7 @@ app.post('/sendTx', async function (req, res) {
     const ret1 = await Util.sendRawtx(obj.rawtx, chain);
     if (ret1.code == 0) {
         if (ret.obj && ret.obj.oHash) {
-            await indexers.db.saveData(obj.oData, ret.obj.output.domain)
+            await indexers.db.saveData({ data: obj.oData, owner: ret.obj.output.domain, time: ret.obj.ts })
         }
         indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
         Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
@@ -203,9 +203,11 @@ async function handleNewTx(para, from) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data) {
-            if (res.data.oData) {
-                const obj = await (Parser.getParser(chain).parseRaw({ rawtx: res.data.rawtx, height: -1, verify: true }));
-                await indexers.db.saveData(res.data.oData, obj.obj.output.domain)
+            if (res.data.oDataRecord) {
+                const item = res.data.oDataRecord
+                const ret = await (Parser.get(chain).parseRaw({ rawtx: res.data.rawtx, height: -1 }));
+                if (ret.code == 0 && ret.obj.oHash === item.hash)
+                    await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
             }
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
         }
@@ -303,10 +305,9 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
         } else {
-            const rr = await (Parser.getParser(chain).parseRaw({ rawtx: ret.rawtx, height: -1, verify: true }));
-            if (rr.obj.oHash) {
-                ret.oData = indexers.db.readData(rr.obj.oHash).raw
-
+            const rr = await (Parser.get(chain).parseRaw({ rawtx: ret.rawtx, height: -1 }));
+            if (rr.code == 0 && rr.obj.oHash) {
+                ret.oDataRecord = indexers.db.readData(rr.obj.oHash)
             }
 
         }
@@ -349,12 +350,12 @@ app.get(`/tld`, function (req, res) {
     }
     res.json(CONFIG.tld_config);
 });
-app.get('/queryTX', (req, res) => {
+app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']
     const chain = req.query['chain']
     const resolver = indexers.get(chain).resolver
-    res.json(resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
+    res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', async (req, res) => {
     /*    let sql = "select * from ar_tx"

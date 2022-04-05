@@ -147,7 +147,7 @@ class Resolver {
             let ret = await DomainTool.fetchDomainAvailibility(fullDomain);
             ret.domain = fullDomain;
 
-            return ret.code==0?{...ret,code:100}:ret;
+            return ret.code == 0 ? { ...ret, code: 100 } : ret;
         }
         const ret = this.readSubdomain(fullDomain, history);
         if (ret) return ret;
@@ -157,12 +157,12 @@ class Resolver {
     getDomainHistoryLen(domain) {
         return this.db.readKeyHistoryLen(domain)
     }
-    readNBTX(fromTime, toTime) {
-        return this.db.queryTX(fromTime, toTime,this.chain)
+    async readNBTX(fromTime, toTime) {
+        return await this.db.queryTX(fromTime, toTime, this.chain)
     }
     async resolveNextBatch() {
         if (!this.started) return
-        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT,this.chain)
+        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 
         try {
             if (rtxArray == null || rtxArray.length == 0) {
@@ -177,7 +177,7 @@ class Resolver {
                 // Add transaction to Nid one by one in their creation order
                 try {
                     for (const rtx of rtxArray) {
-                        this.db.setTransactionResolved(rtx.txid,this.chain)
+                        this.db.setTransactionResolved(rtx.txid, this.chain)
                         if (!rtx.output || !rtx.output.domain) continue
                         if (rtx.command == CMD.REGISTER && rtx.output.err) continue
                         let domain = rtx.output.domain
@@ -190,7 +190,7 @@ class Resolver {
                             }
                         }
                         //const obj = DomainTool.fillNIDFromTX(g_nidObjMap[domain], rtx)
-                        const obj = await (Parser.getParser(this.chain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
+                        const obj = await (Parser.get(this.chain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
                         if (obj) {
                             g_nidObjMap[domain] = obj
                             g_nidObjMap[domain].dirty = true

@@ -48,7 +48,7 @@ class Indexer {
 
     this.crawler = new Crawler(api)
     this.resolver = new Resolver(this.chain, this.database)
-    Parser.getParser(this.chain).init(this.database)
+    Parser.get(this.chain).init(this.database)
 
     //this.database.onAddTransaction = this._onAddTransaction.bind(this)
     //this.database.onDeleteTransaction = this._onDeleteTransaction.bind(this)
@@ -79,6 +79,10 @@ class Indexer {
       //console.log(res)
       for (const tx of res.data) {
         this.add(tx.txid, tx.rawtx, tx.height, tx.time)
+        if (tx.oDataRecord) {
+          const item = tx.oDataRecord
+          this.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
+        }
         console.log("syncFromNode: Adding ", tx.txid)
       }
     } catch (e) {
@@ -248,7 +252,7 @@ class Indexer {
     const block_time = this.database.getTransactionTime(txid, this.chain);
     let meta = null
     try {
-      meta = await Parser.getParser(this.chain).verify(rawtx, height, block_time);
+      meta = await Parser.get(this.chain).verify(rawtx, height, block_time);
       if (meta.code != 0) {
         this.logger.warn(txid, ":" + meta.msg);
         this.database.deleteTransaction(txid, this.chain);

@@ -49,7 +49,7 @@ class ARChain {
                         const d = await Nodes.getOData(attrib.hash, { string: true })
                         oData = d.raw
                         if (oData) {
-                            db.saveData(oData, d.owner)
+                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts })
                         }
                     }
                 }
@@ -157,7 +157,7 @@ class BSVChain {
                         const d = await Nodes.getOData(attrib.hash, { string: true })
                         oData = d.raw
                         if (oData) {
-                            db.saveData(oData, d.owner)
+                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts })
                         }
                     }
                 }

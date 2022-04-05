@@ -4,7 +4,7 @@ const { ARChain, BSVChain } = require('./chains.js')
 
 const parsers = {}
 class Parser {
-    static getParser(chain) {
+    static get(chain) {
         if (chain == 'bsv') {
             if (!parsers.bsv) parsers.bsv = new Parser('bsv')
             return parsers.bsv

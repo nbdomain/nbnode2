@@ -367,7 +367,7 @@ class Database {
           break;
         }
         const rawtx = (chain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
-        const res = await (Parser.getParser(chain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
+        const res = await (Parser.get(chain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
         if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
         else {
           list[i].output = { err: res.msg }
@@ -553,17 +553,23 @@ class Database {
       this.logger.error(e)
     }
   }
-  queryTX(fromTime, toTime, chain) {
+  async queryTX(fromTime, toTime, chain) {
     if (toTime == -1) toTime = 9999999999
     let sql = `SELECT * from ${chain}_tx where txTime > ? AND txTime < ?`
     //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime)
     //console.log(ret)
-    ret.forEach(item => {
+    for (const item of ret) {
       const rawtx = chain == 'bsv' ? Buffer.from(item.bytes).toString('hex') : Buffer.from(item.bytes).toString()
       item.rawtx = rawtx
+      if (rawtx) {
+        const ret = await Parser.get(chain).parseRaw({ rawtx, height: item.height, time: item.time })
+        if (ret.obj.oHash) {
+          item.oDataRecord = this.readData(ret.obj.oHash)
+        }
+      }
       delete item.bytes
-    })
+    }
     return ret
   }
   //--------------------------------data service---------------------------
@@ -579,7 +585,7 @@ class Database {
     }
     fs.writeFileSync(Path.join(path, sub, hash), buf)
   }
-  async saveData(data, owner) {
+  async saveData({ data, owner, time }) {
     try {
       let buf = data
       if (!Buffer.isBuffer(data)) {
@@ -587,7 +593,7 @@ class Database {
       }
       const hash = await blake3(buf, 128)
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
-      this.txdb.prepare(sql).run(hash, buf.length, Math.floor(Date.now() / 1000), owner, buf)
+      this.txdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {
       console.error(e)
     }
