@@ -92,6 +92,7 @@ class Indexer {
   async start() {
 
     let height = this.database.getHeight(this.chain) || this.startHeight
+    console.log("startHeight:", this.startHeight, " height:", height)
     let hash = this.database.getHash(this.chain)
     if (this.reorg) {
       height -= this.reorg
