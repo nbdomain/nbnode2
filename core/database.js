@@ -182,18 +182,19 @@ class Database {
       this.txdb.prepare(sql).run("ar_tip", null);
 
       //migrate txdb data table
-      sql = "SELECT * from data"
-      const data = this.txdb.prepare(sql).all()
-      sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
-      try {
-        for (const item of data) {
-          this.dtdb.prepare(sql).run(item.hash, item.size, item.time, item.owner, item.raw)
-        }
-        sql = "DROP table data"
-        console.log("dropping data table from txdb")
-        this.txdb.prepare(sql).run()
-      } catch (e) { }
-
+      /* sql = "SELECT * from data"
+       const data = this.txdb.prepare(sql).all()
+       sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
+       try {
+         for (const item of data) {
+           this.dtdb.prepare(sql).run(item.hash, item.size, item.time, item.owner, item.raw)
+         }
+         sql = "DROP table data"
+         console.log("dropping data table from txdb")
+         this.txdb.prepare(sql).run()
+    } catch (e) { }*/
+      sql = "ALTER TABLE data ADD attributes TEXT";
+      this.dtdb.prepare(sql).run()
     } catch (e) {
       console.log(e)
     }
