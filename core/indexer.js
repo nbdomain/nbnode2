@@ -185,7 +185,7 @@ class Indexer {
   }
 
   _onCrawlBlockTransactions(height, hash, time, txids, txhexs) {
-    this.logger.info(`Crawled block ${height} for ${txids.length} transactions`)
+    this.logger.info(`${this.chain}: Crawled block ${height} for ${txids.length} transactions`)
     this._addTransactions(txids, txhexs, height, time)
     this.database.setHeightAndHash(height, hash, this.chain)
     if (this.onBlock) this.onBlock(height)
