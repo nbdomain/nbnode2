@@ -30,6 +30,7 @@ const VER_TXDB = 4
 class Database {
   constructor(txpath, dmpath, logger) {
     //this.chain = chain
+    this.dtpath = __dirname + "/db/odata.db"
     this.path = txpath
     this.dmpath = dmpath
     this.logger = logger
@@ -64,6 +65,9 @@ class Database {
       }
       if (!fs.existsSync(this.dmpath)) {
         fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
+      }
+      if (!fs.existsSync(this.dtpath)) {
+        fs.copyFileSync(__dirname + "/db/template/odata.db.tpl.db", this.dtpath);
       }
       const states = fs.statSync(this.dmpath)
       TXRESOLVED_FLAG = states.birthtimeMs
@@ -151,6 +155,18 @@ class Database {
     if (noTxdb) {
       this.saveLastResolvedId(0)
     }
+
+    //----------------------------DATA DB----------------------------------
+    this.dtdb = new Sqlite3Database(this.dtpath)
+    // 100MB cache
+    this.dtdb.pragma('cache_size = 6400')
+    this.dtdb.pragma('page_size = 16384')
+    // WAL mode allows simultaneous readers
+    this.dtdb.pragma('journal_mode = WAL')
+    // Synchronizes WAL at checkpoints
+    this.dtdb.pragma('synchronous = NORMAL')
+
+
     this.preDealData()
   }
   preDealData() {
@@ -165,15 +181,19 @@ class Database {
       this.txdb.prepare(sql).run("bsv_tip", null);
       this.txdb.prepare(sql).run("ar_tip", null);
 
-      sql = `CREATE TABLE IF NOT EXISTS data(id    INTEGER PRIMARY KEY AUTOINCREMENT
-        DEFAULT (1) 
-        NOT NULL,
-        hash  TEXT    NOT NULL,
-        size  INTEGER,
-        owner TEXT    NOT NULL,
-        time  INTEGER,
-        raw BLOB )`
-      this.txdb.prepare(sql).run();
+      //migrate txdb data table
+      sql = "SELECT * from data"
+      const data = this.txdb.prepare(sql).all()
+      sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
+      try {
+        for (const item of data) {
+          this.dtdb.prepare(sql).run(item.hash, item.size, item.time, item.owner, item.raw)
+        }
+        sql = "DROP table data"
+        console.log("dropping data table from txdb")
+        this.txdb.prepare(sql).run()
+      } catch (e) { }
+
     } catch (e) {
       console.log(e)
     }
@@ -184,6 +204,8 @@ class Database {
       this.txdb = null
       this.dmdb.close()
       this.dmdb = null
+      this.dtdb.close()
+      this.dtdb = null
     }
   }
 
@@ -593,7 +615,7 @@ class Database {
       }
       const hash = await blake3(buf, 128)
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
-      this.txdb.prepare(sql).run(hash, buf.length, time, owner, buf)
+      this.dtdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {
       console.error(e)
     }
@@ -615,7 +637,7 @@ class Database {
   }
   readData(hash, option = { string: true }) {
     let sql = 'SELECT * from data where hash = ?'
-    const ret = this.txdb.prepare(sql).get(hash)
+    const ret = this.dtdb.prepare(sql).get(hash)
     if (!ret) return {}
     if (ret.raw) {
       if (option.string) ret.raw = ret.raw.toString()

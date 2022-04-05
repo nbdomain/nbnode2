@@ -47,9 +47,9 @@ class ARChain {
                     oData = db.readData(attrib.hash).raw
                     if (!oData) { //read from other peer
                         const d = await Nodes.getOData(attrib.hash, { string: true })
-                        oData = d.raw
-                        if (oData) {
-                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts })
+                        if (d.raw) {
+                            oData = d.raw
+                            db.saveData({ data: d.raw, owner: d.owner, time: d.time })
                         }
                     }
                 }

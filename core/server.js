@@ -104,14 +104,14 @@ class Server {
     });
     app.use('/files/', express.static(__dirname + '/public'))
 
-    app.get('/nblink/add/', this.addNBlink.bind(this))
+    //app.get('/nblink/add/', this.addNBlink.bind(this))
     app.get('/nodeInfo', this.getNodeInfo.bind(this))
-    app.get('/*', this.getAll.bind(this))
+    //app.get('/*', this.getAll.bind(this))
 
-    app.post("/*", async (req, res, next) => {
+    /*app.post("/*", async (req, res, next) => {
       console.log("got post");
       next();
-    });
+    });*/
     setInterval(() => {
       //console.log("clear domainMap cache");
       domainMap = []; //clear domainMap cache
@@ -209,30 +209,30 @@ class Server {
     this.listener = null
   }
 
-  async addNBlink(req, res, next) {
-    try {
-      if (!isAPICall(req.get("host"))) {
-        next();
+  /*  async addNBlink(req, res, next) {
+      try {
+        if (!isAPICall(req.get("host"))) {
+          next();
+          return;
+        }
+        const domain = req.query["domain"];
+        console.log("Adding domain:", domain);
+        const nbLink = await getNBLink(domain);
+        const ret = {
+          code: nbLink ? 0 : 1,
+          message: nbLink ? nbLink : domain + ":No NBlink found in DNS record",
+        };
+        res.json(ret);
+        console.log("nbLink:", nbLink);
+        if (ret.code == 0 && greenlock) { //add ssl
+          const res = await greenlock.sites.add({
+            subject: domain,
+            altnames: [domain],
+          });
+        }
         return;
-      }
-      const domain = req.query["domain"];
-      console.log("Adding domain:", domain);
-      const nbLink = await getNBLink(domain);
-      const ret = {
-        code: nbLink ? 0 : 1,
-        message: nbLink ? nbLink : domain + ":No NBlink found in DNS record",
-      };
-      res.json(ret);
-      console.log("nbLink:", nbLink);
-      if (ret.code == 0 && greenlock) { //add ssl
-        const res = await greenlock.sites.add({
-          subject: domain,
-          altnames: [domain],
-        });
-      }
-      return;
-    } catch (e) { next(e) }
-  }
+      } catch (e) { next(e) }
+    }*/
 
   async getNodeInfo(req, res, next) {
     try {
