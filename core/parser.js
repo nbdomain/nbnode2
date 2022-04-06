@@ -61,6 +61,7 @@ class Parser {
                     return { code: 1, msg: "invalid timestamp" }
                 }
             }
+            console.log(rtx)
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
             if (handler) rtx.output = await handler.parseTX(rtx, verify)
