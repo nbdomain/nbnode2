@@ -145,7 +145,6 @@ class Database {
       this.txdb.pragma('synchronous = NORMAL')
     }
 
-    //this.getHeightStmt = this.txdb.prepare(`SELECT height FROM ${this.chain}_config WHERE role = \'tip\'`)
     //this.getHashStmt = this.txdb.prepare(`SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`)
     //this.setHeightAndHashStmt = this.txdb.prepare(`UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
 
