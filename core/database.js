@@ -145,6 +145,7 @@ class Database {
       this.txdb.pragma('synchronous = NORMAL')
     }
 
+    //this.getHashStmt = this.txdb.prepare(`SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`)
     //this.setHeightAndHashStmt = this.txdb.prepare(`UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
 
     this.getPayTxStmt = this.txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
