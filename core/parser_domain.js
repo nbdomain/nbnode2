@@ -295,7 +295,7 @@ class CMD_KEYUSER {
             output.err = e.message
         }
         if (typeof output.value != "object") {
-            output.err = "Invalid key transaction record. Record must be object!"
+            output.err = "Invalid value of key:" + output.value
         }
         return output;
     }
