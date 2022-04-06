@@ -57,6 +57,11 @@ class ARChain {
                     console.error("Cannot get OData hash:", attrib.hash)
                     return null
                 }
+                const hash = await Util.dataHash(oData)
+                if (hash !== attrib.hash) {
+                    console.error("hash mismatch:", attrib.hash)
+                    return null
+                }
                 cmd = Util.parseJson(oData)
                 rtx.command = cmd[2]
                 rtx.oHash = attrib.hash
@@ -163,6 +168,11 @@ class BSVChain {
                 }
                 if (!oData) {
                     console.error("Cannot get OData hash:", attrib.hash)
+                    return null
+                }
+                const hash = await Util.dataHash(oData)
+                if (hash !== attrib.hash) {
+                    console.error("hash mismatch:", attrib.hash)
                     return null
                 }
                 let cmd = Util.parseJson(oData)

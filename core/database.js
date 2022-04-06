@@ -9,7 +9,7 @@ const Parser = require('./parser')
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
 const { CONFIG } = require('./config')
-const { blake3 } = require('hash-wasm')
+
 var Path = require('path');
 
 // ------------------------------------------------------------------------------------------------
@@ -611,11 +611,9 @@ class Database {
   async saveData({ data, owner, time }) {
     let hash = null
     try {
-      let buf = data
-      if (!Buffer.isBuffer(data)) {
-        buf = Buffer.from(data, 'utf8')
-      }
-      hash = await blake3(buf, 128)
+      hash = await Util.dataHash(data)
+      const buf = Util.toBuffer(data)
+      console.log("saving odata.......hash:", hash)
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
       this.dtdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {

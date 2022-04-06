@@ -177,19 +177,29 @@ app.post('/sendTx', async function (req, res) {
     let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
     console.log("got obj:", obj)
+    if (!obj.oData) {
+        console.error("old sendtx format")
+        //res.json({ code: -1, message: "invalid sendtx format" })
+        //return
+    }
     let ret = await (Parser.get(chain).parseRaw({ rawtx: obj.rawtx, oData: obj.oData, height: -1, verify: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
+        console.error("parseRaw error err:", ret)
         res.json({ code: -1, message: ret.msg })
         return
     }
 
     const ret1 = await Util.sendRawtx(obj.rawtx, chain);
     if (ret1.code == 0) {
+        console.log("send tx successfully. txid:", ret1.txid)
         if (ret.obj && ret.obj.oHash) {
+            console.log("saving oData... owner:", ret.obj.output.domain)
             await indexers.db.saveData({ data: obj.oData, owner: ret.obj.output.domain, time: ret.obj.ts })
         }
         indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
         Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
+    } else {
+        console.log("send tx failed")
     }
     res.json(ret1);
 });

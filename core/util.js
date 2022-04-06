@@ -9,8 +9,9 @@ const cp = require('child_process');
 const nbpay = require('nbpay')
 const arweave = require('arweave')
 const CoinFly = require('coinfly');
+const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
-const  LocalStorage = require('node-localstorage').LocalStorage;
+const LocalStorage = require('node-localstorage').LocalStorage;
 Storage = new LocalStorage('./storage');
 nbpay.auto_config();
 let arLib = null, bsvLib = null;
@@ -100,7 +101,22 @@ class CMD_BASE {
 };
 
 class Util {
-
+    static toBuffer(data) {
+        let buf = null
+        if (Buffer.isBuffer(data)) {
+            buf = data
+        } else if (typeof data === 'string') {
+            buf = Buffer.from(data, 'utf8')
+        } else {
+            buf = Buffer.from(data)
+        }
+        return buf
+    }
+    static async dataHash(data) {
+        const buf = Util.toBuffer(data)
+        const hash = await blake3(buf, 128)
+        return hash
+    }
     static parseJson(str) {
         try {
             return JSON.parse(str)
@@ -126,19 +142,19 @@ class Util {
     }
     static async getBalance(address, chain) {
         const lib = await CoinFly.create(chain)
-        if(chain=='bsv')
+        if (chain == 'bsv')
             return await lib.getBalance(address)
-        if(chain=='ar'){
-            try{
+        if (chain == 'ar') {
+            try {
                 return await lib.getBalance(address)
-            }catch(e){
+            } catch (e) {
                 const newAPI = arNodes.get()
-                console.log("change ar api to:",newAPI)
+                console.log("change ar api to:", newAPI)
                 lib.changeNode(newAPI)
                 return await lib.getBalance(address)
             }
         }
-        return "wrong chain:"+chain
+        return "wrong chain:" + chain
     }
     static async getTxStatus(txid, chain) {
         const lib = chain == "bsv" ? bsvLib : arLib
