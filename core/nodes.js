@@ -121,6 +121,32 @@ class Nodes {
         }
         return {}
     }
+    async SyncFromNodes(indexer, chain) {
+        for (const node of this.getNodes()) {
+            const apiURL = node.id
+            const latestTime = indexer.database.getLatestTxTime(chain)
+            const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
+            try {
+                const res = await axios.get(url)
+                for (const tx of res.data) {
+                    //this.add(tx.txid, tx.rawtx, tx.height, tx.time)
+                    let oData = null
+                    if (tx.oDataRecord) oData = tx.oDataRecord.raw
+                    const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
+                    if (ret && ret.code == 0) {
+                        if (tx.oDataRecord) {
+                            const item = tx.oDataRecord
+                            indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
+                        }
+                        indexer.add(tx.txid, tx.rawtx, tx.height, tx.time)
+                    }
+                    console.log("syncFromNode: Adding ", tx.txid)
+                }
+            } catch (e) {
+                console.error("syncFromNode " + apiURL + ": " + e.message)
+            }
+        }
+    }
     static inst() {
         if (node == null) {
             node = new Nodes

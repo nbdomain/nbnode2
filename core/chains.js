@@ -13,6 +13,20 @@ class ARChain {
         const rtx = await ARChain.raw2rtx({ rawtx, height, db })
         return { code: rtx ? 0 : 1, txTime: rtx && rtx.ts }
     }
+    static getAttrib({ rawtx }) {
+        try {
+            const tx = JSON.parse(rawtx);
+            let tags = tx.tags
+            if (!tx.tags.nbprotocol)
+                tags = ArUtil.decodeTags(tx.tags)
+            const nbdata = JSON.parse(tags.nbdata)
+            const attrib = JSON.parse(nbdata[1])
+            return attrib
+        } catch (e) {
+            console.error(e)
+            return {}
+        }
+    }
     static async raw2rtx({ rawtx, height, oData, db }) {
         try {
             const tx = JSON.parse(rawtx);
@@ -63,7 +77,7 @@ class ARChain {
                     return null
                 }
                 cmd = Util.parseJson(oData)
-                console.log("oData:", oData, "  cmd:", cmd)
+                //console.log("oData:", oData, "  cmd:", cmd)
                 rtx.command = cmd[2]
                 rtx.oHash = attrib.hash
             }
@@ -113,7 +127,7 @@ class BSVChain {
         }
         if (block_time) { //check txtime
             const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
-            txTime = rtx.ts
+            txTime = rtx?.ts
             if (rtx.ts && rtx.ts > block_time)
                 return { code: -1, msg: 'txTime invalid' }
         }
@@ -136,6 +150,11 @@ class BSVChain {
                     : "";
             }
         }
+    }
+    static getAttrib({ rawtx }) {
+        const tx = TXO.fromRaw(rawtx);
+        const attrib = Util.parseJson(tx.out[0].s3)
+        return attrib
     }
     static async raw2rtx({ rawtx, oData, height, time, db }) {
         const tx = TXO.fromRaw(rawtx);

@@ -45,6 +45,9 @@ class Parser {
          }*/
         return this.parser_nft
     }
+    getAttrib({ rawtx }) {
+        return this.chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
+    }
     async parseRaw({ rawtx, oData, height, time, verify = false }) {
 
         let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
@@ -61,7 +64,7 @@ class Parser {
                     return { code: 1, msg: "invalid timestamp" }
                 }
             }
-            console.log(rtx)
+            //console.log(rtx)
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
             if (handler) rtx.output = await handler.parseTX(rtx, verify)

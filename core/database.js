@@ -585,9 +585,10 @@ class Database {
       const rawtx = chain == 'bsv' ? Buffer.from(item.bytes).toString('hex') : Buffer.from(item.bytes).toString()
       item.rawtx = rawtx
       if (rawtx) {
-        const ret = await Parser.get(chain).parseRaw({ rawtx, height: item.height, time: item.time })
-        if (ret.obj.oHash) {
-          item.oDataRecord = this.readData(ret.obj.oHash)
+        //const ret = await Parser.get(chain).parseRaw({ rawtx, height: item.height, time: item.time })
+        const atttrib = await (Parser.get(chain).getAttrib({ rawtx }));
+        if (atttrib.hash) {
+          item.oDataRecord = this.readData(atttrib.hash)
         }
       }
       delete item.bytes

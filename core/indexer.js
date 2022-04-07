@@ -98,7 +98,7 @@ class Indexer {
       height -= this.reorg
       hash = null
     }
-    await this.syncFromNode()
+    await Nodes.SyncFromNodes(this, this.chain)
 
     if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))

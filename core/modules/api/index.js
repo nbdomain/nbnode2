@@ -214,11 +214,12 @@ async function handleNewTx(para, from) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data) {
-            if (res.data.oDataRecord) {
-                const item = res.data.oDataRecord
-                const ret = await (Parser.get(chain).parseRaw({ rawtx: res.data.rawtx, height: -1 }));
-                if (ret.code == 0 && ret.obj.oHash === item.hash)
-                    await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
+            const item = res.data.oDataRecord
+            const ret = await (Parser.get(chain).parseRaw({ rawtx: res.data.rawtx, oData: item?.raw, height: -1 }));
+            if (ret.code == 0 && ret.obj.oHash === item.hash)
+                await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
+            else {
+                console.error("wrong rawtx format. ret:", ret)
             }
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
         }
@@ -316,11 +317,10 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
         } else {
-            const rr = await (Parser.get(chain).parseRaw({ rawtx: ret.rawtx, height: -1 }));
-            if (rr.code == 0 && rr.obj.oHash) {
-                ret.oDataRecord = indexers.db.readData(rr.obj.oHash)
+            const atttrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+            if (atttrib.hash) {
+                ret.oDataRecord = indexers.db.readData(rr.hash)
             }
-
         }
     }
     if (cmd === 'getdata') {
