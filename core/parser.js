@@ -68,6 +68,9 @@ class Parser {
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
             if (handler) rtx.output = await handler.parseTX(rtx, verify)
+            if (!handler) {
+                console.error("no handler for command:", rtx.command)
+            }
             delete rtx.in
             delete rtx.out
             if (!rtx.output) {
