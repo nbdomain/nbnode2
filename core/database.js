@@ -20,7 +20,7 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 4
+const VER_DMDB = 5
 const VER_TXDB = 4
 
 // ------------------------------------------------------------------------------------------------
@@ -52,7 +52,11 @@ class Database {
         fs.writeFileSync(this.path + "." + VER_TXDB, "do not delete this file");
       }
       if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
-        if (fs.existsSync(this.dmpath)) fs.unlinkSync(this.dmpath)
+        if (fs.existsSync(this.dmpath)) {
+          fs.unlinkSync(this.dmpath)
+          fs.unlinkSync(this.dmpath + "-shm")
+          fs.unlinkSync(this.dmpath + "-wal")
+        }
         fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       }
 
@@ -69,7 +73,7 @@ class Database {
       if (!fs.existsSync(this.dtpath)) {
         fs.copyFileSync(__dirname + "/db/template/odata.db.tpl.db", this.dtpath);
       }
-      const states = fs.statSync(this.dmpath)
+      const states = fs.statSync(this.dmpath + "." + VER_DMDB)
       TXRESOLVED_FLAG = states.birthtimeMs
     }
 
@@ -388,8 +392,14 @@ class Database {
           list.splice(i)
           break;
         }
+        if (list[i].txid == "1bb7a9d790908828cf25a9d5380801e6abe3481a1d5be51c6bbcc8d6eb8b5fb2") {
+          console.log("found")
+        }
         const rawtx = (chain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
         const res = await (Parser.get(chain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
+        if (res.obj && res.obj.output.domain == "10200.test") {
+          console.log("found")
+        }
         if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
         else {
           list[i].output = { err: res.msg }
@@ -518,7 +528,7 @@ class Database {
       const keyName = item + "." + nidObj.domain;
       const tags = nidObj.keys[item].tags;
       if (tags) {
-        console.log("tags")
+        console.log("tags:", tags)
       }
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
       if (this.tickers[keyName]) //notify subscribers

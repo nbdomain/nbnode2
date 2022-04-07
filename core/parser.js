@@ -85,6 +85,9 @@ class Parser {
     }
     async fillObj(nidObj, rtx, objMap) {
         let retObj = null
+        if (nidObj == null) {
+            console.log("found")
+        }
         nidObj.lastUpdateheight = rtx.height;
         nidObj.last_txid = rtx.txid
         if (rtx.txid == "5c23c8f8ed684ecb23b5a83b10507a4ef38de2fc3816acd0fdbbd312143dacda") {

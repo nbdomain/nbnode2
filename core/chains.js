@@ -170,7 +170,7 @@ class BSVChain {
             ts: 0,
         };
         const attrib = Util.parseJson(tx.out[0].s3)
-        if (attrib) {
+        if (attrib && typeof attrib == "object") {
             rtx.ts = +attrib.ts
             if (attrib.v === 2) {
                 rtx.command = tx.out[0].s6

@@ -184,7 +184,7 @@ class CMD_SELL {
     }
     static async fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null) return null
-        if (nidObj.owner_key == rtx.publicKey && nidObj.status != DEF.STATUS_PUBLIC) { //cannot sell public domain
+        if (nidObj.owner_key == rtx.publicKey) { //cannot sell public domain
             nidObj.status = DEF.STATUS_TRANSFERING
             //nidObj = DomainTool.updateNidObjFromRX(nidObj, rtx);
             nidObj.sell_info = {
@@ -234,7 +234,7 @@ class CMD_TRANSER {
     static async fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null) return null
         try {
-            if (nidObj.owner_key == rtx.publicKey && nidObj.status != DEF.STATUS_PUBLIC) { //can not transfer public domain
+            if (nidObj.owner_key == rtx.publicKey) {
                 //nidObj = DomainTool.updateNidObjFromRX(nidObj, rtx)
                 nidObj.owner_key = rtx.output.owner_key;
                 nidObj.owner = await Util.addressFromPublickey(rtx.output.owner_key)//Util.getAddressFromPublicKey(rtx.output.owner_key).toString();
@@ -351,14 +351,14 @@ class CMD_KEYUSER {
                     }
                     obj.dirty = true
                 }
-            } else {
-                for (const key in rtx.output.value) {
-                    let newKey = key.toLowerCase()
-                    let newValue = rtx.output.value[key]
-                    CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
-                    //CMD_KEYUSER.updateKeyAndHistory(nidObj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay)
-                }
             }
+            for (const key in rtx.output.value) {
+                let newKey = key.toLowerCase()
+                let newValue = rtx.output.value[key]
+                CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
+                //CMD_KEYUSER.updateKeyAndHistory(nidObj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay)
+            }
+
 
         }
         if (rtx.command == CMD.USER) {

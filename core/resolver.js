@@ -181,6 +181,9 @@ class Resolver {
                         if (!rtx.output || !rtx.output.domain) continue
                         if (rtx.command == CMD.REGISTER && rtx.output.err) continue
                         let domain = rtx.output.domain
+                        if (domain == "10200.test") {
+                            console.log("found")
+                        }
                         if (!(domain in g_nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain)
                             if (!onDiskNid) {

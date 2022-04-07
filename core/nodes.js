@@ -1,6 +1,7 @@
 const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
+var dns = require("dns");
 const Parser = require("./parser")
 let node = null
 class Nodes {
@@ -54,6 +55,20 @@ class Nodes {
         this.refreshPeers(true)
         return true
     }
+    async _fromDNS() {
+        return new Promise(resolve => {
+            const domain = "nodes.nbdomain.com"
+            dns.resolve(domain, "TXT", (err, data) => {
+                //console.log(data)
+                let nodes = []
+                for (let i = 0; i < data?.length; i++) {
+                    const items = data[i][0].toLowerCase().split(',')
+                    nodes = nodes.concat(items)
+                }
+                resolve(nodes)
+            })
+        })
+    }
     async refreshPeers(onlyLocal = false) {
         const port = config.server.port
         let peers2test = []
@@ -67,9 +82,11 @@ class Nodes {
         }
         if (config.peers.length)
             peers2test = peers2test.concat(config.peers)
+        const p = await this._fromDNS()
         peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
         //this.peers = await this.selectNode(peers2test,50)
-        for (const node of peers2test) {
+        const peers = new Set(peers2test)
+        for (const node of peers) {
             if (this.nodes.find(item => item.id == node)) continue;
             console.log("Adding node:", node)
             this.nodes.push({ id: node, weight: 50 })
