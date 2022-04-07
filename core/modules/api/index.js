@@ -319,7 +319,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         } else {
             const atttrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
             if (atttrib.hash) {
-                ret.oDataRecord = indexers.db.readData(rr.hash)
+                ret.oDataRecord = indexers.db.readData(atttrib.hash)
             }
         }
     }
