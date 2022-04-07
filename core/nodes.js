@@ -1,6 +1,7 @@
 const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
+const Parser = require("./parser")
 let node = null
 class Nodes {
     constructor() {
@@ -129,7 +130,6 @@ class Nodes {
             try {
                 const res = await axios.get(url)
                 for (const tx of res.data) {
-                    //this.add(tx.txid, tx.rawtx, tx.height, tx.time)
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
