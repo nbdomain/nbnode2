@@ -63,6 +63,7 @@ class ARChain {
                     return null
                 }
                 cmd = Util.parseJson(oData)
+                console.log("oData:", oData, "  cmd:", cmd)
                 rtx.command = cmd[2]
                 rtx.oHash = attrib.hash
             }

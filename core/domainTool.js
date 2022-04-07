@@ -1,6 +1,6 @@
-const {Util} = require('./util')
-const { CONFIG } = require('./config')
-const { CMD,DEF } = require('./def')
+const { Util } = require('./util')
+const CONSTS = require('./const')
+const { CMD, DEF } = require('./def')
 const Parser = require('./parser')
 var axios = require("axios");
 
@@ -11,7 +11,7 @@ class DomainTool {
    */
     static async fetchDomainAvailibility(domain) {
         try {
-            let url = `${CONFIG.nidcheck_endpoint}${domain}`;
+            let url = `${CONSTS.nidcheck_endpoint}${domain}`;
             console.log(`Sending request to URL ${url}`);
             let res = await axios.get(url, { timeout: 10000 });
             return res.data;

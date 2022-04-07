@@ -4,7 +4,7 @@
 
 
 const bsv = require('bsv');
-const { CONFIG } = require('./config');
+const CONSTS = require('./const');
 const cp = require('child_process');
 const nbpay = require('nbpay')
 const arweave = require('arweave')
@@ -17,7 +17,7 @@ nbpay.auto_config();
 let arLib = null, bsvLib = null;
 CoinFly.create('ar').then(lib => arLib = lib)
 CoinFly.create('bsv').then(lib => bsvLib = lib)
-const SUB_PROTOCOL_MAP = CONFIG.tld_config
+const SUB_PROTOCOL_MAP = CONSTS.tld_config
 
 class ArNodes {
     async _getPeers(seed) {

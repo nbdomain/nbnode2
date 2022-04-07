@@ -3,6 +3,7 @@
  */
 var url = require('url');
 const { CONFIG } = require('../../config')
+const CONSTS = require('../../const')
 var express = require('express');
 var bodyParser = require("body-parser");
 var cors = require('cors');
@@ -348,17 +349,17 @@ app.get('/queryTags', function (req, res) {
     return;
 });
 app.get('/nodeInfo', (req, res) => {
-    let info = CONFIG.node_info;
+    let info = { ...CONFIG.node_info, ...CONSTS.node_info };
     info.endpoints = Object.keys(CONFIG.proxy_map);
     info.version = "1.5.1";
-    info.tld = CONFIG.tld_config
+    info.tld = CONSTS.tld_config
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
     if (!auth(req, res)) {
         return;
     }
-    res.json(CONFIG.tld_config);
+    res.json(CONSTS.tld_config);
 });
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
