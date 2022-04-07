@@ -54,8 +54,8 @@ class Database {
       if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
         if (fs.existsSync(this.dmpath)) {
           fs.unlinkSync(this.dmpath)
-          fs.unlinkSync(this.dmpath + "-shm")
-          fs.unlinkSync(this.dmpath + "-wal")
+          //fs.unlinkSync(this.dmpath + "-shm")
+          //fs.unlinkSync(this.dmpath + "-wal")
         }
         fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       }
