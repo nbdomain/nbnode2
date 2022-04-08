@@ -216,18 +216,18 @@ class CMD_TRANSER {
         let output = CMD_BASE.parseTX(rtx);
         try {
             output.owner_key = rtx.out[0].s5.toLowerCase();
-            output.transfer_fee = rtx.out[3].e.v;
-            output.payment_addr = rtx.out[3].e.a;
+            // output.transfer_fee = rtx.out[3].e.v;
+            // output.payment_addr = rtx.out[3].e.a;
             //Util.getAddressFromPublicKey(output.owner_key) //test public key
             await Util.addressFromPublickey(output.owner_key, rtx.chain)
         } catch (err) {
             output.err = "Invalid format for Transfer command."
             return output
         }
-        if (output.transfer_fee < 1000) {
-            output.err = "Transfer command must pay admin fee 1000 satoshi."
-            return output
-        }
+        //  if (output.transfer_fee < 1000) {
+        //      output.err = "Transfer command must pay admin fee 1000 satoshi."
+        //      return output
+        //  }
 
         return output
     }

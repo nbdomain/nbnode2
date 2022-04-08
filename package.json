@@ -12,13 +12,13 @@
     "abort-controller": "^3.0.0",
     "arweave": "^1.10.23",
     "axios": "^0.21.4",
-    "better-sqlite3": "^7.5.0",
+    "better-sqlite3": "^7.5.1",
     "better-sse": "^0.6.0",
     "bitidentity": "^1.0.48",
     "body": "^5.1.0",
     "body-parser": "^1.20.0",
     "bsv": "1.5.6",
-    "coinfly": "^1.0.87",
+    "coinfly": "^1.0.88",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
     "event-stream": "^4.0.1",
@@ -37,7 +37,7 @@
     "node-localstorage": "^2.2.1",
     "p-limit": "3.1.0",
     "random-weighted-choice": "^0.1.4",
-    "reconnecting-eventsource": "^1.3.0",
+    "reconnecting-eventsource": "^1.4.0",
     "superagent": "^7.1.2"
   }
 }
