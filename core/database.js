@@ -430,6 +430,10 @@ class Database {
       })
     }
   }
+  getDataCount() {
+    let sql = "select (select count(*) from bsv_tx) as bsv , (select count(*) from ar_tx) as ar"
+    return this.txdb.prepare(sql).get()
+  }
   queryKeys({ v, num, startID, tags }) {
     let sql = "select id,key,value,tags from keys ";
     if (v != "1") {

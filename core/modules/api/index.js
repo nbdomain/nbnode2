@@ -354,6 +354,7 @@ app.get('/nodeInfo', (req, res) => {
     info.endpoints = Object.keys(CONFIG.proxy_map);
     info.version = "1.5.1";
     info.tld = CONSTS.tld_config
+    info.dataCount = indexers.db.getDataCount()
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {

@@ -73,7 +73,6 @@ class Crawler {
     try {
       await this._pollForNextBlock()
       await this._updateMempoolTransactions()
-
     } catch (e) {
       if (this.onCrawlError) this.onCrawlError(e)
       // Swallow, we'll retry

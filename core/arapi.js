@@ -20,7 +20,7 @@ const { Util } = require('./util')
 // NbNode
 // ------------------------------------------------------------------------------------------------
 let ar_node = null
-const NumOfRecords = 100
+const NumOfRecords = 1000
 class AWNode {
   constructor(apiKey, db, logger) {
     this.suffix = apiKey ? `?api_key=${apiKey}` : ''
