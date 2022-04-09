@@ -7,10 +7,13 @@
 // ------------------------------------------------------------------------------------------------
 // Crawler
 // ------------------------------------------------------------------------------------------------
+const CoinFly = require('coinfly');
 
 class Crawler {
-  constructor (api) {
+  constructor(api, db, chain) {
     this.api = api
+    this.db = db
+    this.chain = chain
     this.height = null
     this.hash = null
     this.pollForNewBlocksInterval = 10000
@@ -26,9 +29,10 @@ class Crawler {
     this.onRewindBlocks = null
     this.onMempoolTransaction = null
     this.onExpireMempoolTransactions = null
+    this.onConfirmTransactions = null
   }
 
-  start (height, hash) {
+  start(height, hash) {
     if (this.started) return
 
     this.started = true
@@ -39,7 +43,7 @@ class Crawler {
     this._expireMempoolTransactions()
   }
 
-  stop () {
+  stop() {
     this.started = false
     this.listeningForMempool = false
     clearTimeout(this.pollForNewBlocksTimerId)
@@ -48,18 +52,28 @@ class Crawler {
     this.expireMempoolTransactionsTimerId = null
   }
 
-  _expireMempoolTransactions () {
+  _expireMempoolTransactions() {
     if (!this.started) return
     if (this.onExpireMempoolTransactions) this.onExpireMempoolTransactions()
     this.expireMempoolTransactionsTimerId = setTimeout(
       this._expireMempoolTransactions.bind(this), this.expireMempoolTransactionsInterval)
   }
-
-  async _pollForNewBlocks () {
+  async _updateMempoolTransactions() {
+    if (this.chain === 'ar') return
+    const txids = this.db.getMempoolTransactionsBeforeTime(9999999999, this.chain)
+    if (txids.length > 0) {
+      const lib = await CoinFly.create(this.chain)
+      const ret = await lib.getTxStatus(txids)
+      this.onConfirmTransactions(ret)
+    }
+  }
+  async _pollForNewBlocks() {
     if (!this.started) return
 
     try {
       await this._pollForNextBlock()
+      await this._updateMempoolTransactions()
+
     } catch (e) {
       if (this.onCrawlError) this.onCrawlError(e)
       // Swallow, we'll retry
@@ -70,7 +84,7 @@ class Crawler {
     this.pollForNewBlocksTimerId = setTimeout(this._pollForNewBlocks.bind(this), this.pollForNewBlocksInterval)
   }
 
-  async _pollForNextBlock () {
+  async _pollForNextBlock() {
     if (!this.started) return
 
     // Save the current query so we can check for a race condition after
@@ -109,14 +123,14 @@ class Crawler {
     }
   }
 
-  _rewindAfterReorg () {
+  _rewindAfterReorg() {
     const newHeight = this.height - this.rewindCount
     if (this.onRewindBlocks) this.onRewindBlocks(newHeight)
     this.height = newHeight
     this.hash = null
   }
 
-  async _listenForMempool () {
+  async _listenForMempool() {
     if (this.listeningForMempool) return
 
     if (this.api.listenForMempool) {
@@ -126,7 +140,7 @@ class Crawler {
     this.listeningForMempool = true
   }
 
-  _onMempoolRunTransaction (txid, rawtx) {
+  _onMempoolRunTransaction(txid, rawtx) {
     if (this.onMempoolTransaction) this.onMempoolTransaction(txid, rawtx)
   }
 }

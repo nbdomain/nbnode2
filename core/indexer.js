@@ -46,7 +46,7 @@ class Indexer {
     this.database = db; //new Database(chain, txdb, dmdb, this.logger)
     this.downloader = new Downloader(fetchFunction, numParallelDownloads)
 
-    this.crawler = new Crawler(api)
+    this.crawler = new Crawler(api, db, this.chain)
     this.resolver = new Resolver(this.chain, this.database)
     Parser.get(this.chain).init(this.database)
 
@@ -63,6 +63,7 @@ class Indexer {
     this.crawler.onRewindBlocks = this._onRewindBlocks.bind(this)
     this.crawler.onMempoolTransaction = this._onMempoolTransaction.bind(this)
     this.crawler.onExpireMempoolTransactions = this._onExpireMempoolTransactions.bind(this)
+    this.crawler.onConfirmTransactions = this._onConfirmTransactions.bind(this)
   }
   async restart() {
     await this.stop();
@@ -147,7 +148,13 @@ class Indexer {
       downloading: this.downloader.remaining()
     }
   }
+  async _onConfirmTransactions(txobjs) {
+    for (const item of txobjs) {
+      if (!item.err)
+        this.add(item.txid, null, item.height, item.time)
+    }
 
+  }
   async _onDownloadTransaction(txid, hex, height, time) {
     this.logger.info(`Downloaded ${txid} (${this.downloader.remaining()} remaining)`)
     if (!this.database.hasTransaction(txid, this.chain)) return
