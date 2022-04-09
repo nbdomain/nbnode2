@@ -196,6 +196,7 @@ class Util {
         }
         nidObj.tf_update_tx = 0
         nidObj.sell_info = null;
+        nidObj.dirty = true
         return nidObj;
     }
     static async sendRawtx(rawtx, chain = 'bsv') {
@@ -272,11 +273,16 @@ class Util {
         }
         return [null, null];
     }
-    static getPaymentAddr(protocol) {
-        for (let tld in SUB_PROTOCOL_MAP) {
-            if (SUB_PROTOCOL_MAP[tld].address.protocol == protocol) {
-                return SUB_PROTOCOL_MAP[tld].address.payment;
+    static getPaymentAddr({ protocol, tld }) {
+        if (protocol) {
+            for (let tld in SUB_PROTOCOL_MAP) {
+                if (SUB_PROTOCOL_MAP[tld].address.protocol == protocol) {
+                    return SUB_PROTOCOL_MAP[tld].address.payment;
+                }
             }
+        }
+        if (tld) {
+            return SUB_PROTOCOL_MAP[tld].address.payment
         }
         return null;
     }

@@ -129,41 +129,43 @@ class CMD_BUY {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            var extra = JSON.parse(rtx.out[0].s6);
-            output.transferTx = extra["sell_txid"];
-            output.payTxid = extra["pay_txid"];
-            output.agent = rtx.out[0].s7;
-            output.owner_key = rtx.out[0].s5;
+            var extra = JSON.parse(rtx.out[0].s5);
+            output.transferTx = extra.sell_txid;
+            output.sellDomain = extra.domain
+            output.agent = rtx.out[0].s6;
+            const pay1 = rtx.out[2].e
+            const pay2 = rtx.out[3].e
+            const ret = this.parser.db.loadDomain(extra.domain)
+            if (ret && ret.sell_info) {
+                const delta = Math.abs(pay1.v - ret.sell_info.price)
+                if (delta > 10) {
+                    output.err = "not enough payment for:" + extra.domain
+                    return output
+                }
+                const paymentAddress = Util.getPaymentAddr({ protocol: output.protocol })
+                if (paymentAddress != pay2.a) {
+                    output.err = "wrong fee payment address:" + extra.domain
+                    return output
+                }
+            } else {
+                output.err = extra.domain + "is not onsale"
+                return output
+            }
+            //output.owner_key = rtx.publicKey;
         } catch (err) {
             output.err = "Invalid format for BuyOutput class."
             return output
         }
-        let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain) //Util.getAddressFromPublicKey(rtx.publicKey);
-        let authorsities = Util.getAdmins(
-            output.protocol,
-            rtx.height
-        );
-        if (!authorsities.includes(addr)) {
-            output.err = "Input address not in authorities.";
-            return output
-        }
         return output
     }
-    static async fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx, objMap) {
         if (nidObj.owner_key == null) return null
-        if (nidObj.status == DEF.STATUS_TRANSFERING && nidObj.sell_info) {
-            //TODO validate
-            {
-                if (rtx.txTime != -1 && rtx.txTime * 1000 > Number(nidObj.sell_info.expire)) return null //expired
-                let clearData = nidObj.sell_info.clear_data;
-                if (nidObj.sell_info.buyer != 'any') { //check if it's the right buyer
-                    //if (Util.getAddressFromPublicKey(rtx.output.owner_key) != nidObj.sell_info.buyer)
-                    if (await Util.addressFromPublickey(rtx.output.owner_key, rtx.chain) != nidObj.sell_info.buyer)
-                        return null
-                }
-                nidObj = await Util.resetNid(nidObj, rtx.output.owner_key, rtx.txid, DEF.STATUS_VALID, clearData, rtx.chain);
-            }
-        }
+        const sellDomain = rtx.output.sellDomain
+        let obj = objMap[sellDomain]
+        if (!obj) obj = this.parser.db.loadDomain(sellDomain)
+        if (!obj) return null
+        await Util.resetNid(obj, nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
+        console.log("bought:", sellDomain)
         return nidObj
     }
 }

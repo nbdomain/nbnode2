@@ -95,6 +95,7 @@ async function getAllItems(para, forceFull = false, from = null) {
             if (moreHis.length == 1) {
                 if (his[1] == 'all') {
                     const resolver = indexers.resolver(Util.getchain(his[0]))
+                    if (!resolver) return
                     const count = resolver.getDomainHistoryLen(his[0])
                     for (let i = 1; i <= count; i++) {
                         items.push(his[0] + "/" + i)

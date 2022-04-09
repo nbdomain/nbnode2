@@ -2,7 +2,8 @@ const CONSTS = {
     node_info: {
         prices: {
             domainHost: { bsv: 1000, ar: 1000 }, //host user's triditional domain and link to a nbdomain
-            keyUpdate: { bsv: 1.0, ar: 1.0 }
+            keyUpdate: { bsv: 2.0, ar: 4.0, fee: 0.5 },
+            sellFee: 0.1,
         },
     },
     "nidcheck_endpoint": "https://util.nbsite.link/namecheck/v1/check/",
