@@ -376,9 +376,13 @@ app.get('/test', async (req, res) => {
         console.log("count:",ret.length)
         res.end("ok")*/
     //res.json(indexers.db.getAllPaytx('register'))
-    //res.json(await handleNewTx({ chain: 'bsv', txid: "3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9" }, "https://api.nbdomain.com"))
-    indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
+    res.json(await handleNewTx({ chain: 'bsv', txid: "3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9" }, "https://tnode.nbdomain.com"))
+    //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
+    //res.end("ok")
+})
+app.get('/dataCount', (req, res) => {
+    res.json(indexers.db.getDataCount())
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
