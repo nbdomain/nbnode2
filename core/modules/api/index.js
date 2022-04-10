@@ -353,7 +353,7 @@ app.get('/nodeInfo', (req, res) => {
     let info = { ...CONFIG.node_info, ...CONSTS.node_info };
     info.version = "1.5.1." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
     info.tld = CONSTS.tld_config
-    info.dataCount = indexers.db.getDataCount()
+    //info.dataCount = indexers.db.getDataCount()
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
@@ -378,7 +378,7 @@ app.get('/test', async (req, res) => {
     //res.json(indexers.db.getAllPaytx('register'))
     //res.json(await handleNewTx({ chain: 'bsv', txid: "3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9" }, "https://api.nbdomain.com"))
     indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
-    res.end("ok")
+    //res.json(indexers.db.getDataCount())
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
