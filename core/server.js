@@ -11,7 +11,9 @@ const cors = require('cors')
 var dns = require("dns");
 var axios = require("axios");
 const { CONFIG } = require('./config')
+const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const { createCipheriv } = require('crypto');
 
 
 // ------------------------------------------------------------------------------------------------
@@ -105,7 +107,6 @@ class Server {
     app.use('/files/', express.static(__dirname + '/public'))
 
     //app.get('/nblink/add/', this.addNBlink.bind(this))
-    app.get('/nodeInfo', this.getNodeInfo.bind(this))
     //app.get('/*', this.getAll.bind(this))
 
     /*app.post("/*", async (req, res, next) => {
@@ -168,7 +169,7 @@ class Server {
     this.listener = app.listen(CONFIG.server.port, async function () {
       console.log(`NBnode server started on port ${CONFIG.server.port}...`);
 
-      var proxyPassConfig = CONFIG.proxy_map;
+      var proxyPassConfig = CONSTS.proxy_map;
 
       for (let uri in proxyPassConfig) {
         uri = uri.trim().toLowerCase();
@@ -176,8 +177,14 @@ class Server {
         let env = CONFIG;
         env.indexers = self.indexers;
         let service_folder = proxyPassConfig[uri];
-        const service = require("./modules/" + service_folder + "/index.js");
-        const port = await service(env);
+        let port = 0;
+        try {
+          const service = require("./modules/" + service_folder + "/index.js");
+          port = await service(env);
+        } catch (e) {
+          console.error("Error loading service from: " + service_folder)
+          continue
+        }
         const localAddr = "http://localhost:" + port;
         const pa = "^" + uri;
         if (uri === "/web/") localWebGateway = localAddr + "/";
@@ -234,18 +241,6 @@ class Server {
       } catch (e) { next(e) }
     }*/
 
-  async getNodeInfo(req, res, next) {
-    try {
-      if (!isAPICall(req.get("host"))) {
-        next();
-        return;
-      }
-      let info = CONFIG.node_info;
-      info.endpoints = Object.keys(CONFIG.proxy_map);
-      info.version = verNode;
-      res.json(info);
-    } catch (e) { next(e) }
-  }
 
   async getAll(req, res, next) {
     try {

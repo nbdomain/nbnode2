@@ -214,7 +214,7 @@ async function handleNewTx(para, from) {
     if (!db.hasTransaction(para.txid, chain)) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
-        if (res.data) {
+        if (res.data && res.data.code == 0) {
             const item = res.data.oDataRecord
             const ret = await (Parser.get(chain).parseRaw({ rawtx: res.data.rawtx, oData: item?.raw, height: -1 }));
             if (ret.code == 0 && ret.obj.oHash === item.hash)
@@ -351,8 +351,7 @@ app.get('/queryTags', function (req, res) {
 });
 app.get('/nodeInfo', (req, res) => {
     let info = { ...CONFIG.node_info, ...CONSTS.node_info };
-    info.endpoints = Object.keys(CONFIG.proxy_map);
-    info.version = "1.5.1";
+    info.version = "1.5.1." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
     info.tld = CONSTS.tld_config
     info.dataCount = indexers.db.getDataCount()
     res.json(info);
@@ -376,7 +375,10 @@ app.get('/test', async (req, res) => {
         console.log(ret)
         console.log("count:",ret.length)
         res.end("ok")*/
-    res.json(indexers.db.getAllPaytx('register'))
+    //res.json(indexers.db.getAllPaytx('register'))
+    //res.json(await handleNewTx({ chain: 'bsv', txid: "3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9" }, "https://api.nbdomain.com"))
+    indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
+    res.end("ok")
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;

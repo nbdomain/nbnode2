@@ -8,10 +8,8 @@ const Indexer = require('./indexer')
 const Server = require('./server')
 const Database = require('./database')
 const Nodes = require('./nodes')
-const {
-  API, TXDB, DMDB, FETCH_LIMIT, WORKERS, PLANARIA_TOKEN, START_HEIGHT,
-  MEMPOOL_EXPIRATION,
-} = require('./config')
+const CONSTS = require('./const')
+
 const Planaria = require('./planaria')
 //const UrChain = require('./urchain')
 //const RunConnectFetcher = require('./run-connect')
@@ -27,7 +25,7 @@ const AWNode = require('./arapi')
 // ------------------------------------------------------------------------------------------------
 
 const logger = console
-logger.info("PLANARIA_TOKEN:", PLANARIA_TOKEN);
+logger.info("PLANARIA_TOKEN:", CONSTS.PLANARIA_TOKEN);
 var myArgs = process.argv.slice(2);
 let REORG = 0;
 if (myArgs) {
@@ -35,7 +33,7 @@ if (myArgs) {
   logger.info("cmd:", argv);
   if (argv.reorg) {
     REORG = argv.reorg
-    fs.unlinkSync(__dirname + "/db/" + DMDB)
+    fs.unlinkSync(__dirname + "/db/" + CONSTS.DMDB)
   }
 }
 
@@ -47,22 +45,22 @@ let indexers = null, server = null;
 let apiAR = null, apiBSV = null;
 class Indexers {
   static init() {
-    this.db = new Database(__dirname + "/db/" + TXDB, __dirname + "/db/" + DMDB, logger)
+    this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger)
     this.db.open()
     //this.db.saveData("Hello World", "nbdomain.a")
     //this.db.saveData(Buffer.from([0, 1, 0, 0, 2, 0]), "nbdomain.a")
     //console.log(this.db.readData("0cc84ab57c476d2385b899ca742a2790", { string: false }))
-    switch (API.bsv) {
-      case 'planaria': apiBSV = new Planaria(PLANARIA_TOKEN, this.db, logger); break
+    switch (CONSTS.API.bsv) {
+      case 'planaria': apiBSV = new Planaria(CONSTS.PLANARIA_TOKEN, this.db, logger); break
       //default: throw new Error(`Unknown API: ${API}`)
     }
-    switch (API.ar) {
+    switch (CONSTS.API.ar) {
       case 'arnode': apiAR = new AWNode("", this.db, logger); break
       //default: throw new Error(`Unknown API: ${API}`)
     }
 
-    this.bsv = new Indexer(this.db, apiBSV, "bsv", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.bsv, MEMPOOL_EXPIRATION, REORG)
-    this.ar = new Indexer(this.db, apiAR, "ar", FETCH_LIMIT, WORKERS, logger, START_HEIGHT.ar, MEMPOOL_EXPIRATION, REORG)
+    this.bsv = new Indexer(this.db, apiBSV, "bsv", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.bsv, CONSTS.MEMPOOL_EXPIRATION, REORG)
+    this.ar = new Indexer(this.db, apiAR, "ar", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.ar, CONSTS.MEMPOOL_EXPIRATION, REORG)
   }
   static async start() {
     await this.ar.start()

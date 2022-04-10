@@ -432,7 +432,12 @@ class Database {
   }
   getDataCount() {
     let sql = "select (select count(*) from bsv_tx) as bsv , (select count(*) from ar_tx) as ar"
-    return this.txdb.prepare(sql).get()
+    const ret = this.txdb.prepare(sql).get()
+    sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
+    const ret1 = this.dmdb.prepare(sql).get()
+    sql = "select (select count(*) from data) as odata"
+    const ret2 = this.dtdb.prepare(sql).get()
+    return { ...ret, ...ret1, ...ret2 }
   }
   queryKeys({ v, num, startID, tags }) {
     let sql = "select id,key,value,tags from keys ";
