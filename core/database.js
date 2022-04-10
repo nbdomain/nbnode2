@@ -294,7 +294,10 @@ class Database {
     this.txdb.prepare(sql).run(txid)
   }
 
-
+  getTransaction(txid, chain) {
+    const sql = `select * from ${chain}_tx WHERE txid = ?`
+    return this.txdb.prepare(sql).get(txid)
+  }
   hasTransaction(txid, chain) {
     const sql = `SELECT txid FROM ${chain}_tx WHERE txid = ?`
     return !!this.txdb.prepare(sql).get(txid)

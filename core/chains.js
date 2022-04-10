@@ -68,7 +68,7 @@ class ARChain {
                     }
                 }
                 if (!oData) {
-                    console.error("Cannot get OData hash:", attrib.hash)
+                    console.error("Cannot get OData hash:", attrib.hash, " txid:", rtx.txid)
                     return null
                 }
                 const hash = await Util.dataHash(oData)
@@ -127,6 +127,9 @@ class BSVChain {
         }
         if (block_time) { //check txtime
             const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
+            if (!rtx) {
+                return { code: -1, msg: 'invalid rawtx format' }
+            }
             txTime = rtx?.ts
             if (rtx.ts && rtx.ts > block_time)
                 return { code: -1, msg: 'txTime invalid' }
@@ -187,7 +190,7 @@ class BSVChain {
                     }
                 }
                 if (!oData) {
-                    console.error("Cannot get OData hash:", attrib.hash)
+                    console.error("Cannot get OData hash:", attrib.hash, " txid:", rtx.txid)
                     return null
                 }
                 const hash = await Util.dataHash(oData)

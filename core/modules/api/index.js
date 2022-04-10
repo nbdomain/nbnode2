@@ -384,6 +384,17 @@ app.get('/test', async (req, res) => {
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())
 })
+app.get('/getData', (req, res) => {
+    const type = req.query['type']
+    const txid = req.query['txid']
+    const hash = req.query['hash']
+    const chain = req.query['chain']
+    switch (type) {
+        case 'tx': res.json(indexers.db.getTransaction(txid, chain)); return;
+        case 'data': res.json(indexers.db.readData(hash, { string: true })); return;
+    }
+    res.end("ok")
+})
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
     let result = bsv_resolver.db.queryDomains(addr);
