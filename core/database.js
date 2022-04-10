@@ -311,7 +311,7 @@ class Database {
     return this.txdb.prepare(sql).raw(true).all(height).map(row => row[0])
   }
   getMempoolTransactionsBeforeTime(time, chain) {
-    const sql = `SELECT txid FROM ${chain}_tx WHERE height = ${HEIGHT_MEMPOOL} AND txTime < ?`
+    const sql = `SELECT txid FROM ${chain}_tx WHERE txTime < ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
     return this.txdb.prepare(sql).raw(true).all(time).map(row => row[0])
   }
   getTransactionsToDownload(chain) {
