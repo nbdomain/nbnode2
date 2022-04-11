@@ -1,8 +1,8 @@
+const Parser = require('./parser')
 const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const Parser = require("./parser")
 let node = null
 class Nodes {
     constructor() {
@@ -52,7 +52,7 @@ class Nodes {
     async init() {
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
-        this.refreshPeers(true)
+        await this.refreshPeers(true)
         return true
     }
     async _fromDNS() {
@@ -139,11 +139,29 @@ class Nodes {
         }
         return {}
     }
-    async SyncFromNodes(indexer, chain) {
+    async SyncFromNodes(indexer, fullSync, chain) {
+        const latestTime = fullSync ? indexer.database.getLastFullSyncTime(chain) : indexer.database.getLatestTxTime(chain)
+        let fullSyncDone = false
+        if (fullSync) {
+            console.log(chain + ": perform full sync check...")
+        }
         for (const node of this.getNodes()) {
             const apiURL = node.id
-            const latestTime = indexer.database.getLatestTxTime(chain)
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
+            if (fullSync) {
+
+                const dataCount = indexer.database.getDataCount()
+                const url1 = apiURL + "/api/dataCount"
+                try {
+                    const res = await axios.get(url1)
+                    if (res.data) {
+                        if (dataCount[chain] >= res.data[chain]) continue;
+                        fullSyncDone = true
+                    }
+                } catch (e) {
+                    continue
+                }
+            }
             try {
                 const res = await axios.get(url)
                 for (const tx of res.data) {
@@ -162,6 +180,10 @@ class Nodes {
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
+        }
+        if (fullSyncDone) {
+            const time = Math.floor(Date.now() / 1000).toString()
+            indexer.database.saveLastFullSyncTime(time, chain)
         }
     }
     static inst() {

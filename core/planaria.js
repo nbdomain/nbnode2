@@ -21,8 +21,6 @@ const axios = require('axios')
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const NBD_PREFIX = 'nbd'
-const NBD_VERSION = '01'
 let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5", "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ", "nbd"];//Util.getAllRegProtocols();
 
 // ------------------------------------------------------------------------------------------------
@@ -30,9 +28,9 @@ let allPrefixes = ["1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5", "14PML1XzZqs5JvJCGy2AJ2
 // ------------------------------------------------------------------------------------------------
 
 class Planaria {
-    constructor(token, db,logger) {
+    constructor(token, db, logger) {
         this.token = token
-        if(!token) throw("Planaria token missing")
+        if (!token) throw ("Planaria token missing")
         this.logger = logger
         this.db = db
 
@@ -223,10 +221,10 @@ class Planaria {
                         if (!json.length) return
                         // console.log(json);
                         let data = null
-                        try{
+                        try {
                             data = JSON.parse(json)
-                        }catch(e){
-                            console.error("bitbus error. ret=",json)
+                        } catch (e) {
+                            console.error("bitbus error. ret=", json)
                         }
 
                         // If there are pending transactions, check if we are on a new block

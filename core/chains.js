@@ -2,8 +2,7 @@ const TXO = require("./txo.js");
 const { DEF } = require("./def");
 const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
-const ARAPI = require('./arapi')
-const Nodes = require('./nodes')
+//const Nodes = require('./nodes')
 
 class ARChain {
     static async verify(rawtx, height, time, db) {
@@ -59,13 +58,13 @@ class ARChain {
             if (attrib.v === 3) {
                 if (!oData) {
                     oData = db.readData(attrib.hash).raw
-                    if (!oData) { //read from other peer
-                        const d = await Nodes.getOData(attrib.hash, { string: true })
-                        if (d.raw) {
-                            oData = d.raw
-                            db.saveData({ data: d.raw, owner: d.owner, time: d.time })
-                        }
-                    }
+                    /* if (!oData) { //read from other peer
+                         const d = await Nodes.getOData(attrib.hash, { string: true })
+                         if (d.raw) {
+                             oData = d.raw
+                             db.saveData({ data: d.raw, owner: d.owner, time: d.time })
+                         }
+                     }*/
                 }
                 if (!oData) {
                     console.error("Cannot get OData hash:", attrib.hash, " txid:", rtx.txid)
@@ -181,13 +180,13 @@ class BSVChain {
             if (attrib.v === 3) {
                 if (!oData) {
                     oData = db.readData(attrib.hash).raw
-                    if (!oData) { //read from other peer
+                    /*if (!oData) { //read from other peer
                         const d = await Nodes.getOData(attrib.hash, { string: true })
                         oData = d.raw
                         if (oData) {
                             db.saveData({ data: oData, owner: d.owner, time: attrib.ts })
                         }
-                    }
+                    }*/
                 }
                 if (!oData) {
                     console.error("Cannot get OData hash:", attrib.hash, " txid:", rtx.txid)

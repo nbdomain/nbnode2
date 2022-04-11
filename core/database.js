@@ -235,6 +235,23 @@ class Database {
     const res = this.txdb.prepare(sql).get()
     return res ? res.txTime : -1
   }
+  getLastFullSyncTime(chain) {
+    try {
+      const sql = `SELECT ${chain}_fullSyncTime from config`
+      const res = this.txdb.prepare(sql).get()
+      return res ? res : 0
+    } catch (e) {
+      return 0
+    }
+  }
+  saveLastFullSyncTime(time, chain) {
+    try {
+      const sql = `insert or replace into config (key,value) VALUES('${chain}_fullSyncTime',?) `
+      this.txdb.prepare(sql).run(time)
+    } catch (e) {
+      console.log(e)
+    }
+  }
   saveTransaction(txid, rawtx, txTime, chain) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
     const sql = `UPDATE ${chain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`

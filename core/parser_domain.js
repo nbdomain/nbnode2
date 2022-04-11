@@ -45,9 +45,18 @@ class Parser_Domain {
     }
     getAllCommands() {
         return {
-            [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_KEYUSER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER,
+            [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_KEYUSER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
             [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC
         }
+    }
+}
+class CMD_PAY_REGISTER {
+    static parseTX(rtx) {
+        let output = CMD_BASE.parseTX(rtx);
+        return output;
+    }
+    static fillObj(nidObj, rtx) {
+        return nidObj
     }
 }
 class CMD_MAKE_PUBLIC {

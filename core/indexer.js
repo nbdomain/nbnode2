@@ -99,7 +99,8 @@ class Indexer {
       height -= this.reorg
       hash = null
     }
-    await Nodes.SyncFromNodes(this, this.chain)
+    await Nodes.SyncFromNodes(this, false, this.chain)
+    await Nodes.SyncFromNodes(this, true, this.chain)
 
     if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))
@@ -107,6 +108,11 @@ class Indexer {
     this.resolver.start()
     if (CONFIG.exit_count != 0)
       this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * CONFIG.exit_count);
+
+    const self = this
+    this.fullSyncTimer = setInterval(() => {
+      Nodes.SyncFromNodes(self, true, self.chain)
+    }, 1 * 60 * 1000); //every 10 minutes
   }
 
   async stop() {
