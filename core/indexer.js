@@ -112,7 +112,7 @@ class Indexer {
     const self = this
     this.fullSyncTimer = setInterval(() => {
       Nodes.SyncFromNodes(self, true, self.chain)
-    }, 1 * 60 * 1000); //every 10 minutes
+    }, 30 * 60 * 1000); //every 30 minutes
   }
 
   async stop() {

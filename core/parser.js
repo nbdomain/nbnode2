@@ -59,7 +59,6 @@ class Parser {
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
                 if (tspan > 120 || tspan < -1) {
-
                     console.error("invalid timestamp:tspan=", tspan, " tsNow:", tsNow, " ts:", rtx.ts)
                     return { code: 1, msg: "invalid timestamp" }
                 }
@@ -85,14 +84,8 @@ class Parser {
     }
     async fillObj(nidObj, rtx, objMap) {
         let retObj = null
-        if (nidObj == null) {
-            console.log("found")
-        }
         nidObj.lastUpdateheight = rtx.height;
         nidObj.last_txid = rtx.txid
-        if (rtx.txid == "5c23c8f8ed684ecb23b5a83b10507a4ef38de2fc3816acd0fdbbd312143dacda") {
-            console.log("found")
-        }
         if (rtx.output.err) {
             return null
         }
