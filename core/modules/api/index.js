@@ -385,15 +385,24 @@ app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())
 })
 app.get('/getData', (req, res) => {
-    const type = req.query['type']
     const txid = req.query['txid']
-    const hash = req.query['hash']
-    const chain = req.query['chain']
-    switch (type) {
-        case 'tx': res.json(indexers.db.getTransaction(txid, chain)); return;
-        case 'data': res.json(indexers.db.readData(hash, { string: true })); return;
+    const chain = req.query['chain'] ? req.query['chain'] : 'bsv'
+    const tx = indexers.db.getTransaction(txid, chain);
+    delete tx.bytes
+    let ret = {
+        tx: tx
     }
-    res.end("ok")
+
+    ret.rawtx = indexers.db.getRawTransaction(txid, chain)
+
+    if (ret.rawtx) {
+        ret.atttrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+        if (ret.atttrib.hash) {
+            ret.oDataRecord = indexers.db.readData(ret.atttrib.hash)
+
+        }
+    }
+    res.json(ret)
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
