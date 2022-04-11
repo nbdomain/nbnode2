@@ -388,7 +388,8 @@ app.get('/getData', (req, res) => {
     const txid = req.query['txid']
     const chain = req.query['chain'] ? req.query['chain'] : 'bsv'
     const tx = indexers.db.getTransaction(txid, chain);
-    delete tx.bytes
+    if (tx && tx.bytes)
+        delete tx.bytes
     let ret = {
         tx: tx
     }
