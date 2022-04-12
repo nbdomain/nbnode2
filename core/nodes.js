@@ -144,6 +144,7 @@ class Nodes {
         let affected = 0
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
+            if (chain == 'ar') latestTime = 0
         }
         for (const node of this.getNodes()) {
             const apiURL = node.id
