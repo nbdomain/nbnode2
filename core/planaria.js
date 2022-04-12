@@ -127,6 +127,9 @@ class Planaria {
     }
 
     async listenForMempool(mempoolTxCallback) {
+        //no need to listen unconfirmed tx from blockchain
+        return
+
         this.logger.info('Listening for mempool via BitSocket')
 
         const query = {

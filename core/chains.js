@@ -117,24 +117,8 @@ class BSVChain {
         return null
     }
     static async verify(rawtx, height, block_time, db) {
-        let txTime = null
-        if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
-            const publicKey = BSVChain.verifySig(rawtx)
-            if (!publicKey) {
-                return { code: -1, msg: `Failed to verify transaction signature.` }
-            }
-        }
-        if (block_time) { //check txtime
-            const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
-            if (!rtx) {
-                return { code: -1, msg: 'invalid rawtx format' }
-            }
-            txTime = rtx?.ts
-            if (rtx.ts && rtx.ts > block_time)
-                console.error("rtx.ts:", rtx.ts, "block_time:", block_time)
-            return { code: -1, msg: 'txTime invalid' }
-        }
-        return { code: 0, txTime: txTime }
+        const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
+        return { code: rtx ? 0 : -1, txTime: rtx && rtx.ts }
     }
     static _reArrage(rtx) {
         if (rtx.out[0].s2 === "nbd") {
@@ -159,14 +143,21 @@ class BSVChain {
         const attrib = Util.parseJson(tx.out[0].s3)
         return attrib
     }
-    static async raw2rtx({ rawtx, oData, height, time, db }) {
+    static async raw2rtx({ rawtx, oData, height, time: block_time, db }) {
+        //check sig
+        if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
+            const publicKey = BSVChain.verifySig(rawtx)
+            if (!publicKey) {
+                console.error("Failed to verify transaction signature")
+                return null
+            }
+        }
         const tx = TXO.fromRaw(rawtx);
         let rtx = {
             height: height,
-            time: time,
+            time: block_time,
             txid: tx.tx.h,
             publicKey: tx.in[0].h1.toString(),
-
             output: null,
             in: tx.in,
             out: tx.out,
@@ -212,6 +203,13 @@ class BSVChain {
 
         tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
         BSVChain._reArrage(rtx)
+
+        //check txtime
+        if (block_time && rtx.ts && rtx.ts > block_time) {
+            console.error("rtx.ts:", rtx.ts, "block_time:", block_time)
+            return null
+        }
+
         rtx.chain = 'bsv'
         return rtx
     }

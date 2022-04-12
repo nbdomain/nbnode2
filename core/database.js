@@ -704,6 +704,19 @@ class Database {
     //ret.raw = this.readDataFromDisk(hash, option)
     return ret
   }
+  async verifyTxDB(chain) {
+    let sql = `select * from ${chain}_tx`
+    const ret = this.txdb.prepare(sql).all()
+    for (const item of ret) {
+      const rawtx = chain === 'bsv' ? item.bytes.toString('hex') : item.bytes.toString()
+      const res = await Parser.get(chain).verify(rawtx, item.height, item.time)
+      if (res.code != 0) {
+        console.log("found invalid tx", item.txid)
+        this.deleteTransaction(item.txid, chain)
+      }
+    }
+    console.log("verify finish")
+  }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {
     const res = this.getNFTStmt.get(symbol)

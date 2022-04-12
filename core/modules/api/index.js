@@ -376,10 +376,11 @@ app.get('/test', async (req, res) => {
         console.log("count:",ret.length)
         res.end("ok")*/
     //res.json(indexers.db.getAllPaytx('register'))
-    res.json(await handleNewTx({ chain: 'bsv', txid: "5343ecbb33ff74b3a41f54eb276c02ae06cb23307065e810731024ad412659d0" }, "https://tnode.nbdomain.com"))
+    //res.json(await handleNewTx({ chain: 'bsv', txid: "5343ecbb33ff74b3a41f54eb276c02ae06cb23307065e810731024ad412659d0" }, "https://tnode.nbdomain.com"))
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
-    //res.end("ok")
+    await indexers.db.verifyTxDB('bsv')
+    res.end("ok")
 })
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())
