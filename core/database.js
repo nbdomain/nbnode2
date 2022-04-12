@@ -644,9 +644,9 @@ class Database {
       item.rawtx = rawtx
       if (rawtx) {
         //const ret = await Parser.get(chain).parseRaw({ rawtx, height: item.height, time: item.time })
-        const atttrib = await (Parser.get(chain).getAttrib({ rawtx }));
-        if (atttrib.hash) {
-          item.oDataRecord = this.readData(atttrib.hash)
+        const attrib = await (Parser.get(chain).getAttrib({ rawtx }));
+        if (attrib && attrib.hash) {
+          item.oDataRecord = this.readData(attrib.hash)
         }
       }
       delete item.bytes
