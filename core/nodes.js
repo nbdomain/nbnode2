@@ -196,9 +196,9 @@ class Nodes {
         let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
         const time = Math.floor(Date.now() / 1000).toString()
         if (affected > 0)
-            indexer.database.saveLastFullSyncTime(time, 'bsv')
+            indexers.db.saveLastFullSyncTime(time, 'bsv')
         if (affected1 > 0)
-            indexer.database.saveLastFullSyncTime(time, 'ar')
+            indexers.db.saveLastFullSyncTime(time, 'ar')
 
         if (affected + affected1 > 0) {
             indexers.db.resetDB("domain")

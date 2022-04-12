@@ -10,7 +10,7 @@ class ARChain {
         //if(!v)return { code: 1, msg:"can not verify" }
 
         const rtx = await ARChain.raw2rtx({ rawtx, height, db })
-        return { code: rtx ? 0 : 1, txTime: rtx && rtx.ts }
+        return { code: rtx ? 0 : -1, txTime: rtx && rtx.ts }
     }
     static getAttrib({ rawtx }) {
         try {
@@ -44,6 +44,10 @@ class ARChain {
             const nbdata = JSON.parse(tags.nbdata)
             const attrib = JSON.parse(nbdata[1])
             rtx.ts = attrib.ts
+            if (!attrib.ts || !Number.isInteger(+rtx.ts)) {
+                console.error("timestamp is missing:", rtx.txid)
+                return null
+            }
             let cmd = null
             if (attrib.v === 2) {
                 cmd = Util.parseJson(tags.cmd)
