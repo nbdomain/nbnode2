@@ -27,13 +27,5 @@ const CONFIG = {
 // ------------------------------------------------------------------------------------------------
 
 module.exports = {
-  API,
-  PLANARIA_TOKEN,
-  NODEKEY,
-  TXDB,
-  DMDB,
-  FETCH_LIMIT,
-  START_HEIGHT,
-  MEMPOOL_EXPIRATION,
   CONFIG
 }
