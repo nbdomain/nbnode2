@@ -182,6 +182,7 @@ class Nodes {
                     }
                 }
             } catch (e) {
+                console.error(e)
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
         }
