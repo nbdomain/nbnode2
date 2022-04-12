@@ -339,7 +339,8 @@ class Database {
   }
   isTransactionDownloaded(txid, chain) {
     const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${chain}_tx WHERE txid = ?`
-    return !!this.txdb.prepare(sql).raw(true).get(txid)[0]
+    const ret = this.txdb.prepare(sql).raw(true).get(txid)
+    return ret && !!ret[0]
   }
   getTransactionsAboveHeight(height, chain) {
     const sql = `SELECT txid FROM ${chain}_tx WHERE height > ?`
