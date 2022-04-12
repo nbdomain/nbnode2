@@ -164,6 +164,7 @@ class Nodes {
             }
             try {
                 const res = await axios.get(url)
+                console.log(res.data.length)
                 for (const tx of res.data) {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
