@@ -255,7 +255,7 @@ class Database {
   }
   getLastFullSyncTime(chain) {
     try {
-      const sql = `SELECT ${chain}_fullSyncTime from config`
+      const sql = `SELECT ${chain}_fullSyncTime1 from config`
       const res = this.txdb.prepare(sql).get()
       return res ? res : 0
     } catch (e) {
@@ -264,7 +264,7 @@ class Database {
   }
   saveLastFullSyncTime(time, chain) {
     try {
-      const sql = `insert or replace into config (key,value) VALUES('${chain}_fullSyncTime',?) `
+      const sql = `insert or replace into config (key,value) VALUES('${chain}_fullSyncTime1',?) `
       this.txdb.prepare(sql).run(time)
     } catch (e) {
       console.log(e)

@@ -188,15 +188,17 @@ class Nodes {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
         }
-        if (fullSync && affected > 0) {
-            const time = Math.floor(Date.now() / 1000).toString()
-            indexer.database.saveLastFullSyncTime(time, chain)
-        }
         return affected
     }
     async FullSyncFromNodes(indexers) {
         let affected = await this._syncFromNode(indexers.bsv, true, 'bsv')
         let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
+        const time = Math.floor(Date.now() / 1000).toString()
+        if (affected > 0)
+            indexer.database.saveLastFullSyncTime(time, 'bsv')
+        if (affected1 > 0)
+            indexer.database.saveLastFullSyncTime(time, 'ar')
+
         if (affected + affected1 > 0) {
             indexers.db.resetDB("domain")
         }
