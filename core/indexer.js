@@ -9,10 +9,7 @@ const Database = require('./database')
 const Downloader = require('./downloader')
 const Crawler = require('./crawler')
 const Resolver = require('./resolver')
-const fs = require('fs')
 const Parser = require('./parser')
-const Nodes = require('./nodes')
-const axios = require('axios')
 const { CONFIG } = require('./config')
 const process = require('process')
 
@@ -44,6 +41,7 @@ class Indexer {
     const fetchFunction = this.api.fetch ? this.api.fetch.bind(this.api) : null
 
     this.database = db; //new Database(chain, txdb, dmdb, this.logger)
+    db.onResetDB = Resolver.onResetDB
     this.downloader = new Downloader(fetchFunction, numParallelDownloads)
 
     this.crawler = new Crawler(api, db, this.chain)
@@ -71,25 +69,6 @@ class Indexer {
     //fs.copyFileSync(this.database.dmpath,__dirname+"/public/domains.db");
     process.kill(process.pid, 'SIGINT')
   }
-  async syncFromNode() {
-    const apiURL = Nodes.get()
-    const latestTime = this.database.getLatestTxTime(this.chain)
-    const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + this.chain
-    try {
-      const res = await axios.get(url)
-      //console.log(res)
-      for (const tx of res.data) {
-        this.add(tx.txid, tx.rawtx, tx.height, tx.time)
-        if (tx.oDataRecord) {
-          const item = tx.oDataRecord
-          this.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
-        }
-        console.log("syncFromNode: Adding ", tx.txid)
-      }
-    } catch (e) {
-      console.error("syncFromNode " + apiURL + ": " + e.message)
-    }
-  }
   async start() {
 
     let height = this.database.getHeight(this.chain) || this.startHeight
@@ -99,8 +78,6 @@ class Indexer {
       height -= this.reorg
       hash = null
     }
-    await Nodes.SyncFromNodes(this, false, this.chain)
-    await Nodes.SyncFromNodes(this, true, this.chain)
 
     if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))
@@ -109,11 +86,8 @@ class Indexer {
     if (CONFIG.exit_count != 0)
       this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * CONFIG.exit_count);
 
-    const self = this
-    this.fullSyncTimer = setInterval(() => {
-      Nodes.SyncFromNodes(self, true, self.chain)
-    }, 30 * 60 * 1000); //every 30 minutes
   }
+
 
   async stop() {
     this.logger.info('stopping...')

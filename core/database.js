@@ -40,6 +40,7 @@ class Database {
     this.tickers = {}
     this.onAddTransaction = null
     this.onDeleteTransaction = null
+    this.onResetDB = null
   }
   open() {
     let noTxdb = false;
@@ -76,7 +77,6 @@ class Database {
       const states = fs.statSync(this.dmpath + "." + VER_DMDB)
       TXRESOLVED_FLAG = states.birthtimeMs
     }
-
     //--------------------------------------------------------//
     //  Domains DB
     //-------------------------------------------------------//
@@ -171,6 +171,24 @@ class Database {
 
 
     this.preDealData()
+  }
+  resetDB(type = 'domain') {
+    if (type === 'domain') {
+      let sql = "DELETE from nidobj"
+      this.dmdb.prepare(sql).run()
+      sql = "DELETE from keys"
+      this.dmdb.prepare(sql).run()
+      sql = "DELETE from tags"
+      this.dmdb.prepare(sql).run()
+
+      fs.unlinkSync(this.dmpath + "." + VER_DMDB)
+      fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
+      const states = fs.statSync(this.dmpath + "." + VER_DMDB)
+      TXRESOLVED_FLAG = states.birthtimeMs
+    }
+    if (this.onResetDB) {
+      this.onResetDB(type)
+    }
   }
   preDealData() {
     //change txTime from NULL to 0

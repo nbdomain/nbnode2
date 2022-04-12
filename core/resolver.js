@@ -67,6 +67,11 @@ class Resolver {
         this.resolveNextBatchTimerId = 0
 
     }
+    static onResetDB(type) {
+        if (type === 'domain') {
+            g_nidObjMap = {}
+        }
+    }
     start() {
         if (this.started) return
         this.started = true

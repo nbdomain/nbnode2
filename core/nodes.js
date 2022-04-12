@@ -139,9 +139,9 @@ class Nodes {
         }
         return {}
     }
-    async SyncFromNodes(indexer, fullSync, chain) {
+    async _syncFromNode(indexer, fullSync, chain) {
         const latestTime = fullSync ? indexer.database.getLastFullSyncTime(chain) : indexer.database.getLatestTxTime(chain)
-        let fullSyncDone = false
+        let affected = 0
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
         }
@@ -149,7 +149,6 @@ class Nodes {
             const apiURL = node.id
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
             if (fullSync) {
-
                 const dataCount = indexer.database.getDataCount()
                 const url1 = apiURL + "/api/dataCount"
                 try {
@@ -170,22 +169,37 @@ class Nodes {
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
                     if (ret && ret.code == 0) {
+                        console.log("syncFromNode: Adding ", tx.txid)
+                        affected++
                         if (tx.oDataRecord) {
                             const item = tx.oDataRecord
                             indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
                         }
                         indexer.add(tx.txid, tx.rawtx, tx.height, tx.time)
                     }
-                    console.log("syncFromNode: Adding ", tx.txid)
                 }
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
         }
-        if (fullSyncDone) {
+        if (fullSync && affected > 0) {
             const time = Math.floor(Date.now() / 1000).toString()
             indexer.database.saveLastFullSyncTime(time, chain)
         }
+        return affected
+    }
+    async FullSyncFromNodes(indexers) {
+        let affected = await this._syncFromNode(indexers.bsv, true, 'bsv')
+        let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
+        if (affected + affected1 > 0) {
+            indexers.db.resetDB("domain")
+        }
+    }
+    async startTxSync(indexers) {
+        await this._syncFromNode(indexers.bsv, false, 'bsv')
+        await this._syncFromNode(indexers.ar, false, 'ar')
+        await this.FullSyncFromNodes(indexers)
+        setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10)
     }
     static inst() {
         if (node == null) {

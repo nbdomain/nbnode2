@@ -44,9 +44,11 @@ if (myArgs) {
 let indexers = null, server = null;
 let apiAR = null, apiBSV = null;
 class Indexers {
-  static init() {
+  static initDB() {
     this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger)
     this.db.open()
+  }
+  static init() {
     //this.db.saveData("Hello World", "nbdomain.a")
     //this.db.saveData(Buffer.from([0, 1, 0, 0, 2, 0]), "nbdomain.a")
     //console.log(this.db.readData("0cc84ab57c476d2385b899ca742a2790", { string: false }))
@@ -61,8 +63,11 @@ class Indexers {
 
     this.bsv = new Indexer(this.db, apiBSV, "bsv", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.bsv, CONSTS.MEMPOOL_EXPIRATION, REORG)
     this.ar = new Indexer(this.db, apiAR, "ar", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.ar, CONSTS.MEMPOOL_EXPIRATION, REORG)
+    this.bsv.indexers = this
+    this.ar.indexers = this
   }
   static async start() {
+    await Nodes.startTxSync(this)
     await this.ar.start()
     await this.bsv.start()
   }
@@ -86,7 +91,7 @@ class Indexers {
   }
 }
 async function main() {
-
+  Indexers.initDB()
   const seedNode = await Nodes.init()
   Indexers.init()
 
