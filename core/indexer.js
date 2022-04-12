@@ -70,6 +70,11 @@ class Indexer {
     //fs.copyFileSync(this.database.dmpath,__dirname+"/public/domains.db");
     process.kill(process.pid, 'SIGINT')
   }
+  async reCrawlAll() {
+    await this.stop();
+    this.database.setHeightAndHash(this.startHeight, "", this.chain)
+    this.start()
+  }
   async start() {
 
     let height = this.database.getHeight(this.chain) || this.startHeight

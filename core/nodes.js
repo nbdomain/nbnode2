@@ -148,6 +148,7 @@ class Nodes {
         for (const node of this.getNodes()) {
             const apiURL = node.id
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
+            let remoteData = 0
             if (fullSync) {
                 const dataCount = indexer.database.getDataCount()
                 const url1 = apiURL + "/api/dataCount"
@@ -155,6 +156,7 @@ class Nodes {
                     const res = await axios.get(url1)
                     if (res.data) {
                         if (dataCount[chain] >= res.data[chain]) continue;
+                        remoteData = res.data[chain]
                         console.log(`Need sync. self ${chain} count:${dataCount[chain]},${apiURL} count:${res.data[chain]}`)
                     }
                 } catch (e) {
@@ -181,6 +183,14 @@ class Nodes {
                         console.error("invalid tx:", tx.txid)
                     }
                 }
+                if (fullSync && remoteData > 0) {
+                    const dataCount = indexer.database.getDataCount()
+                    if (dataCount[chain] < remoteData) {
+                        console.log("recrawl all from chain:", chain)
+                        indexer.reCrawlAll()
+                    }
+                }
+
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
