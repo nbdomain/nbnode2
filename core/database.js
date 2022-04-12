@@ -9,6 +9,7 @@ const Parser = require('./parser')
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
 const { CONFIG } = require('./config')
+const { DEF } = require('./def')
 
 var Path = require('path');
 
@@ -414,39 +415,22 @@ class Database {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
   async getUnresolvedTX(count, chain) {
-    let list = [];
-    if (chain == 'bsv') {
-      const sql = `SELECT * FROM ${chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
-      list = this.txdb.prepare(sql).raw(false).all(count);
-    }
-    if (list.length == 0) { //no more old format tx
-      const sql = `SELECT * FROM ${chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
-      const list1 = this.txdb.prepare(sql).raw(false).all(count);
-      list = list.concat(list1)
-    }
-
-    if (list) {
-      for (let i = 0; i < list.length; i++) {
-        if (list[i].bytes == null) {
-          list.splice(i)
-          break;
-        }
-        if (list[i].txid == "1bb7a9d790908828cf25a9d5380801e6abe3481a1d5be51c6bbcc8d6eb8b5fb2") {
-          console.log("found")
-        }
-        const rawtx = (chain == 'bsv' ? Buffer.from(list[i].bytes).toString('hex') : Buffer.from(list[i].bytes).toString())
-        const res = await (Parser.get(chain).parseRaw({ rawtx: rawtx, height: list[i].height, time: list[i].time }))
-        if (res.obj && res.obj.output.domain == "10200.test") {
-          console.log("found")
-        }
-        if (res.code == 0) list[i] = { ...res.obj, ...list[i] }
-        else {
-          list[i].output = { err: res.msg }
-        }
-        delete list[i].bytes
+    try {
+      let list = [];
+      if (chain == 'bsv') {
+        const sql = `SELECT * FROM ${chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND time !=${DEF.TIME_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+        list = this.txdb.prepare(sql).raw(false).all(count);
       }
+      if (list.length == 0) { //no more old format tx
+        const sql = `SELECT * FROM ${chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND time !=${DEF.TIME_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+        const list1 = this.txdb.prepare(sql).raw(false).all(count);
+        list = list.concat(list1)
+      }
+      return list;
+    } catch (e) {
+      console.error(e)
+      return []
     }
-    return list;
   }
   loadDomain(domain) {
     const res = this.getDomainStmt.get(domain);
@@ -470,7 +454,7 @@ class Database {
     }
   }
   getDataCount() {
-    let sql = "select (select count(*) from bsv_tx) as bsv , (select count(*) from ar_tx) as ar"
+    let sql = `select (select count(*) from bsv_tx where time !=${DEF.TIME_INVALIDTX} ) as bsv , (select count(*) from ar_tx where time !=${DEF.TIME_INVALIDTX}) as ar`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
@@ -635,15 +619,14 @@ class Database {
   }
   async queryTX(fromTime, toTime, chain) {
     if (toTime == -1) toTime = 9999999999
-    let sql = `SELECT * from ${chain}_tx where txTime > ? AND txTime < ?`
+    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ?) OR (time > ? AND time < ?)`
     //console.log(sql,fromTime,toTime)
-    const ret = this.txdb.prepare(sql).all(fromTime, toTime)
+    const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
     //console.log(ret)
     for (const item of ret) {
-      const rawtx = chain == 'bsv' ? Buffer.from(item.bytes).toString('hex') : Buffer.from(item.bytes).toString()
+      const rawtx = item.bytes && (chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
       item.rawtx = rawtx
       if (rawtx) {
-        //const ret = await Parser.get(chain).parseRaw({ rawtx, height: item.height, time: item.time })
         const attrib = await (Parser.get(chain).getAttrib({ rawtx }));
         if (attrib && attrib.hash) {
           item.oDataRecord = this.readData(attrib.hash)

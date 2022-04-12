@@ -1,4 +1,3 @@
-const Parser = require('./parser')
 const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
@@ -49,7 +48,8 @@ class Nodes {
             node.weight++
         }
     }
-    async init() {
+    async init(parser) {
+        this.parser = parser
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
         await this.refreshPeers(true)
@@ -168,7 +168,7 @@ class Nodes {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     if (indexer.database.isTransactionDownloaded(tx.txid, chain)) continue
-                    const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
+                    const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
                         console.log("syncFromNode: Adding ", tx.txid)
                         affected++
@@ -182,7 +182,6 @@ class Nodes {
                     }
                 }
             } catch (e) {
-                console.error(e)
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
         }
@@ -209,7 +208,7 @@ class Nodes {
     }
     static inst() {
         if (node == null) {
-            node = new Nodes
+            node = new Nodes()
         }
         return node
     }

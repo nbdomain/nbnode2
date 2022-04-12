@@ -11,6 +11,7 @@ const Crawler = require('./crawler')
 const Resolver = require('./resolver')
 const Parser = require('./parser')
 const { CONFIG } = require('./config')
+const { DEF } = require('./def')
 const process = require('process')
 
 // ------------------------------------------------------------------------------------------------
@@ -238,21 +239,18 @@ class Indexer {
     }
     const height = this.database.getTransactionHeight(txid, this.chain);
     const block_time = this.database.getTransactionTime(txid, this.chain);
-    let meta = null
+    let ret = {}
     try {
-      meta = await Parser.get(this.chain).verify(rawtx, height, block_time);
-      if (meta.code != 0) {
-        this.logger.warn(txid, ":" + meta.msg);
-        this.database.deleteTransaction(txid, this.chain);
-        return;
+      ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
+      if (ret.code != 0) {
+        this.logger.warn(txid, ":" + ret.msg);
+        this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
       }
     } catch (e) {
       console.error(e);
-      this.database.deleteTransaction(txid, this.chain);
-      return;
+      this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
     }
-    //this.database.setTransaction(txid, meta.obj)
-    this.database.saveTransaction(txid, rawtx, meta.txTime, this.chain)
+    this.database.saveTransaction(txid, rawtx, ret.rtx?.txTime, this.chain)
     return
 
 

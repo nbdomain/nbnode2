@@ -216,8 +216,8 @@ async function handleNewTx(para, from) {
         const res = await axios.get(url)
         if (res.data && res.data.code == 0) {
             const item = res.data.oDataRecord
-            const ret = await (Parser.get(chain).parseRaw({ rawtx: res.data.rawtx, oData: item?.raw, height: -1 }));
-            if (ret.code == 0 && ret.obj.oHash === item.hash)
+            const ret = await (Parser.get(chain).verify({ rawtx: res.data.rawtx, oData: item?.raw, height: -1 }));
+            if (ret.code == 0 && ret.rtx?.oHash === item.hash)
                 await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
             else {
                 console.error("wrong rawtx format. ret:", ret)

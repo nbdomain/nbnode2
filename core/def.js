@@ -19,7 +19,7 @@ const CMD = {
     "BUY": "buy",
     "TRANSFER": "transfer",
     "NOP": "nop",
-    "MAKE_PUBLIC":"make_public",
+    "MAKE_PUBLIC": "make_public",
     "PAY_REGISTER": "pay_register",
     "PAY_BUY": "pay_buy",
     NFT_CREATE: "nft.create",
@@ -34,7 +34,10 @@ const DEF = {
     STATUS_VALID: 0x01,
     STATUS_TRANSFERING: 0x11,  // (code:17)
     STATUS_PUBLIC: 0x10,
+
+    TIME_INVALIDTX: 1 //MARK an invalid tx
 }
+
 class NIDObject {
     constructor(domain) {
         this.domain = domain;

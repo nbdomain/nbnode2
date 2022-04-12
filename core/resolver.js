@@ -177,14 +177,21 @@ class Resolver {
                     g_nidObjMap = {}; //release memory
                 }
             } else {
-                let lastResolvedId = 0;
                 console.log("get ", rtxArray.length, " txs from DB")
                 // Add transaction to Nid one by one in their creation order
                 try {
-                    for (const rtx of rtxArray) {
-                        this.db.setTransactionResolved(rtx.txid, this.chain)
-                        if (!rtx.output || !rtx.output.domain) continue
-                        if (rtx.command == CMD.REGISTER && rtx.output.err) continue
+                    for (const item of rtxArray) {
+                        this.db.setTransactionResolved(item.txid, this.chain)
+                        const rawtx = (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+                        delete item.bytes
+                        const res = await Parser.get(this.chain).parseRaw({ rawtx, height: item.height, time: item.time })
+                        if (!res) continue
+                        const rtx = { ...res.obj, ...item }
+                        if (!rtx.output || rtx.output?.err) {
+                            //console.error(item.txid, " parse error:", rtx.output?.err)
+                            continue
+                        }
+
                         let domain = rtx.output.domain
                         if (domain == "10200.test") {
                             console.log("found")
@@ -203,7 +210,7 @@ class Resolver {
                             g_nidObjMap[domain] = obj
                             g_nidObjMap[domain].dirty = true
                         }
-                        lastResolvedId = rtx.id
+
                     }
 
 
@@ -220,8 +227,6 @@ class Resolver {
 
                     }
                 }
-                //if (lastResolvedId != 0)
-                //    this.db.saveLastResolvedId(lastResolvedId)
             }
 
         } catch (err) {

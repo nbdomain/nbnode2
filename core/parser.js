@@ -25,10 +25,9 @@ class Parser {
         this.parser_nft.init(db)
         this.db = db
     }
-    async verify(rawtx, height, block_time) {
-        if (this.chain === 'ar') return await ARChain.verify(rawtx, height, block_time, this.db);
-        if (this.chain === 'bsv') return await BSVChain.verify(rawtx, height, block_time, this.db);
-        throw "Unsupported chain"
+    async verify({ rawtx, oData, height, time }) {
+        let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+        return { code: rtx ? 0 : 1, rtx: rtx }
     }
     domainParser() {
         /*switch(this.chain){
@@ -50,11 +49,13 @@ class Parser {
     }
     async parseRaw({ rawtx, oData, height, time, verify = false }) {
 
-        let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+        //let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+        const ret = await this.verify({ rawtx, oData, height, time })
+        if (ret.code != 0) {
+            return { code: 1, msg: "invalid rawtx format" }
+        }
+        const rtx = ret.rtx
         try {
-            if (!rtx) {
-                return { code: 1, msg: "invalid rawtx format" }
-            }
             if (verify && height == -1) { //p2p rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
@@ -63,7 +64,6 @@ class Parser {
                     return { code: 1, msg: "invalid timestamp" }
                 }
             }
-            //console.log(rtx)
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
             if (handler) rtx.output = await handler.parseTX(rtx, verify)

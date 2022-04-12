@@ -122,7 +122,7 @@ class BSVChain {
     }
     static async verify(rawtx, height, block_time, db) {
         const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
-        return { code: rtx ? 0 : -1, txTime: rtx && rtx.ts }
+        return { code: rtx ? 0 : -1, rtx: rtx }
     }
     static _reArrage(rtx) {
         if (rtx.out[0].s2 === "nbd") {

@@ -9,6 +9,7 @@ const Server = require('./server')
 const Database = require('./database')
 const Nodes = require('./nodes')
 const CONSTS = require('./const')
+const Parser = require('./parser')
 
 const Planaria = require('./planaria')
 //const UrChain = require('./urchain')
@@ -92,7 +93,7 @@ class Indexers {
 }
 async function main() {
   Indexers.initDB()
-  const seedNode = await Nodes.init()
+  const seedNode = await Nodes.init(Parser)
   Indexers.init()
 
   server = new Server(Indexers, logger)
