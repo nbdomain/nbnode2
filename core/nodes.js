@@ -156,9 +156,9 @@ class Nodes {
                     if (res.data) {
                         if (dataCount[chain] >= res.data[chain]) continue;
                         console.log(`Need sync. self ${chain} count:${dataCount[chain]},${apiURL} count:${res.data[chain]}`)
-                        fullSyncDone = true
                     }
                 } catch (e) {
+                    console.error(e.message)
                     continue
                 }
             }
