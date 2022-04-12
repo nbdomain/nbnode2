@@ -168,6 +168,7 @@ class Nodes {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     if (indexer.database.isTransactionDownloaded(tx.txid, chain)) continue
+                    console.log("doing:", tx.txid)
                     const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
                     if (ret && ret.code == 0) {
                         console.log("syncFromNode: Adding ", tx.txid)
