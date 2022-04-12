@@ -176,6 +176,8 @@ class Nodes {
                             indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
                         }
                         indexer.add(tx.txid, tx.rawtx, tx.height, tx.time)
+                    } else {
+                        console.error("invalid tx:", tx.txid)
                     }
                 }
             } catch (e) {
