@@ -131,7 +131,8 @@ class BSVChain {
             }
             txTime = rtx?.ts
             if (rtx.ts && rtx.ts > block_time)
-                return { code: -1, msg: 'txTime invalid' }
+                console.error("rtx.ts:", rtx.ts, "block_time:", block_time)
+            return { code: -1, msg: 'txTime invalid' }
         }
         return { code: 0, txTime: txTime }
     }
