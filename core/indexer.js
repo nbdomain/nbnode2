@@ -250,7 +250,7 @@ class Indexer {
       console.error(e);
       this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
     }
-    this.database.saveTransaction(txid, rawtx, ret.rtx?.txTime, this.chain)
+    this.database.saveTransaction(txid, rawtx, ret.rtx?.ts, this.chain)
     return
 
 

@@ -658,8 +658,7 @@ class Database {
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
       this.dtdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {
-      console.error(e)
-      console.log("hash:", hash)
+      console.error("Error Saving Data:", e.message, " hash:", hash)
     }
   }
   readDataFromDisk(hash, option) {

@@ -182,7 +182,7 @@ class Resolver {
                 try {
                     for (const item of rtxArray) {
                         this.db.setTransactionResolved(item.txid, this.chain)
-                        const rawtx = (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+                        const rawtx = item.bytes && (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
                         delete item.bytes
                         const res = await Parser.get(this.chain).parseRaw({ rawtx, height: item.height, time: item.time })
                         if (!res) continue
