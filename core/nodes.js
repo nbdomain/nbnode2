@@ -140,7 +140,7 @@ class Nodes {
         return {}
     }
     async _syncFromNode(indexer, fullSync, chain) {
-        const latestTime = fullSync ? indexer.database.getLastFullSyncTime(chain) : indexer.database.getLatestTxTime(chain)
+        let latestTime = fullSync ? indexer.database.getLastFullSyncTime(chain) : indexer.database.getLatestTxTime(chain)
         let affected = 0
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
