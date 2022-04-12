@@ -25,7 +25,6 @@ const CONSTS = {
     },
     "proxy_map": {
         "/api/": "api",
-        "/web/": "web",
         '/admin/': "admin"
     },
     "nidcheck_endpoint": "https://util.nbsite.link/namecheck/v1/check/",

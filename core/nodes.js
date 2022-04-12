@@ -144,7 +144,6 @@ class Nodes {
         let affected = 0
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
-            if (chain == 'ar') latestTime = 0
         }
         for (const node of this.getNodes()) {
             const apiURL = node.id
@@ -165,12 +164,10 @@ class Nodes {
             }
             try {
                 const res = await axios.get(url)
-                console.log(res.data.length)
                 for (const tx of res.data) {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     if (indexer.database.isTransactionDownloaded(tx.txid, chain)) continue
-                    console.log("doing:", tx.txid)
                     const ret = await (Parser.get(chain).parseRaw({ rawtx: tx.rawtx, oData: oData, height: tx.height }));
                     if (ret && ret.code == 0) {
                         console.log("syncFromNode: Adding ", tx.txid)
@@ -208,7 +205,7 @@ class Nodes {
         await this._syncFromNode(indexers.bsv, false, 'bsv')
         await this._syncFromNode(indexers.ar, false, 'ar')
         await this.FullSyncFromNodes(indexers)
-        setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10)
+        setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     static inst() {
         if (node == null) {

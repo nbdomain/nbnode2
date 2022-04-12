@@ -705,13 +705,11 @@ class Database {
     return ret
   }
   async verifyTxDB(chain) {
+    console.log("verifying...", chain)
     let sql = `select * from ${chain}_tx`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
       const rawtx = chain === 'bsv' ? item.bytes.toString('hex') : item.bytes.toString()
-      if (item.txid == "xQqnCdHnJkYXJoIsbdnHFucOVo6RVPZfNYYzwLlsmLU") {
-        console.log("found")
-      }
       const res = await Parser.get(chain).verify(rawtx, item.height, item.time)
       if (res.code != 0) {
         console.log("found invalid tx", item.txid)
