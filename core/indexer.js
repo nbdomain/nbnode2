@@ -214,8 +214,12 @@ class Indexer {
   }
 
   _addTransactions(txids, txhexs, height, time) {
+    this.resolver.pauseResolve = true //pause resolve while adding new tx
     this.database.transaction(() => {
       txids.forEach((txid, i) => {
+        if (txid === "WU2e-F-nCh9KxYw2ZbrOhjUTomtLwrnheyZzcBjGeBc") {
+          console.log("found")
+        }
         this.database.addNewTransaction(txid, this.chain)
         if (height) this.database.setTransactionHeight(txid, height, this.chain)
         if (time) this.database.setTransactionTime(txid, time, this.chain)
@@ -233,6 +237,7 @@ class Indexer {
         }
       })
     })
+    this.resolver.pauseResolve = false
   }
 
   async _parseAndStoreTransaction(txid, rawtx) {
@@ -246,16 +251,19 @@ class Indexer {
     const block_time = this.database.getTransactionTime(txid, this.chain);
     let ret = {}
     try {
+      this.database.setTransactionRaw(txid, rawtx, this.chain)
       ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
       if (ret.code != 0) {
-        this.logger.warn(txid, ":" + ret.msg);
         this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
+      }
+      if (ret.rtx) {
+        this.database.setTxTime(txid, ret.rtx.ts, this.chain)
       }
     } catch (e) {
       console.error(e);
       this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
     }
-    this.database.saveTransaction(txid, rawtx, ret.rtx?.ts, this.chain)
+
     return
 
 

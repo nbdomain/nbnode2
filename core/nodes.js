@@ -121,10 +121,14 @@ class Nodes {
     async getData(txid, chain) {
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
-            const res = await axios.get(url)
-            if (res.data && res.data.code == 0 && chain == 'ar') {
-                const d = JSON.parse(res.data.rawtx)
-                if (d.data) return d.data
+            try {
+                const res = await axios.get(url)
+                if (res.data && res.data.code == 0 && chain == 'ar') {
+                    const d = JSON.parse(res.data.rawtx)
+                    if (d.data) return d.data
+                }
+            } catch (e) {
+                console.error("getData:error getting from url:", url, e.code, e.message)
             }
         }
         return null
@@ -132,9 +136,13 @@ class Nodes {
     async getOData(hash, option = { string: true }) {
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
-            const res = await axios.get(url)
-            if (res.data && res.data.code == 0) {
-                return res.data
+            try {
+                const res = await axios.get(url)
+                if (res.data && res.data.code == 0) {
+                    return res.data
+                }
+            } catch (e) {
+                console.error("getOData:err getting from:", url, e.code, e.message)
             }
         }
         return {}

@@ -65,6 +65,7 @@ class Resolver {
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
+        this.pauseResolve = false
 
     }
     static onResetDB(type) {
@@ -166,7 +167,7 @@ class Resolver {
         return await this.db.queryTX(fromTime, toTime, this.chain)
     }
     async resolveNextBatch() {
-        if (!this.started) return
+        if (!this.started || this.pauseResolve) return
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 
         try {
@@ -181,9 +182,14 @@ class Resolver {
                 // Add transaction to Nid one by one in their creation order
                 try {
                     for (const item of rtxArray) {
-                        this.db.setTransactionResolved(item.txid, this.chain)
+
                         const rawtx = item.bytes && (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
                         delete item.bytes
+                        if (!rawtx) {
+                            console.log("found")
+                            continue
+                        }
+                        this.db.setTransactionResolved(item.txid, this.chain)
                         const res = await Parser.get(this.chain).parseRaw({ rawtx, height: item.height, time: item.time })
                         if (!res) continue
                         const rtx = { ...res.obj, ...item }

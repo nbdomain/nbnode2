@@ -271,10 +271,14 @@ class Database {
       console.log(e)
     }
   }
-  saveTransaction(txid, rawtx, txTime, chain) {
+  setTransactionRaw(txid, rawtx, chain) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-    const sql = `UPDATE ${chain}_tx SET bytes = ?, txTime = ? WHERE txid = ?`
-    this.txdb.prepare(sql).run(bytes, txTime, txid)
+    const sql = `UPDATE ${chain}_tx SET bytes = ? WHERE txid = ?`
+    this.txdb.prepare(sql).run(bytes, txid)
+  }
+  setTxTime(txid, txTime, chain) {
+    const sql = `UPDATE ${chain}_tx SET txTime = ? WHERE txid = ?`
+    this.txdb.prepare(sql).run(txTime, txid)
   }
   setTransactionResolved(txid, chain) {
     this.txdb.prepare(`UPDATE ${chain}_tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
