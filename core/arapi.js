@@ -145,33 +145,36 @@ class AWNode {
       if (this.db.hasTransaction(item.node.id, 'ar')) continue
 
       let height = item.node.block && item.node.block.height
+      if (height === 912199) {
+        console.log("found")
+      }
       let time = item.node.block && item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
       if (height > bigHeight) { bigHeight = height }
       if (!block) {
         block = { height: height, time: time, hash: item.node.block.id, txids: [], txhexs: [] }
-        this.txs.push(block)
       }
 
       let tags = {}
       item.node.tags.forEach(tag => tags[tag.name] = tag.value)
       item.node.tags = tags
-      if (!tags.cmd) {
-        try {
-          const data = await this.lib.getData(item.node.id, { decode: false, string: true })
-          if (data) item.node.data = data
-        } catch (e) {
-          const d = await Nodes.getData(item.node.id, 'ar')
-          if (d) {
-            console.log("got from peers")
-            item.node.data = d
-          } else
-            console.error(e.message + " txid:", item.node.id)
-        }
-
-      }
+      /* if (!tags.cmd) {
+         try {
+           const data = await this.lib.getData(item.node.id, { decode: false, string: true })
+           if (data) item.node.data = data
+         } catch (e) {
+           const d = await Nodes.getData(item.node.id, 'ar')
+           if (d) {
+             console.log("got from peers")
+             item.node.data = d
+           } else
+             console.error(e.message + " txid:", item.node.id)
+         }
+ 
+       }*/
       block.txids.push(item.node.id)
       block.txhexs.push(JSON.stringify(item.node))
+      this.txs.push(block)
     }
     try {
       const current = await this.arweave.blocks.getCurrent();

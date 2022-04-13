@@ -118,7 +118,7 @@ class Nodes {
         }
         return null
     }
-    async getData(txid, chain) {
+    async getArData(txid, chain) {
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
             try {
@@ -133,7 +133,7 @@ class Nodes {
         }
         return null
     }
-    async getOData(hash, option = { string: true }) {
+    async getData(hash, option = { string: true }) {
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
             try {
@@ -142,7 +142,7 @@ class Nodes {
                     return res.data
                 }
             } catch (e) {
-                console.error("getOData:err getting from:", url, e.code, e.message)
+                console.error("getData:err getting from:", url, e.code, e.message)
             }
         }
         return {}

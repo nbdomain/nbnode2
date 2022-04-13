@@ -217,7 +217,7 @@ class Indexer {
     this.resolver.pauseResolve = true //pause resolve while adding new tx
     this.database.transaction(() => {
       txids.forEach((txid, i) => {
-        if (txid === "WU2e-F-nCh9KxYw2ZbrOhjUTomtLwrnheyZzcBjGeBc") {
+        if (txid === "_n9hX_1RceozQ6rPEE6ofidnI_5hLZFZk2A8uFM0TpA") {
           console.log("found")
         }
         this.database.addNewTransaction(txid, this.chain)
