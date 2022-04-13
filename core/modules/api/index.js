@@ -362,7 +362,7 @@ app.get(`/tld`, function (req, res) {
     }
     res.json(CONSTS.tld_config);
 });
-app.get('/onSell', (req, res) => {
+app.get('/onSale', (req, res) => {
     res.json(indexers.db.getSellDomains())
 })
 app.get('/queryTX', async (req, res) => {
