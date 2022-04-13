@@ -362,6 +362,9 @@ app.get(`/tld`, function (req, res) {
     }
     res.json(CONSTS.tld_config);
 });
+app.get('/onSell', (req, res) => {
+    res.json(indexers.db.getSellDomains())
+})
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']

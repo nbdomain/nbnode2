@@ -590,6 +590,18 @@ class Database {
     const sql = 'SELECT domain FROM nidobj WHERE owner = ? '
     return this.dmdb.prepare(sql).all(address);
   }
+  getSellDomains() {
+    const sql = "SELECT jsonString from nidobj where jsonString like '%sell_info%' "
+    const ret = this.dmdb.prepare(sql).all()
+    let res = []
+    for (const item of ret) {
+      const obj = JSON.parse(item.jsonString)
+      if (obj.sell_info.expire > Date.now()) {
+        res.push({ domain: obj.domain, sell_info: obj.sell_info })
+      }
+    }
+    return res;
+  }
   nftCreate(nft) {
     this.addNFTStmt.run(nft.symbol, JSON.stringify(nft.attributes), JSON.stringify(nft.data), JSON.stringify(nft.attributes), JSON.stringify(nft.data))
     this.deleteNFTStmt.run(nft.symbol + '.testing')
@@ -607,9 +619,6 @@ class Database {
   saveDomainObj(obj) {
     try {
       this.transaction(() => {
-        if (obj.domain == "10200.test") {
-          console.log("found")
-        }
         this.saveKeys(obj);
         this.saveTags(obj);
         this.saveNFT(obj);

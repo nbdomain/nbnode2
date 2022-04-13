@@ -52,7 +52,6 @@ class NIDObject {
         this.users = {}
         this.admins = []
         this.admin_update_tx = 0
-        this.sell_info = null
         this.tf_update_tx = 0
         this.lastUpdateBlockId = 0
         this.last_txid = 0

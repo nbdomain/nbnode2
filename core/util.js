@@ -195,7 +195,7 @@ class Util {
             nidObj.admin_update_tx = 0;
         }
         nidObj.tf_update_tx = 0
-        nidObj.sell_info = null;
+        delete nidObj.sell_info
         nidObj.dirty = true
         return nidObj;
     }

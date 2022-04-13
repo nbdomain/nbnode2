@@ -1,8 +1,7 @@
 const axios = require('axios');
 const Arweave = require('arweave');
-
-(async () => {
-    
+/*
+   
     const variables = {
         tags:
         {
@@ -46,4 +45,7 @@ const Arweave = require('arweave');
         query,variables
     });
     console.log(response.data);
+    */
+(async () => {
+  console.log(__dirname)
 })()

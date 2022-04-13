@@ -16,8 +16,8 @@ const CONFIG = {
     contact: "", //contact email of the owner,required for ssl certificate
   },
   server: {
-    domain: "", //domain name or IP of the node
-    https: false, //for auto generated SSL certificate
+    domain: "", //public domain name or IP of the node
+    https: false, //for auto generated SSL certificate, require domain name be set
     port: 9000,  //port for http service
   },
   dataPath: "", //Existing Disk Path for big data, default is core/db/data

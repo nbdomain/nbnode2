@@ -83,7 +83,9 @@ class Nodes {
         if (config.peers.length)
             peers2test = peers2test.concat(config.peers)
         const p = await this._fromDNS()
-        peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
+        peers2test = peers2test.concat(p)
+        if (config.server.domain)
+            peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
         //this.peers = await this.selectNode(peers2test,50)
         const peers = new Set(peers2test)
         for (const node of peers) {
