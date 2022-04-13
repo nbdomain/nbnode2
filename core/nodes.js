@@ -168,7 +168,7 @@ class Nodes {
                         console.log(`Need sync. self ${chain} count:${dataCount[chain]},${apiURL} count:${res.data[chain]}`)
                     }
                 } catch (e) {
-                    console.error(e.message)
+                    console.error(url1 + ":", e.message)
                     continue
                 }
             }
