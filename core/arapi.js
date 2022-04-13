@@ -151,8 +151,10 @@ class AWNode {
       let time = item.node.block && item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
       if (height > bigHeight) { bigHeight = height }
+      let newBlock = false
       if (!block) {
         block = { height: height, time: time, hash: item.node.block.id, txids: [], txhexs: [] }
+        newBlock = true
       }
 
       let tags = {}
@@ -174,7 +176,8 @@ class AWNode {
        }*/
       block.txids.push(item.node.id)
       block.txhexs.push(JSON.stringify(item.node))
-      this.txs.push(block)
+      if (newBlock)
+        this.txs.push(block)
     }
     try {
       const current = await this.arweave.blocks.getCurrent();
