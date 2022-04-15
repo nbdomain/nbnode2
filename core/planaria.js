@@ -39,7 +39,7 @@ class Planaria {
         this.maxReorgDepth = 10
         //this.runConnectFetcher = new RunConnectFetcher()
 
-        this.txns = []
+
         this.network = null
         this.mempoolEvents = null
         this.recrawlTimerId = null
@@ -51,6 +51,7 @@ class Planaria {
         // if (network !== 'main') throw new Error(`Network not supported with Planaria: ${network}`)
 
         //this.runConnectFetcher.connect(height, network)
+        this.txns = []
         this.abortController = new AbortController()
         this.network = "main"
         this.lastCrawlHeight = height

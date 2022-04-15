@@ -79,7 +79,7 @@ class Crawler {
     }
 
     if (!this.started) return
-
+    if (this.pollForNewBlocksTimerId) clearTimeout(this.pollForNewBlocksTimerId)
     this.pollForNewBlocksTimerId = setTimeout(this._pollForNewBlocks.bind(this), this.pollForNewBlocksInterval)
   }
 
