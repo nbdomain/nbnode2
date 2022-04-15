@@ -31,7 +31,7 @@ class AWNode {
     this.recrawlInterveral = 30000
     this.db = db
 
-    this.txs = []
+
 
     ar_node = this
     //setTimeout(this._crawl.bind(this), 30000)
@@ -62,6 +62,7 @@ class AWNode {
 
   async connect(height, chain) {
     if (chain !== 'ar') throw new Error(`chain not supported with NbNode: ${network}`)
+    this.txs = []
     this.lib = await CoinFly.create('ar')
     this.arweave = this.lib.ar
     this.lastCrawlHeight = height
@@ -118,7 +119,19 @@ class AWNode {
   async fetch(txid) {
     //const tx = await this.arweave.transactions.get(txid)
     console.log("ar: fetching ", txid, " return null")
-    return { hex: "{}", height: 0, time: 0 }
+    const tx = this.db.getTransaction(txid, 'ar')
+    let rawtx = ""
+    if (tx && tx.bytes) rawtx = tx.bytes.toString()
+    if (!rawtx) {
+      const res = await axios.get("https://arweave.net/tx/" + txid)
+      if (res.data) {
+        rawtx = JSON.stringify(res.data)
+      }
+    }
+    if (tx) {
+      return { hex: rawtx, height: tx.height, time: tx.time }
+    }
+    return { hex: null, height: 0, time: 0 }
   }
   async _recrawl() {
     const scheduleRecrawl = () => {

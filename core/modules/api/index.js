@@ -386,7 +386,7 @@ app.get('/test', async (req, res) => {
     //res.json(indexers.db.getDataCount())
     //await indexers.db.verifyTxDB('bsv')
     //await indexers.db.verifyTxDB('ar')
-    indexers.bsv.reCrawlAll()
+    indexers.ar.reCrawlAll()
     res.end("ok")
 })
 app.get('/dataCount', (req, res) => {

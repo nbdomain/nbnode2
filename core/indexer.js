@@ -229,7 +229,7 @@ class Indexer {
         let parsed = this.database.isTransactionParsed(txid, this.chain)
         if (parsed) return
 
-        const hex = this.database.getRawTransaction(txid, this.chain)//txhexs && txhexs[i]
+        const hex = txhexs && txhexs[i] ? txhexs[i] : this.database.getRawTransaction(txid, this.chain)//txhexs && txhexs[i]
         if (hex) {
           await this._parseAndStoreTransaction(txid, hex)
         } else {
