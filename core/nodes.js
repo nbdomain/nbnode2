@@ -2,7 +2,6 @@ const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const api = require('./modules/api');
 let node = null
 class Nodes {
     constructor() {
