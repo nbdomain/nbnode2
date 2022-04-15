@@ -172,7 +172,7 @@ class Nodes {
                     }
                 } catch (e) {
                     console.error(url1 + ":", e.message)
-                    node.cool(apiURL)
+                    this.cool(apiURL)
                     continue
                 }
             }
@@ -209,7 +209,7 @@ class Nodes {
                 if (fullSync && affected > 0) return affected
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
-                node.cool(apiURL)
+                this.cool(apiURL)
             }
         }
         return affected
