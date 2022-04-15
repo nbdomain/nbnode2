@@ -71,8 +71,8 @@ class Indexer {
     process.kill(process.pid, 'SIGINT')
   }
   async reCrawlAll() {
-    await this.stop();
     this.database.setHeightAndHash(this.startHeight, "", this.chain)
+    await this.stop();
     this.start()
   }
   async start() {
@@ -100,8 +100,8 @@ class Indexer {
     this.resolver.stop()
     this.crawler.stop()
     if (this.api.disconnect) await this.api.disconnect()
-    this.downloader.stop()
-    this.database.close()
+    //    this.downloader.stop()
+    //this.database.close()
   }
 
   add(txid, hex = null, height = null, time = null) {

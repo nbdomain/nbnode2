@@ -194,7 +194,7 @@ class AWNode {
         }
       }
     } catch (e) {
-      console.error(e.code)
+      console.error("arapi._crawl:", e.code)
       this.lib.changeNode("http://gateway-7.arweave.net:1984");
     }
   }
