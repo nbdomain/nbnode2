@@ -2,6 +2,7 @@ const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
+const api = require('./modules/api');
 let node = null
 class Nodes {
     constructor() {
@@ -158,6 +159,7 @@ class Nodes {
         for (const node of this.getNodes()) {
             let apiURL = node.id
             if (fullSync) apiURL = this.get() //select based on weight
+            console.log("Selected node:", apiURL)
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
             let remoteData = 0
             if (fullSync) {
