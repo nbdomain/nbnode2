@@ -155,9 +155,9 @@ class Nodes {
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
         }
-        let FullSyncDone = false
         for (const node of this.getNodes()) {
-            const apiURL = node.id
+            let apiURL = node.id
+            if (fullSync) apiURL = node.get() //select based on weight
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
             let remoteData = 0
             if (fullSync) {
@@ -172,18 +172,23 @@ class Nodes {
                     }
                 } catch (e) {
                     console.error(url1 + ":", e.message)
+                    node.cool(apiURL)
                     continue
                 }
             }
             try {
                 const res = await axios.get(url)
+                let all = res.data.length
                 for (const tx of res.data) {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
-                    if (indexer.database.isTransactionParsed(tx.txid, chain)) continue
+                    if (indexer.database.isTransactionParsed(tx.txid, chain)) {
+                        --all
+                        continue
+                    }
                     const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
-                        console.log("syncFromNode: Adding ", tx.txid)
+                        console.log("syncFromNode: Adding ", tx.txid, "(", --all, " left)")
                         affected++
                         if (tx.oDataRecord) {
                             const item = tx.oDataRecord
@@ -199,12 +204,12 @@ class Nodes {
                     if (dataCount[chain] < remoteData) {
                         console.log("recrawl all from chain:", chain)
                         indexer.reCrawlAll()
-                        FullSyncDone = true
                     }
                 }
-                if (FullSyncDone) return affected
+                if (fullSync && affected > 0) return affected
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
+                node.cool(apiURL)
             }
         }
         return affected

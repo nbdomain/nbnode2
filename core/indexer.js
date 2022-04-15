@@ -249,14 +249,14 @@ class Indexer {
     }
     const height = this.database.getTransactionHeight(txid, this.chain);
     const block_time = this.database.getTransactionTime(txid, this.chain);
-    let ret = {}
+    let attrib = {}
     try {
       //just save, no verify
       this.database.setTransactionRaw(txid, rawtx, this.chain)
       //ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
-      ret = await Parser.get(this.chain).getAttrib({ rawtx })
-      if (ret.code == 0 && ret.rtx) {
-        this.database.setTxTime(txid, ret.rtx.ts, this.chain)
+      attrib = await Parser.get(this.chain).getAttrib({ rawtx })
+      if (attrib.ts) {
+        this.database.setTxTime(txid, attrib.ts, this.chain)
       }
     } catch (e) {
       // console.error(e);

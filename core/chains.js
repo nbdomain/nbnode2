@@ -145,7 +145,7 @@ class BSVChain {
     static getAttrib({ rawtx }) {
         const tx = TXO.fromRaw(rawtx);
         const attrib = Util.parseJson(tx.out[0].s3)
-        return attrib
+        return attrib ? attrib : {}
     }
     static async raw2rtx({ rawtx, oData, height, time: block_time, db }) {
         //check sig
