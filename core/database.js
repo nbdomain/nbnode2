@@ -342,6 +342,11 @@ class Database {
     const sql = `SELECT txid FROM ${chain}_tx WHERE txid = ?`
     return !!this.txdb.prepare(sql).get(txid)
   }
+  isTransactionParsed(txid, chain) {
+    const sql = `SELECT txTime from ${chain}_tx WHERE txid = ?`
+    const ret = this.txdb.prepare(sql).raw(true).get(txid)
+    return ret[0] != 0
+  }
   isTransactionDownloaded(txid, chain) {
     const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${chain}_tx WHERE txid = ?`
     const ret = this.txdb.prepare(sql).raw(true).get(txid)

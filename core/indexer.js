@@ -226,10 +226,10 @@ class Indexer {
       })
 
       txids.forEach(async (txid, i) => {
-        let downloaded = this.database.isTransactionDownloaded(txid, this.chain)
-        if (downloaded) return
+        let parsed = this.database.isTransactionParsed(txid, this.chain)
+        if (parsed) return
 
-        const hex = txhexs && txhexs[i]
+        const hex = this.database.getRawTransaction(txid, this.chain)//txhexs && txhexs[i]
         if (hex) {
           await this._parseAndStoreTransaction(txid, hex)
         } else {
@@ -241,7 +241,7 @@ class Indexer {
   }
 
   async _parseAndStoreTransaction(txid, rawtx) {
-    if (this.database.isTransactionDownloaded(txid, this.chain)) return
+    if (this.database.isTransactionParsed(txid, this.chain)) return
 
     if (!rawtx) {
       this.logger.warn(txid, ":", "no rawtx");
@@ -251,17 +251,16 @@ class Indexer {
     const block_time = this.database.getTransactionTime(txid, this.chain);
     let ret = {}
     try {
+      //just save, no verify
       this.database.setTransactionRaw(txid, rawtx, this.chain)
-      ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
-      if (ret.code != 0) {
-        this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
-      }
-      if (ret.rtx) {
+      //ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
+      ret = await Parser.get(this.chain).getAttrib({ rawtx })
+      if (ret.code == 0 && ret.rtx) {
         this.database.setTxTime(txid, ret.rtx.ts, this.chain)
       }
     } catch (e) {
-      console.error(e);
-      this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
+      // console.error(e);
+      // this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
     }
 
     return

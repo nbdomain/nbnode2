@@ -205,13 +205,13 @@ app.post('/sendTx', async function (req, res) {
     }
     res.json(ret1);
 });
-async function handleNewTx(para, from) {
+async function handleNewTx(para, from, force = false) {
     let db = indexers.db, indexer = indexers.bsv;
     if (para.chain == "ar") {
         indexer = indexers.ar
     }
     const chain = para.chain ? para.chain : 'bsv'
-    if (!db.hasTransaction(para.txid, chain)) {
+    if (!db.hasTransaction(para.txid, chain) || force) {
         const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data && res.data.code == 0) {
@@ -379,11 +379,12 @@ app.get('/test', async (req, res) => {
         console.log("count:",ret.length)
         res.end("ok")*/
     //res.json(indexers.db.getAllPaytx('register'))
-    //res.json(await handleNewTx({ chain: 'bsv', txid: "5343ecbb33ff74b3a41f54eb276c02ae06cb23307065e810731024ad412659d0" }, "https://tnode.nbdomain.com"))
+    //res.json(await handleNewTx({ chain: 'bsv', txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }, "https://tnode.nbdomain.com", true))
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
-    await indexers.db.verifyTxDB('bsv')
-    await indexers.db.verifyTxDB('ar')
+    //await indexers.db.verifyTxDB('bsv')
+    //await indexers.db.verifyTxDB('ar')
+    indexers.bsv.reCrawlAll()
     res.end("ok")
 })
 app.get('/dataCount', (req, res) => {

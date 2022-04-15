@@ -34,7 +34,7 @@ class Planaria {
         this.logger = logger
         this.db = db
 
-        this.abortController = new AbortController()
+
         this.recrawlInterveral = 30000
         this.maxReorgDepth = 10
         //this.runConnectFetcher = new RunConnectFetcher()
@@ -51,7 +51,7 @@ class Planaria {
         // if (network !== 'main') throw new Error(`Network not supported with Planaria: ${network}`)
 
         //this.runConnectFetcher.connect(height, network)
-
+        this.abortController = new AbortController()
         this.network = "main"
         this.lastCrawlHeight = height
         this.logger.info('Crawling for new blocks via BitBus')

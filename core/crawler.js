@@ -33,7 +33,7 @@ class Crawler {
   }
 
   start(height, hash) {
-    if (this.started) return
+    //if (this.started) return
 
     this.started = true
     this.height = height

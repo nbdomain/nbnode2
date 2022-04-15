@@ -155,6 +155,7 @@ class Nodes {
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
         }
+        let FullSyncDone = false
         for (const node of this.getNodes()) {
             const apiURL = node.id
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
@@ -179,7 +180,7 @@ class Nodes {
                 for (const tx of res.data) {
                     let oData = null
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
-                    if (indexer.database.isTransactionDownloaded(tx.txid, chain)) continue
+                    if (indexer.database.isTransactionParsed(tx.txid, chain)) continue
                     const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
                         console.log("syncFromNode: Adding ", tx.txid)
@@ -198,9 +199,10 @@ class Nodes {
                     if (dataCount[chain] < remoteData) {
                         console.log("recrawl all from chain:", chain)
                         indexer.reCrawlAll()
+                        FullSyncDone = true
                     }
                 }
-
+                if (FullSyncDone) return affected
             } catch (e) {
                 console.error("syncFromNode " + apiURL + ": " + e.message)
             }
