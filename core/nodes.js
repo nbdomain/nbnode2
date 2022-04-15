@@ -209,6 +209,7 @@ class Nodes {
                 }
                 if (fullSync && affected > 0) return affected
             } catch (e) {
+                console.log(e)
                 console.error("syncFromNode " + apiURL + ": " + e.message)
                 this.cool(apiURL)
             }
