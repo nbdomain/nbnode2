@@ -75,6 +75,7 @@ class Indexers {
   static async stop() {
     await this.ar.stop();
     await this.bsv.stop();
+    this.db.close();
   }
   static resolver(chain) {
     return this.get(chain)?.resolver
