@@ -155,7 +155,7 @@ class AWNode {
 
     let bigHeight = height;
     for (let item of txs.edges) {
-      if (this.db.hasTransaction(item.node.id, 'ar')) continue
+      if (this.db.isTransactionParsed(item.node.id, 'ar')) continue
 
       let height = item.node.block && item.node.block.height
       if (height === 912199) {
