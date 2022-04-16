@@ -385,8 +385,8 @@ app.get('/test', async (req, res) => {
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
     //await indexers.db.verifyTxDB('bsv')
-    //await indexers.db.verifyTxDB('ar')
-    indexers.ar.reCrawlAll()
+    await indexers.db.verifyTxDB('ar')
+    //indexers.ar.reCrawlAll()
     res.end("ok")
 })
 app.get('/dataCount', (req, res) => {

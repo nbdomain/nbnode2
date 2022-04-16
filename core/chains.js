@@ -20,6 +20,10 @@ class ARChain {
                 tags = ArUtil.decodeTags(tx.tags)
             const nbdata = JSON.parse(tags.nbdata)
             const attrib = JSON.parse(nbdata[1])
+            if (attrib && attrib.ts) {
+                if (!Number.isInteger(attrib.ts))
+                    attrib.ts = 1
+            }
             return attrib
         } catch (e) {
             console.error(e)
@@ -145,6 +149,10 @@ class BSVChain {
     static getAttrib({ rawtx }) {
         const tx = TXO.fromRaw(rawtx);
         const attrib = Util.parseJson(tx.out[0].s3)
+        if (attrib && attrib.ts) {
+            if (!Number.isInteger(attrib.ts))
+                attrib.ts = 1
+        }
         return attrib ? attrib : {}
     }
     static async raw2rtx({ rawtx, oData, height, time: block_time, db }) {
