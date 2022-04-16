@@ -471,7 +471,7 @@ class Database {
     }
   }
   getDataCount() {
-    let sql = `select (select count(*) from bsv_tx } ) as bsv , (select count(*) from ar_tx) as ar`
+    let sql = `select (select count(*) from bsv_tx  ) as bsv , (select count(*) from ar_tx) as ar`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
