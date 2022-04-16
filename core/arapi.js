@@ -155,15 +155,12 @@ class AWNode {
 
     let bigHeight = height;
     for (let item of txs.edges) {
+      let height = item.node.block && item.node.block.height
+      if (height > bigHeight) { bigHeight = height }
       if (this.db.isTransactionParsed(item.node.id, 'ar')) continue
 
-      let height = item.node.block && item.node.block.height
-      if (height === 912199) {
-        console.log("found")
-      }
       let time = item.node.block && item.node.block.timestamp
       let block = this.txs.find(bl => bl.height === height)
-      if (height > bigHeight) { bigHeight = height }
       let newBlock = false
       if (!block) {
         block = { height: height, time: time, hash: item.node.block.id, txids: [], txhexs: [] }
