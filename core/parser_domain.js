@@ -82,7 +82,7 @@ class CMD_REGISTER {
         try {
             // Suppose the output array has a fixed order.
             // output 0 - OP_RETURN.
-            if (output.domain == "nbdomain.b") {
+            if (output.domain == "107493.b") {
                 console.log("found")
             }
             output.owner_key = rtx.out[0].s5;

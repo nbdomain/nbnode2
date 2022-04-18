@@ -650,7 +650,7 @@ class Database {
         //let sql = 'UPDATE nidobj SET txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=? where domain = ?';
         const txUpdate = obj.last_ts
         const txCreate = obj.reg_ts
-        if (obj.domain == "nbdomain.b") {
+        if (obj.domain == "107493.b") {
           console.log("found")
         }
         this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,

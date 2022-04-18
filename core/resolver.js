@@ -147,12 +147,12 @@ class Resolver {
     }
     async resolveNextBatch() {
         if (!this.started) return
-        for (const controller of this.controllers) {
-            if (!controller.canResolve()) {
-                this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
-                return
-            }
-        }
+        /*    for (const controller of this.controllers) {
+                if (!controller.canResolve()) {
+                    this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
+                    return
+                }
+            }*/
         console.log("start to resolve...")
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 

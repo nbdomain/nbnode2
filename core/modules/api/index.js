@@ -325,9 +325,9 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
         } else {
-            const atttrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
-            if (atttrib.hash) {
-                ret.oDataRecord = indexers.db.readData(atttrib.hash)
+            const attrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+            if (attrib.hash) {
+                ret.oDataRecord = indexers.db.readData(attrib.hash)
             }
         }
     }
@@ -411,10 +411,9 @@ app.get('/getData', (req, res) => {
     ret.rawtx = indexers.db.getRawTransaction(txid, chain)
 
     if (ret.rawtx) {
-        ret.atttrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
-        if (ret.atttrib.hash) {
-            ret.oDataRecord = indexers.db.readData(ret.atttrib.hash)
-
+        ret.attrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+        if (ret.attrib.hash) {
+            ret.oDataRecord = indexers.db.readData(ret.attrib.hash)
         }
     }
     res.json(ret)
