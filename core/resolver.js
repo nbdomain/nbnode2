@@ -153,6 +153,7 @@ class Resolver {
                 return
             }
         }
+        console.log("start to resolve...")
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 
         try {
