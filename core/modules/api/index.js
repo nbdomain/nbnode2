@@ -313,6 +313,11 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         const from = req.query['from']
         handleNewTx(para, from)
     }
+    if (cmd === "newnode") {
+        const d = req.query['data'];
+        const para = JSON.parse(d)
+        Nodes.addNode(d)
+    }
     if (cmd === 'gettx') {
         let chain = req.query['chain'] ? req.query['chain'] : 'bsv'
         let indexer = chain == 'bsv' ? indexers.bsv : indexers.ar

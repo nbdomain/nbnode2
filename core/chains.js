@@ -21,7 +21,7 @@ class ARChain {
             const nbdata = JSON.parse(tags.nbdata)
             const attrib = JSON.parse(nbdata[1])
             if (attrib && attrib.ts) {
-                if (!Number.isInteger(attrib.ts))
+                if (!Number.isInteger(+attrib.ts))
                     attrib.ts = 1
             }
             return attrib

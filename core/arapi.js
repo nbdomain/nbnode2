@@ -30,7 +30,7 @@ class AWNode {
     this.lastCrawHash = null
     this.recrawlInterveral = 30000
     this.db = db
-
+    this._canResolve = true
 
 
     ar_node = this
@@ -116,6 +116,9 @@ class AWNode {
     //    console.log(response.data)
     return response.data.data ? response.data.data.transactions : null
   }
+  canResolve() {
+    return this._canResolve
+  }
   async fetch(txid) {
     //const tx = await this.arweave.transactions.get(txid)
     console.log("ar: fetching ", txid, " return null")
@@ -152,7 +155,7 @@ class AWNode {
     let height = this.lastCrawlHeight + 1
     const txs = await this.queryTx({ name: "nbprotocol", values: ["nbd"] }, { min: height })
     if (!txs) return;
-
+    this._canResolve = false
     let bigHeight = height;
     for (let item of txs.edges) {
       let height = item.node.block && item.node.block.height
@@ -192,6 +195,7 @@ class AWNode {
       if (newBlock)
         this.txs.push(block)
     }
+    this._canResolve = true
     try {
       const current = await this.arweave.blocks.getCurrent();
       if (current) {

@@ -64,7 +64,8 @@ class Resolver {
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
-        this.pauseResolve = false
+
+        this.controllers = [] //control resolve switch
 
     }
     static onResetDB(type) {
@@ -165,8 +166,14 @@ class Resolver {
     async readNBTX(fromTime, toTime) {
         return await this.db.queryTX(fromTime, toTime, this.chain)
     }
+    addController(controller) {
+        this.controllers.push(controller)
+    }
     async resolveNextBatch() {
-        if (!this.started || this.pauseResolve) return
+        if (!this.started) return
+        for (const controller of this.controllers) {
+            if (!controller.canResolve()) return
+        }
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 
         try {
@@ -179,9 +186,9 @@ class Resolver {
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
                 // Add transaction to Nid one by one in their creation order
-                try {
-                    for (const item of rtxArray) {
 
+                for (const item of rtxArray) {
+                    try {
                         const rawtx = item.bytes && (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
                         delete item.bytes
                         if (!rawtx) {
@@ -215,13 +222,9 @@ class Resolver {
                             g_nidObjMap[domain] = obj
                             g_nidObjMap[domain].dirty = true
                         }
-
+                    } catch (e) {
+                        console.error(e);
                     }
-
-
-
-                } catch (e) {
-                    console.error(e);
                 }
 
                 for (let domain in g_nidObjMap) {

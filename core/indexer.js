@@ -10,6 +10,7 @@ const Downloader = require('./downloader')
 const Crawler = require('./crawler')
 const Resolver = require('./resolver')
 const Parser = require('./parser')
+const Nodes = require('./nodes')
 const { CONFIG } = require('./config')
 const { DEF } = require('./def')
 const process = require('process')
@@ -47,6 +48,8 @@ class Indexer {
 
     this.crawler = new Crawler(api, db, this.chain)
     this.resolver = new Resolver(this.chain, this.database)
+    this.resolver.addController(this.api)
+    this.resolver.addController(Nodes)
     Parser.get(this.chain).init(this.database)
 
     //this.database.onAddTransaction = this._onAddTransaction.bind(this)
@@ -69,6 +72,9 @@ class Indexer {
     //fs.copyFileSync(this.database.path, __dirname + "/public/txs.db");
     //fs.copyFileSync(this.database.dmpath,__dirname+"/public/domains.db");
     process.kill(process.pid, 'SIGINT')
+  }
+  pauseResolve(pause) {
+    this.resolver.pauseResolve = pause
   }
   async reCrawlAll() {
     this.database.setHeightAndHash(this.startHeight, "", this.chain)

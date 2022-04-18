@@ -34,12 +34,9 @@ class Planaria {
         this.logger = logger
         this.db = db
 
-
+        this._canResolve = true
         this.recrawlInterveral = 30000
         this.maxReorgDepth = 10
-        //this.runConnectFetcher = new RunConnectFetcher()
-
-
         this.network = null
         this.mempoolEvents = null
         this.recrawlTimerId = null
@@ -51,6 +48,7 @@ class Planaria {
         // if (network !== 'main') throw new Error(`Network not supported with Planaria: ${network}`)
 
         //this.runConnectFetcher.connect(height, network)
+
         this.txns = []
         this.abortController = new AbortController()
         this.network = "main"
@@ -186,7 +184,9 @@ class Planaria {
                 scheduleRecrawl()
             })
     }
-
+    canResolve() {
+        return this._canResolve
+    }
     async _crawl() {
         //this.logger.info('Recrawling planaria')
 
@@ -212,7 +212,7 @@ class Planaria {
             body: JSON.stringify(query),
             signal: this.abortController.signal
         }
-
+        this._canResolve = false
         return new Promise((resolve, reject) => {
             fetch('https://txo.bitbus.network/block', options)
                 .then(res => {
@@ -268,7 +268,7 @@ class Planaria {
                             this.lastCrawlHeight = pending[0].height
                             pending = []
                         }
-
+                        this._canResolve = true
                         resolve()
                     }
 

@@ -6,6 +6,7 @@ let node = null
 class Nodes {
     constructor() {
         this.nodes = []
+        this._canResolve = true
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -72,14 +73,7 @@ class Nodes {
     async refreshPeers(onlyLocal = false) {
         const port = config.server.port
         let peers2test = []
-        if (!onlyLocal) {
-            try {
-                const res = await axios.get("http://localhost:" + port + "/api/queryKeys?tags=nbnode")
-                if (res.data && res.data.length > 0) {
-                    //peers2test = res.data
-                }
-            } catch (e) { }
-        }
+
         if (config.peers.length)
             peers2test = peers2test.concat(config.peers)
         const p = await this._fromDNS()
@@ -100,6 +94,9 @@ class Nodes {
     getNodes() {
         return this.nodes
     }
+    addNode(url) {
+        this.nodes.push({ id: url, weight: 50 })
+    }
     async notifyPeers({ cmd, data }) {
         for (const peer of this.nodes) {
             const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
@@ -110,6 +107,7 @@ class Nodes {
             }
         }
     }
+
     async getTx(txid, chain) {
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
@@ -216,7 +214,11 @@ class Nodes {
         }
         return affected
     }
+    canResolve() {
+        return this._canResolve
+    }
     async FullSyncFromNodes(indexers) {
+        this._canResolve = false
         let affected = await this._syncFromNode(indexers.bsv, true, 'bsv')
         let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
         const time = Math.floor(Date.now() / 1000).toString()
@@ -228,6 +230,7 @@ class Nodes {
         if (affected + affected1 > 0) {
             indexers.db.resetDB("domain")
         }
+        this._canResolve = true
     }
     async startTxSync(indexers) {
         await this._syncFromNode(indexers.bsv, false, 'bsv')

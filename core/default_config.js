@@ -16,12 +16,12 @@ const CONFIG = {
     contact: "", //contact email of the owner,required for ssl certificate
   },
   server: {
-    domain: "", //public domain name or IP of the node
-    https: false, //for auto generated SSL certificate, require domain name be set
-    port: 9000,  //port for http service
+    domain: "", //public domain name or IP of the node, must set for public node and not set for private node
+    https: false, //for auto generated SSL certificate, require domain name to be set
+    port: 9000,  //port for http service, https will use 443 and ignore this setting
   },
   dataPath: "", //Existing Disk Path for big data, default is core/db/data
-  peers: ["https://tnode.nbdomain.com"],//other(than public) nbnode peers (optional)
+  peers: ["https://tnode.nbdomain.com"],//other(than public) nbnode peers and will not share with other nodes
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
 }
 // ------------------------------------------------------------------------------------------------
