@@ -5,7 +5,6 @@ const Parser = require('./parser')
 
 
 const MAX_RESOLVE_COUNT = 10000
-let g_nidObjMap = {}
 
 /**
    * Filter out private keys from object.
@@ -40,13 +39,13 @@ class Resolver {
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
-
+        this.nidObjMap = {}
         this.controllers = [] //control resolve switch
 
     }
     static onResetDB(type) {
         if (type === 'domain') {
-            g_nidObjMap = {}
+            this.nidObjMap = {}
         }
     }
     start() {
@@ -147,13 +146,12 @@ class Resolver {
     }
     async resolveNextBatch() {
         if (!this.started) return
-        /*    for (const controller of this.controllers) {
-                if (!controller.canResolve()) {
-                    this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
-                    return
-                }
-            }*/
-        console.log("start to resolve...")
+        for (const controller of this.controllers) {
+            if (!controller.canResolve()) {
+                this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
+                return
+            }
+        }
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
 
         try {
@@ -161,7 +159,7 @@ class Resolver {
                 if (!this.firstFinish) {
                     console.warn("------Handled All current TX from DB-------")
                     this.firstFinish = true
-                    //g_nidObjMap = {}; //release memory
+                    this.nidObjMap = {}; //release memory
                 }
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
@@ -188,30 +186,30 @@ class Resolver {
                         if (domain == "10200.test") {
                             console.log("found")
                         }
-                        if (!(domain in g_nidObjMap)) {
+                        if (!(domain in this.nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain)
                             if (!onDiskNid) {
-                                g_nidObjMap[domain] = new NIDObject(domain)
+                                this.nidObjMap[domain] = new NIDObject(domain)
                             } else {
-                                g_nidObjMap[domain] = onDiskNid
+                                this.nidObjMap[domain] = onDiskNid
                             }
                         }
-                        //const obj = DomainTool.fillNIDFromTX(g_nidObjMap[domain], rtx)
-                        const obj = await (Parser.get(this.chain).fillObj(g_nidObjMap[domain], rtx, g_nidObjMap))
+                        //const obj = DomainTool.fillNIDFromTX(this.nidObjMap[domain], rtx)
+                        const obj = await (Parser.get(this.chain).fillObj(this.nidObjMap[domain], rtx, this.nidObjMap))
                         if (obj) {
-                            g_nidObjMap[domain] = obj
-                            g_nidObjMap[domain].dirty = true
+                            this.nidObjMap[domain] = obj
+                            this.nidObjMap[domain].dirty = true
                         }
                     } catch (e) {
                         console.error(e);
                     }
                 }
 
-                for (let domain in g_nidObjMap) {
-                    if (g_nidObjMap[domain].owner_key != null && g_nidObjMap[domain].dirty === true) {
+                for (let domain in this.nidObjMap) {
+                    if (this.nidObjMap[domain].owner_key != null && this.nidObjMap[domain].dirty === true) {
                         console.log("updating:", domain)
-                        delete g_nidObjMap[domain].dirty
-                        this.db.saveDomainObj(g_nidObjMap[domain])
+                        delete this.nidObjMap[domain].dirty
+                        this.db.saveDomainObj(this.nidObjMap[domain])
 
                     }
                 }
