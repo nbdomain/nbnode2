@@ -161,7 +161,7 @@ class Resolver {
                 if (!this.firstFinish) {
                     console.warn("------Handled All current TX from DB-------")
                     this.firstFinish = true
-                    g_nidObjMap = {}; //release memory
+                    //g_nidObjMap = {}; //release memory
                 }
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
