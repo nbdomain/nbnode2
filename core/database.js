@@ -9,7 +9,7 @@ const Parser = require('./parser')
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
 const { CONFIG } = require('./config')
-const { DEF } = require('./def')
+const { DEF, CMD } = require('./def')
 
 var Path = require('path');
 
@@ -21,7 +21,7 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 5
+const VER_DMDB = 6
 const VER_TXDB = 4
 
 // ------------------------------------------------------------------------------------------------
@@ -94,14 +94,7 @@ class Database {
       this.dmdb.pragma('synchronous = NORMAL')
     }
 
-    const saveDomainSql = `
-    INSERT INTO "nidobj" 
-                (domain, nid,owner, owner_key, status, last_txid, lastUpdateBlockId, jsonString, tld) 
-                VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
-                ON CONFLICT( domain ) DO UPDATE
-                SET nid=?,owner=? ,owner_key=?,status=?,last_txid=?,lastUpdateBlockId=?,jsonString=?,tld=?
-    `
-    this.saveDomainObjStmt = this.dmdb.prepare(saveDomainSql);
+
     const saveKeysSql = `
     INSERT INTO "keys" 
                 (key, value,tags) 
@@ -545,20 +538,24 @@ class Database {
     }
     return null;
   }
-  saveKeyHistory(nidObj, keyName, value, txid) {
+  saveKeyHistory(nidObj, keyName, value, isUser = false) {
     try {
       this.transaction(() => {
         if (nidObj.domain == "10200.test") {
           console.log("found")
         }
-        const lenKey = keyName + "." + nidObj.domain + "/len";
+        if (isUser) {
+          console.log("found")
+        }
+        const separator = isUser ? "@" : ".";
+        const lenKey = keyName + separator + nidObj.domain + "/len";
         let lenRet = this.readKeyStmt.get(lenKey);
         let count = 0;
         if (lenRet) count = +lenRet.value;
         count++;
-        const tags = nidObj.keys[keyName].tags;
+        const tags = isUser ? nidObj.users[keyName].tags : nidObj.keys[keyName].tags;
         this.saveKeysStmt.run(lenKey, count.toString(), null, count.toString(), null); //save len
-        const hisKey = keyName + "." + nidObj.domain + "/" + count;
+        const hisKey = keyName + separator + nidObj.domain + "/" + count;
         this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, JSON.stringify(value), tags); //save len
         if (tags) {
           const tag1 = tags.split(';')
@@ -599,9 +596,18 @@ class Database {
     }
 
   }
-  queryDomains(address) {
-    const sql = 'SELECT domain FROM nidobj WHERE owner = ? '
-    return this.dmdb.prepare(sql).all(address);
+  findDomains(option) {
+    let sql = ""
+    if (option.address) {
+      sql = 'SELECT domain FROM nidobj WHERE owner = ? '
+      return this.dmdb.prepare(sql).all(option.address);
+    } else if (option.time) {
+      const from = option.time.from ? option.time.from : 0
+      const to = option.time.to ? option.time.to : 9999999999
+      sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
+      return this.dmdb.prepare(sql).all(from, to);
+    }
+    return []
   }
   getSellDomains() {
     const sql = "SELECT jsonString from nidobj where jsonString like '%sell_info%' "
@@ -635,8 +641,21 @@ class Database {
         this.saveKeys(obj);
         this.saveTags(obj);
         this.saveNFT(obj);
-        this.saveDomainObjStmt.run(obj.domain, obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld,
-          obj.nid, obj.owner, obj.owner_key, obj.status, obj.last_txid, obj.lastUpdateBlockId, JSON.stringify(obj), obj.tld)
+        let sql = `INSERT INTO "nidobj" 
+                (domain, txCreate,txUpdate,owner, owner_key, status, last_txid, jsonString, tld) 
+                VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
+                ON CONFLICT( domain ) DO UPDATE
+                SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?
+    `
+        //let sql = 'UPDATE nidobj SET txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=? where domain = ?';
+        const txUpdate = obj.last_ts
+        const txCreate = obj.reg_ts
+        if (obj.domain == "nbdomain.b") {
+          console.log("found")
+        }
+        this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
+          txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
+
       })
       this.tickerAll.broadcast("key_update", obj)
     } catch (e) {

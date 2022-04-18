@@ -390,8 +390,9 @@ app.get('/test', async (req, res) => {
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
     //await indexers.db.verifyTxDB('bsv')
-    await indexers.db.verifyTxDB('ar')
+    //await indexers.db.verifyTxDB('ar')
     //indexers.ar.reCrawlAll()
+    console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
     res.end("ok")
 })
 app.get('/dataCount', (req, res) => {
@@ -420,7 +421,7 @@ app.get('/getData', (req, res) => {
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
-    let result = bsv_resolver.db.queryDomains(addr);
+    let result = bsv_resolver.db.findDomains({ address: addr });
     const arr = []
     result.forEach(item => {
         const dd = item.domain.split('.')
@@ -434,10 +435,15 @@ app.get('/find_domain', (req, res) => {
     })
 
 })
-app.get(`/findDomain`, function (req, res) {
+app.get('/findDomain', function (req, res) {
     try {
-        var addr = req.query.address;
-        let result = bsv_resolver.db.queryDomains(addr);
+        let addr = req.query.address, result = [];
+        if (addr) {
+            result = bsv_resolver.db.findDomains({ address: addr });
+        } else if (req.query.option) {
+            let option = JSON.parse(req.query.option)
+            result = bsv_resolver.db.findDomains(option);
+        }
         res.json({
             code: 0,
             message: "OK",

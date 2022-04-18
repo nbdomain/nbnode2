@@ -1,6 +1,7 @@
 const { Parser_Domain } = require('./parser_domain')
 const { Parser_NFT } = require('./parser_nft');
-const { ARChain, BSVChain } = require('./chains.js')
+const { ARChain, BSVChain } = require('./chains.js');
+const { CMD } = require('./def');
 
 const parsers = {}
 class Parser {
@@ -86,6 +87,9 @@ class Parser {
         let retObj = null
         nidObj.lastUpdateheight = rtx.height;
         nidObj.last_txid = rtx.txid
+        nidObj.last_ts = rtx.ts ? rtx.ts : rtx.time
+        nidObj.last_cmd = rtx.command
+
         if (rtx.output.err) {
             return null
         }
@@ -100,6 +104,9 @@ class Parser {
             return null
         }
         console.log("applying cmd", rtx.command, " to:", nidObj.domain)
+        if (rtx.command === CMD.REGISTER) {
+            nidObj.reg_ts = nidObj.last_ts
+        }
         return JSON.parse(JSON.stringify(retObj))
     }
 }

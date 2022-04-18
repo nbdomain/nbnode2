@@ -50,7 +50,6 @@ class NIDObject {
         this.txid = 0;
         this.status = DEF.STATUS_EXPIRED;
         this.expire = 0;
-        this.lastTxTs = 0;
         this.keys = {};
         this.key_update_tx = {};
         this.tag_map = {};
@@ -59,10 +58,13 @@ class NIDObject {
         this.admins = [];
         this.admin_update_tx = 0;
         this.nft_log = {};
+        this.udpate
         this.tf_update_tx = 0;
-        this.lastUpdateBlockId = 0;
         this.last_txid = 0;
         this.truncated = false;
+        this.last_txid = 0
+        this.last_ts = 0
+        this.last_cmd = null
     }
 };
 

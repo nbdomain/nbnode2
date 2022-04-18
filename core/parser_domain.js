@@ -82,6 +82,9 @@ class CMD_REGISTER {
         try {
             // Suppose the output array has a fixed order.
             // output 0 - OP_RETURN.
+            if (output.domain == "nbdomain.b") {
+                console.log("found")
+            }
             output.owner_key = rtx.out[0].s5;
             if (rtx.out[0].s6) {
                 var extra = JSON.parse(rtx.out[0].s6);
@@ -310,20 +313,20 @@ class CMD_KEYUSER {
         }
         return output;
     }
-    static updateKeyAndHistory(obj, key, newValue, output) {
+    static updateKeyAndHistory(obj, key, newValue, output, isUser = false) {
         if (key == "todomain") return false//'todomain' is not a key
-        const oldvalue = obj.keys[key];
+        const oldvalue = isUser ? obj.users[key] : obj.keys[key];
         if (oldvalue) {
-            this.parser.db.saveKeyHistory(obj, key, oldvalue);
+            this.parser.db.saveKeyHistory(obj, key, oldvalue, isUser);
         }
         let newKey = { value: newValue, txid: output.txid };
         if (output.ts) newKey.ts = output.ts;
         if (output.pay) newKey.pay = output.pay;
         if (output.tags) {
             newKey.tags = output.tags
-            obj.tag_map[key + '.'] = output.tags;
+            isUser ? obj.tag_map[key + '@'] = output.tags : obj.tag_map[key + '.'] = output.tags;
         }
-        obj.keys[key] = newKey
+        isUser ? obj.users[key] = newKey : obj.keys[key] = newKey;
         return true
     }
     static async fillObj(nidObj, rtx, objMap) {
@@ -367,7 +370,6 @@ class CMD_KEYUSER {
                 let newKey = key.toLowerCase()
                 let newValue = rtx.output.value[key]
                 CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
-                //CMD_KEYUSER.updateKeyAndHistory(nidObj, rtx.txid, lowerKey, rtx.output.value[key], ts, rtx.output.tags, rtx.output.pay)
             }
 
 
@@ -376,11 +378,15 @@ class CMD_KEYUSER {
             // Change deep merge to shallow merge.
             for (const key in rtx.output.value) {
                 let lowerKey = key.toLowerCase();
-                nidObj.users[lowerKey] = { value: rtx.output.value[key], txid: rtx.txid, ts: rtx.output.ts };
-                nidObj.update_tx[lowerKey + '@'] = rtx.txid;
-                if (rtx.output.tags) {
-                    nidObj.tag_map[lowerKey + '@'] = rtx.output.tags;
-                }
+                let newKey = key.toLowerCase()
+                let newValue = rtx.output.value[key]
+                CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output, true)
+
+                /* nidObj.users[lowerKey] = { value: rtx.output.value[key], txid: rtx.txid, ts: rtx.output.ts };
+                 nidObj.update_tx[lowerKey + '@'] = rtx.txid;
+                 if (rtx.output.tags) {
+                     nidObj.tag_map[lowerKey + '@'] = rtx.output.tags;
+                 }*/
             }
         }
         return nidObj

@@ -92,8 +92,9 @@ class CMD_BASE {
 
         output.protocol = rtx.out[0].s2;
         output.nid = rtx.out[0].s3.toLowerCase();
-        output.domain = output.nid + "." + Util.getTLDFromRegisterProtocol(output.protocol)[0];
-        if (output.nid.indexOf('.') != -1 || output.nid.indexOf('@') != -1)
+        const tld = Util.getTLDFromRegisterProtocol(output.protocol)[0];
+        output.domain = output.nid + "." + tld
+        if (tld == null || output.nid.indexOf('.') != -1 || output.nid.indexOf('@') != -1)
             output.err = "Invalid NID"
         return output;
 

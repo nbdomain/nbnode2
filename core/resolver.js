@@ -1,5 +1,5 @@
 const { DomainTool } = require('./domainTool')
-const { ERR, CMD } = require('./def')
+const { ERR, CMD, NIDObject } = require('./def')
 const Parser = require('./parser')
 
 
@@ -33,30 +33,6 @@ function reduceKeys_(data, includeKeyUser) {
     return filtered;
 }
 
-class NIDObject {
-    constructor(domain) {
-        this.domain = domain
-        const ids = domain.split('.')
-        if (ids.length < 2) throw ("NIDOBject init with:", domain)
-        this.nid = ids[0]
-        this.tld = ids[ids.length - 1]
-        this.owner_key = null
-        this.owner = null
-        this.txid = 0
-        this.status = 0
-        this.expire = 0
-        this.lastTxTs = 0
-        this.keys = {}
-        this.update_tx = {}
-        this.tag_map = {}
-        this.users = {}
-        this.admins = []
-        this.admin_update_tx = 0
-        this.tf_update_tx = 0
-        this.lastUpdateBlockId = 0
-        this.last_txid = 0
-    }
-}
 
 class Resolver {
     constructor(chain, database) {
