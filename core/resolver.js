@@ -43,7 +43,7 @@ class Resolver {
         this.controllers = [] //control resolve switch
 
     }
-    static onResetDB(type) {
+    onResetDB(type) {
         if (type === 'domain') {
             this.nidObjMap = {}
         }

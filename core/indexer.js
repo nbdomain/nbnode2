@@ -43,7 +43,6 @@ class Indexer {
     const fetchFunction = this.api.fetch ? this.api.fetch.bind(this.api) : null
 
     this.database = db; //new Database(chain, txdb, dmdb, this.logger)
-    db.onResetDB = Resolver.onResetDB
     this.downloader = new Downloader(fetchFunction, numParallelDownloads)
 
     this.crawler = new Crawler(api, db, this.chain)

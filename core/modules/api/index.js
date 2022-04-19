@@ -392,7 +392,8 @@ app.get('/test', async (req, res) => {
     //await indexers.db.verifyTxDB('bsv')
     //await indexers.db.verifyTxDB('ar')
     //indexers.ar.reCrawlAll()
-    console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
+    //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
+    indexers.db.resetDB()
     res.end("ok")
 })
 app.get('/dataCount', (req, res) => {
