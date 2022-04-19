@@ -212,7 +212,8 @@ class AWNode {
       }
     } catch (e) {
       console.error("arapi._crawl:", e.code)
-      this.lib.changeNode("http://gateway-7.arweave.net:1984");
+      const arnodes = ["http://gateway-2.arweave.net:1984", "http://gateway-3.arweave.net:1984", "http://gateway-2.arweave.net:1984", "https://www.arweave.net"]
+      this.lib.changeNode(arnodes[Math.floor(Math.random() * 10 % 4)]);
     }
   }
   async getNextBlock(currHeight, currHash) {

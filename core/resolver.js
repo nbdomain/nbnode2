@@ -157,14 +157,12 @@ class Resolver {
         try {
             if (rtxArray == null || rtxArray.length == 0) {
                 if (!this.firstFinish) {
-                    console.warn("------Handled All current TX from DB-------")
+                    console.warn(`--${this.chain}----Handled All current TX from DB-------`)
                     this.firstFinish = true
                     this.nidObjMap = {}; //release memory
                 }
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
-                // Add transaction to Nid one by one in their creation order
-
                 for (const item of rtxArray) {
                     try {
                         const rawtx = item.bytes && (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
@@ -207,7 +205,7 @@ class Resolver {
 
                 for (let domain in this.nidObjMap) {
                     if (this.nidObjMap[domain].owner_key != null && this.nidObjMap[domain].dirty === true) {
-                        console.log("updating:", domain)
+                        console.log("saving:", domain)
                         delete this.nidObjMap[domain].dirty
                         this.db.saveDomainObj(this.nidObjMap[domain])
 

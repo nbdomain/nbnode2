@@ -134,6 +134,9 @@ class Nodes {
         return null
     }
     async getData(hash, option = { string: true }) {
+        if (hash == 'undefined') {
+            console.log("found")
+        }
         for (const node of this.getNodes()) {
             const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
             try {
