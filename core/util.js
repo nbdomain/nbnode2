@@ -11,6 +11,7 @@ const arweave = require('arweave')
 const CoinFly = require('coinfly');
 const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
+const rwc = require("random-weighted-choice")
 const LocalStorage = require('node-localstorage').LocalStorage;
 Storage = new LocalStorage('./storage');
 nbpay.auto_config();
