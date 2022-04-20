@@ -22,7 +22,7 @@ const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
 const VER_DMDB = 6
-const VER_TXDB = 4
+const VER_TXDB = 5
 
 // ------------------------------------------------------------------------------------------------
 // Database
@@ -743,14 +743,12 @@ class Database {
            this.deleteTransaction(item.txid, chain)
          }
        } */
-    let sql = `select txid, txTime from ${chain}_tx where txTime=1`
+    let sql = `select txid, txTime from ${chain}_tx where txTime=0`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
-      //if (item.txTime == 1) {
-      sql = `update ${chain}_tx set txTime = ? where txid = ? `
-      this.txdb.prepare(sql).run(2, item.txid)
-      //}
-
+      const rawtx = this.getRawTransaction(item.txid, chain)
+      const attrib = await Parser.get(chain).getAttrib({ rawtx })
+      this.setTxTime(item.txid, attrib.ts ? attrib.ts : 2, chain)
     }
     console.log("verify finish")
   }
