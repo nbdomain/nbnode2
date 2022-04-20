@@ -59,8 +59,8 @@ class Planaria {
 
     async disconnect() {
         clearTimeout(this.recrawlTimerId)
-
-        this.abortController.abort()
+        if (this.abortController)
+            this.abortController.abort()
 
         if (this.mempoolEvents) {
             this.mempoolEvents.close()
