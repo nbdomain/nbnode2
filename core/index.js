@@ -70,7 +70,7 @@ class Indexers {
     this.ar.indexers = this
   }
   static async start() {
-    //    await Nodes.startTxSync(this)
+    await Nodes.startTxSync(this)
     await this.ar.start()
     await this.bsv.start()
   }
