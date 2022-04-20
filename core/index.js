@@ -54,9 +54,7 @@ class Indexers {
     }
   }
   static init() {
-    //this.db.saveData("Hello World", "nbdomain.a")
-    //this.db.saveData(Buffer.from([0, 1, 0, 0, 2, 0]), "nbdomain.a")
-    //console.log(this.db.readData("0cc84ab57c476d2385b899ca742a2790", { string: false }))
+
     switch (CONSTS.API.bsv) {
       case 'planaria': apiBSV = new Planaria(CONSTS.PLANARIA_TOKEN, this.db, logger); break
       //default: throw new Error(`Unknown API: ${API}`)

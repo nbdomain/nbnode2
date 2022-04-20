@@ -183,14 +183,16 @@ class Nodes {
                 let all = res.data.length
                 for (const tx of res.data) {
                     let oData = null
+                    --all
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
                     if (indexer.database.isTransactionParsed(tx.txid, chain)) {
-                        --all
+                        console.log("syncFromNode: Skipping ", tx.txid, "(", all, " left)")
                         continue
                     }
                     const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
-                        console.log("syncFromNode: Adding ", tx.txid, "(", --all, " left)")
+
+                        console.log("syncFromNode: Adding ", tx.txid, "(", all, " left)")
                         affected++
                         if (tx.oDataRecord) {
                             const item = tx.oDataRecord

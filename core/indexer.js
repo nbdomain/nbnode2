@@ -259,9 +259,8 @@ class Indexer {
       this.database.setTransactionRaw(txid, rawtx, this.chain)
       //ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
       attrib = await Parser.get(this.chain).getAttrib({ rawtx })
-      if (attrib.ts) {
-        this.database.setTxTime(txid, attrib.ts, this.chain)
-      }
+      this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
+
     } catch (e) {
       // console.error(e);
       // this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
