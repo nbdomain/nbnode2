@@ -114,13 +114,17 @@ class ARChain {
 }
 class BSVChain {
     static verifySig(rawtx) { //retuen publicKey or null
-        let rtxVerified = BitID.verifyID(rawtx)
-        if (!rtxVerified) {
-            return null
-        }
-        let keyArray = BitID.getBitID(rawtx)
-        if (keyArray.length > 0) {
-            return keyArray[0].publicKey.toString()
+        try {
+            let rtxVerified = BitID.verifyID(rawtx)
+            if (!rtxVerified) {
+                return null
+            }
+            let keyArray = BitID.getBitID(rawtx)
+            if (keyArray.length > 0) {
+                return keyArray[0].publicKey.toString()
+            }
+        } catch (e) {
+
         }
         return null
     }

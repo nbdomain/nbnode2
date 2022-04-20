@@ -664,7 +664,7 @@ class Database {
   }
   async queryTX(fromTime, toTime, chain) {
     if (toTime == -1) toTime = 9999999999
-    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ?) OR (time > ? AND time < ? AND txTime = 0)`
+    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ?) OR (time > ? AND time < ? AND txTime = 2)`
     //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
     //console.log(ret)
@@ -743,13 +743,13 @@ class Database {
            this.deleteTransaction(item.txid, chain)
          }
        } */
-    let sql = `select txid, txTime from ${chain}_tx`
+    let sql = `select txid, txTime from ${chain}_tx where txTime=1`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
-      if (!Number.isInteger(item.txTime)) {
-        sql = `update ${chain}_tx set txTime = ? where txid = ? `
-        this.txdb.prepare(sql).run(1, item.txid)
-      }
+      //if (item.txTime == 1) {
+      sql = `update ${chain}_tx set txTime = ? where txid = ? `
+      this.txdb.prepare(sql).run(2, item.txid)
+      //}
 
     }
     console.log("verify finish")
