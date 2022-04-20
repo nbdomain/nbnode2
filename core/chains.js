@@ -22,7 +22,7 @@ class ARChain {
             const attrib = JSON.parse(nbdata[1])
             if (attrib && attrib.ts) {
                 if (!Number.isInteger(+attrib.ts))
-                    attrib.ts = 2
+                    return {}
             }
             return attrib
         } catch (e) {
@@ -155,7 +155,7 @@ class BSVChain {
         const attrib = Util.parseJson(tx.out[0].s3)
         if (attrib && attrib.ts) {
             if (!Number.isInteger(+attrib.ts))
-                attrib.ts = 2
+                return {}
         }
         return attrib ? attrib : {}
     }

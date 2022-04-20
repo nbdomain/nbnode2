@@ -160,7 +160,7 @@ class AWNode {
     for (let item of txs.edges) {
       let height = item.node.block && item.node.block.height
       if (height > bigHeight) { bigHeight = height }
-      if (item.node.id == "xQqnCdHnJkYXJoIsbdnHFucOVo6RVPZfNYYzwLlsmLU") {
+      if (item.node.id == "WU2e-F-nCh9KxYw2ZbrOhjUTomtLwrnheyZzcBjGeBc") {
         console.log("ar crawl found")
       }
       if (this.db.isTransactionParsed(item.node.id, 'ar')) continue

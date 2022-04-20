@@ -257,13 +257,17 @@ class Indexer {
     try {
       //just save, no verify
       this.database.setTransactionRaw(txid, rawtx, this.chain)
-      //ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
-      attrib = await Parser.get(this.chain).getAttrib({ rawtx })
-      this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
-
+      const ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
+      //attrib = await Parser.get(this.chain).getAttrib({ rawtx })
+      //this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
+      if (ret.code == 0) {
+        this.database.setTxTime(txid, ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2, this.chain)
+      } else {
+        this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
+      }
     } catch (e) {
       // console.error(e);
-      // this.database.setTransactionTime(txid, DEF.TIME_INVALIDTX, this.chain);
+      this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
     }
 
     return

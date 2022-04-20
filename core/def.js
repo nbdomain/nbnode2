@@ -35,7 +35,8 @@ const DEF = {
     STATUS_TRANSFERING: 0x11,  // (code:17)
     STATUS_PUBLIC: 0x10,
 
-    TIME_INVALIDTX: 1 //MARK an invalid tx
+    TX_INVALIDTX: 1, //MARK an invalid tx
+    TX_FORMAT2: 2
 }
 
 class NIDObject {

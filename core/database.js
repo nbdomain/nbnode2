@@ -346,7 +346,7 @@ class Database {
   isTransactionParsed(txid, chain) {
     const sql = `SELECT txTime from ${chain}_tx WHERE txid = ?`
     const ret = this.txdb.prepare(sql).raw(true).get(txid)
-    return (ret && ret[0] != 0)
+    return (ret && ret[0] != 0 && ret[0] != 1)
   }
   isTransactionDownloaded(txid, chain) {
     const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${chain}_tx WHERE txid = ?`
@@ -428,11 +428,11 @@ class Database {
     try {
       let list = [];
       if (chain == 'bsv') {
-        const sql = `SELECT * FROM ${chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND time !=${DEF.TIME_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+        const sql = `SELECT * FROM ${chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
         list = this.txdb.prepare(sql).raw(false).all(count);
       }
       if (list.length == 0) { //no more old format tx
-        const sql = `SELECT * FROM ${chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND time !=${DEF.TIME_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+        const sql = `SELECT * FROM ${chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
         const list1 = this.txdb.prepare(sql).raw(false).all(count);
         list = list.concat(list1)
       }
@@ -464,7 +464,7 @@ class Database {
     }
   }
   getDataCount() {
-    let sql = `select (select count(*) from bsv_tx  ) as bsv , (select count(*) from ar_tx) as ar`
+    let sql = `select (select count(*) from bsv_tx where txTime!=1) as bsv , (select count(*) from ar_tx where txTime!=1) as ar`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
