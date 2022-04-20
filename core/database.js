@@ -664,7 +664,7 @@ class Database {
   }
   async queryTX(fromTime, toTime, chain) {
     if (toTime == -1) toTime = 9999999999
-    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ?) OR (time > ? AND time < ? AND txTime = 2)`
+    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime=2) `
     //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
     //console.log(ret)
