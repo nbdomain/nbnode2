@@ -1,6 +1,6 @@
 
 const { Util, CMD_BASE } = require("./util.js");
-const { CMD, DEF } = require("./def")
+const { CMD, MemDomains, DEF } = require("./def")
 //const DomainTool = require('./domainTool')
 
 class Parser_Domain {
@@ -141,26 +141,38 @@ class CMD_BUY {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            var extra = JSON.parse(rtx.out[0].s5);
+            if (output.domain == "100019.a") {
+                console.log("found")
+            }
+            var extra = Util.parseJson(rtx.out[0].s5);
+            if (!extra || (extra && !extra.sell_txid)) {
+                extra = JSON.parse(rtx.out[0].s6)
+                output.v = 1
+                output.newOwner = rtx.out[0].s5
+                output.sellDomain = output.domain
+            } else {
+                output.v = 2
+                output.sellDomain = extra.domain
+            }
             output.transferTx = extra.sell_txid;
-            output.sellDomain = extra.domain
             output.agent = rtx.out[0].s6;
-            const pay1 = rtx.out[1].e
-            const pay2 = rtx.out[2].e
-            const ret = this.parser.db.loadDomain(extra.domain)
+            const pay1 = rtx.out[2].e
+            const pay2 = rtx.out[3].e
+            let ret = MemDomains.getObj(rtx.chain)[output.sellDomain]
+            if (!ret) ret = this.parser.db.loadDomain(output.sellDomain)
             if (ret && ret.sell_info) {
-                const delta = Math.abs(pay1.v - ret.sell_info.price)
+                const delta = Math.abs(ret.sell_info.price - pay1.v)
                 if (delta > 10) {
-                    output.err = "not enough payment for:" + extra.domain
+                    output.err = "not enough payment for:" + output.sellDomain
                     return output
                 }
                 const paymentAddress = Util.getPaymentAddr({ protocol: output.protocol })
                 if (paymentAddress != pay2.a) {
-                    output.err = "wrong fee payment address:" + extra.domain
+                    output.err = "wrong fee payment address:" + output.sellDomain
                     return output
                 }
             } else {
-                output.err = extra.domain + "is not onsale"
+                output.err = output.sellDomain + "is not onsale"
                 return output
             }
             //output.owner_key = rtx.publicKey;
@@ -176,7 +188,7 @@ class CMD_BUY {
         let obj = objMap[sellDomain]
         if (!obj) obj = this.parser.db.loadDomain(sellDomain)
         if (!obj) return null
-        await Util.resetNid(obj, nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
+        await Util.resetNid(obj, nidObj.output.newOwner ? nidObj.output.newOwner : nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
         objMap[sellDomain] = obj
         console.log("bought:", sellDomain)
         return nidObj

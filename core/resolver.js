@@ -1,5 +1,5 @@
 const { DomainTool } = require('./domainTool')
-const { ERR, CMD, NIDObject } = require('./def')
+const { ERR, MemDomains, NIDObject } = require('./def')
 const Parser = require('./parser')
 
 
@@ -39,13 +39,13 @@ class Resolver {
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
-        this.nidObjMap = {}
+
         this.controllers = [] //control resolve switch
 
     }
     onResetDB(type) {
         if (type === 'domain') {
-            this.nidObjMap = {}
+            MemDomains.clearObj(this.chain)
         }
     }
     start() {
@@ -153,13 +153,13 @@ class Resolver {
             }
         }
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
-
+        const nidObjMap = MemDomains.getObj(this.chain)
         try {
             if (rtxArray == null || rtxArray.length == 0) {
                 if (!this.firstFinish) {
                     console.warn(`--${this.chain}----Handled All current TX from DB-------`)
                     this.firstFinish = true
-                    this.nidObjMap = {}; //release memory
+                    MemDomains.clearObj(this.chain); //release memory
                 }
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
@@ -184,30 +184,29 @@ class Resolver {
                         if (domain == "10200.test") {
                             console.log("found")
                         }
-                        if (!(domain in this.nidObjMap)) {
+                        if (!(domain in nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain)
                             if (!onDiskNid) {
-                                this.nidObjMap[domain] = new NIDObject(domain)
+                                nidObjMap[domain] = new NIDObject(domain)
                             } else {
-                                this.nidObjMap[domain] = onDiskNid
+                                nidObjMap[domain] = onDiskNid
                             }
                         }
-                        //const obj = DomainTool.fillNIDFromTX(this.nidObjMap[domain], rtx)
-                        const obj = await (Parser.get(this.chain).fillObj(this.nidObjMap[domain], rtx, this.nidObjMap))
+                        const obj = await (Parser.get(this.chain).fillObj(nidObjMap[domain], rtx, nidObjMap))
                         if (obj) {
-                            this.nidObjMap[domain] = obj
-                            this.nidObjMap[domain].dirty = true
+                            nidObjMap[domain] = obj
+                            nidObjMap[domain].dirty = true
                         }
                     } catch (e) {
                         console.error(e);
                     }
                 }
 
-                for (let domain in this.nidObjMap) {
-                    if (this.nidObjMap[domain].owner_key != null && this.nidObjMap[domain].dirty === true) {
+                for (let domain in nidObjMap) {
+                    if (nidObjMap[domain].owner_key != null && nidObjMap[domain].dirty === true) {
                         console.log("saving:", domain)
-                        delete this.nidObjMap[domain].dirty
-                        this.db.saveDomainObj(this.nidObjMap[domain])
+                        delete nidObjMap[domain].dirty
+                        this.db.saveDomainObj(nidObjMap[domain])
 
                     }
                 }

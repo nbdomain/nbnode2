@@ -96,6 +96,7 @@ class ARChain {
                 out0['s' + i] = cmd[j]
             }
             out.push(out0)
+            out.push({ protocol: "bitidentity" })
             if (tx.target) {
                 out.push({ e: { a: tx.target, v: +tx.quantity / 10000 } })
             }

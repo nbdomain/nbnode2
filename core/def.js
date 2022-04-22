@@ -68,7 +68,17 @@ class NIDObject {
         this.last_cmd = null
     }
 };
-
+class MemDomains {
+    static getObj(chain) {
+        if (!this.objs) this.objs = {}
+        if (!this.objs[chain]) this.objs[chain] = {}
+        return this.objs[chain]
+    }
+    static clearObj(chain) {
+        if (this.objs && this.objs[chain])
+            this.objs[chain] = {}
+    }
+}
 module.exports = {
-    ERR, CMD, NIDObject, DEF
+    ERR, CMD, MemDomains, NIDObject, DEF
 }

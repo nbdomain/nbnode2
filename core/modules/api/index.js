@@ -185,15 +185,17 @@ app.post('/sendTx', async function (req, res) {
         res.json({ code: -1, message: ret.msg })
         return
     }
-    for (const raw of obj.more_rawtx) { //if there are more 
-        const rr = await Util.sendRawtx(raw, chain);
-        if (rr.code == 0) {
-            console.log("send more tx successfully. txid:", rr.txid);
-        }
-        else {
-            console.error("send more tx failed:", rr)
-            res.json(rr)
-            return
+    if (obj.more_rawtx) {
+        for (const raw of obj.more_rawtx) { //if there are more 
+            const rr = await Util.sendRawtx(raw, chain);
+            if (rr.code == 0) {
+                console.log("send more tx successfully. txid:", rr.txid);
+            }
+            else {
+                console.error("send more tx failed:", rr)
+                res.json(rr)
+                return
+            }
         }
     }
     const ret1 = await Util.sendRawtx(obj.rawtx, chain);
