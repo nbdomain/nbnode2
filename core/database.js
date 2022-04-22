@@ -174,6 +174,8 @@ class Database {
       this.dmdb.prepare(sql).run()
       sql = "DELETE from tags"
       this.dmdb.prepare(sql).run()
+      sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
+      this.dmdb.prepare(sql).run()
 
       fs.unlinkSync(this.dmpath + "." + VER_DMDB)
       fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
@@ -470,7 +472,9 @@ class Database {
     const ret1 = this.dmdb.prepare(sql).get()
     sql = "select (select count(*) from data) as odata"
     const ret2 = this.dtdb.prepare(sql).get()
-    return { ...ret, ...ret1, ...ret2 }
+    sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
+    const ret3 = this.dmdb.prepare(sql).get()
+    return { ...ret, ...ret1, ...ret2, ...ret3 }
   }
   queryKeys({ v, num, startID, tags }) {
     let sql = "select id,key,value,tags from keys ";
@@ -640,7 +644,7 @@ class Database {
       this.transaction(() => {
         this.saveKeys(obj);
         this.saveTags(obj);
-        this.saveNFT(obj);
+        //this.saveNFT(obj);
         let sql = `INSERT INTO "nidobj" 
                 (domain, txCreate,txUpdate,owner, owner_key, status, last_txid, jsonString, tld) 
                 VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
@@ -656,6 +660,8 @@ class Database {
         this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
           txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
 
+        sql = "Update config set value = value+1 where key = 'domainUpdates'"
+        this.dmdb.prepare(sql).run()
       })
       this.tickerAll.broadcast("key_update", obj)
     } catch (e) {

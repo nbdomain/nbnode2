@@ -155,6 +155,7 @@ class Nodes {
         if (fullSync) {
             console.log(chain + ": perform full sync check...")
         }
+        const dataCount = indexer.database.getDataCount()
         for (const node of this.getNodes()) {
             let apiURL = node.id
             if (fullSync) apiURL = this.get() //select based on weight
@@ -162,7 +163,7 @@ class Nodes {
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
             let remoteData = 0
             if (fullSync) {
-                const dataCount = indexer.database.getDataCount()
+
                 const url1 = apiURL + "/api/dataCount"
                 try {
                     const res = await axios.get(url1)
