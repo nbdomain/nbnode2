@@ -145,8 +145,8 @@ class CMD_BUY {
             output.transferTx = extra.sell_txid;
             output.sellDomain = extra.domain
             output.agent = rtx.out[0].s6;
-            const pay1 = rtx.out[2].e
-            const pay2 = rtx.out[3].e
+            const pay1 = rtx.out[1].e
+            const pay2 = rtx.out[2].e
             const ret = this.parser.db.loadDomain(extra.domain)
             if (ret && ret.sell_info) {
                 const delta = Math.abs(pay1.v - ret.sell_info.price)
@@ -177,6 +177,7 @@ class CMD_BUY {
         if (!obj) obj = this.parser.db.loadDomain(sellDomain)
         if (!obj) return null
         await Util.resetNid(obj, nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
+        objMap[sellDomain] = obj
         console.log("bought:", sellDomain)
         return nidObj
     }

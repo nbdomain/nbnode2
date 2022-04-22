@@ -88,7 +88,7 @@ class ARChain {
                 rtx.command = cmd[2]
                 rtx.oHash = attrib.hash
             }
-            let out = [], out0 = { e: { a: tx.target, v: Math.floor(+tx.quantity / 10000) } }, i = 0
+            let out = [], out0 = {}, i = 0
             for (; i < nbdata.length; i++) {
                 out0['s' + i] = nbdata[i]
             }
@@ -96,6 +96,16 @@ class ARChain {
                 out0['s' + i] = cmd[j]
             }
             out.push(out0)
+            if (tx.target) {
+                out.push({ e: { a: tx.target, v: +tx.quantity / 10000 } })
+            }
+            if (tags.otherPay) {
+                const oPay = Util.parseJson(tags.otherPay)
+                for (const item of oPay) {
+                    out.push({ e: { a: item.address, v: item.value, txid: item.txid } })
+                }
+
+            }
             rtx.out = out
             rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
             if (rtx.inputAddress == tx.target) { // ar chain does not allow send to self

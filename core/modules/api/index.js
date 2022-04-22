@@ -168,13 +168,6 @@ app.get('/util/verify', async function (req, res) {
         res.json({ code: -1, message: e.message })
     }
 })
-app.post('/postTx', async (req, res) => {
-    const obj = req.body;
-    let chain = 'bsv'
-    if (obj.chain == 'ar') chain = 'ar'
-    ret = await Util.sendRawtx(obj.rawtx, chain);
-    res.json(ret)
-})
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
@@ -192,7 +185,17 @@ app.post('/sendTx', async function (req, res) {
         res.json({ code: -1, message: ret.msg })
         return
     }
-
+    for (const raw of obj.more_rawtx) { //if there are more 
+        const rr = await Util.sendRawtx(raw, chain);
+        if (rr.code == 0) {
+            console.log("send more tx successfully. txid:", rr.txid);
+        }
+        else {
+            console.error("send more tx failed:", rr)
+            res.json(rr)
+            return
+        }
+    }
     const ret1 = await Util.sendRawtx(obj.rawtx, chain);
     if (ret1.code == 0) {
         console.log("send tx successfully. txid:", ret1.txid)

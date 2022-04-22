@@ -13,7 +13,7 @@ class Nodes {
             setTimeout(resolve, seconds * 1000);
         })
     }
-    async selectNode(nodes, count = 1) {
+    async validatNodes(nodes, count = 1) {
         return new Promise(async resolve => {
             let i = 1, selected_nodes = [], j = 1;
             for (const node of nodes) {
@@ -72,24 +72,23 @@ class Nodes {
     }
     async refreshPeers(onlyLocal = false) {
         const port = config.server.port
-        let peers2test = []
+        let peers2test = [], localPeers = config.peers
 
-        if (config.peers.length)
-            peers2test = peers2test.concat(config.peers)
         const p = await this._fromDNS()
         peers2test = peers2test.concat(p)
         if (config.server.domain)
             peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
-        //this.peers = await this.selectNode(peers2test,50)
+
         const peers = new Set(peers2test)
         for (const node of peers) {
-            if (this.nodes.find(item => item.id == node)) continue;
             console.log("Adding node:", node)
             this.nodes.push({ id: node, weight: 50 })
         }
-        //console.log(`found ${this.peers.length} peers`)
+        localPeers.forEach(item => {
+            this.nodes.push({ id: item, weight: 50, local: true })
+        })
 
-        setTimeout(this.refreshPeers.bind(this), 60000)
+        //setTimeout(this.refreshPeers.bind(this), 60000)
     }
     getNodes() {
         return this.nodes
@@ -185,7 +184,7 @@ class Nodes {
                     let oData = null
                     --all
                     if (tx.oDataRecord) oData = tx.oDataRecord.raw
-                    if (indexer.database.isTransactionParsed(tx.txid, chain)) {
+                    if (indexer.database.isTransactionParsed(tx.txid, false, chain)) {
                         console.log("syncFromNode: Skipping ", tx.txid, "(", all, " left)")
                         continue
                     }

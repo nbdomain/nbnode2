@@ -230,7 +230,7 @@ class Indexer {
       })
 
       txids.forEach(async (txid, i) => {
-        let parsed = this.database.isTransactionParsed(txid, this.chain)
+        let parsed = this.database.isTransactionParsed(txid, false, this.chain)
         if (parsed) return
 
         const hex = txhexs && txhexs[i] ? txhexs[i] : this.database.getRawTransaction(txid, this.chain)//txhexs && txhexs[i]
@@ -245,7 +245,7 @@ class Indexer {
   }
 
   async _parseAndStoreTransaction(txid, rawtx) {
-    if (this.database.isTransactionParsed(txid, this.chain)) return
+    if (this.database.isTransactionParsed(txid, false, this.chain)) return
 
     if (!rawtx) {
       this.logger.warn(txid, ":", "no rawtx");
