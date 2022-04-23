@@ -43,11 +43,6 @@ class Resolver {
         this.controllers = [] //control resolve switch
 
     }
-    onResetDB(type) {
-        if (type === 'domain') {
-            MemDomains.clearObj(this.chain)
-        }
-    }
     start() {
         if (this.started) return
         this.started = true
@@ -172,7 +167,7 @@ class Resolver {
                             continue
                         }
                         this.db.setTransactionResolved(item.txid, this.chain)
-                        const res = await Parser.get(this.chain).parse({ rawtx, height: item.height, time: item.time })
+                        const res = await Parser.get(this.chain).parseTX({ rawtx, height: item.height, time: item.time })
                         if (!res) continue
                         const rtx = { ...res.obj, ...item }
                         if (!rtx.output || rtx.output?.err) {

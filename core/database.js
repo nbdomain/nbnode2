@@ -9,7 +9,7 @@ const Parser = require('./parser')
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
 const { CONFIG } = require('./config')
-const { DEF, CMD } = require('./def')
+const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
 
@@ -176,6 +176,7 @@ class Database {
       this.dmdb.prepare(sql).run()
       sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
       this.dmdb.prepare(sql).run()
+      MemDomains.clearObj()
 
       fs.unlinkSync(this.dmpath + "." + VER_DMDB)
       fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");

@@ -48,14 +48,14 @@ class Parser {
     getAttrib({ rawtx }) {
         return this.chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
     }
-    async verify({ rawtx, oData, height, time }) {
+    async parseTX({ rawtx, oData, height, time, verify = false }) {
         const ret = await this.parse({ rawtx, oData, height, time })
         if (ret.code != 0) {
             return { code: 1, msg: "invalid rawtx format" }
         }
         const rtx = ret.rtx
         try {
-            if (height == -1) { //p2p rawtx
+            if (verify && height == -1) { //p2p rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
                 if (tspan > 120 || tspan < -1) {

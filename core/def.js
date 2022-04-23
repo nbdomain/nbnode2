@@ -74,9 +74,12 @@ class MemDomains {
         if (!this.objs[chain]) this.objs[chain] = {}
         return this.objs[chain]
     }
-    static clearObj(chain) {
-        if (this.objs && this.objs[chain])
-            this.objs[chain] = {}
+    static clearObj() {
+        if (this.objs) {
+            for (const key in this.objs) {
+                this.objs[key] = {}
+            }
+        }
     }
 }
 module.exports = {

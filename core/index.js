@@ -48,10 +48,6 @@ class Indexers {
   static initDB() {
     this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger)
     this.db.open()
-    this.db.onResetDB = (type) => {
-      this.bsv.resolver.onResetDB(type)
-      this.ar.resolver.onResetDB(type)
-    }
   }
   static init() {
 
