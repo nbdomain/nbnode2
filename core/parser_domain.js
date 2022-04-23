@@ -52,7 +52,11 @@ class Parser_Domain {
 }
 class CMD_PAY_REGISTER {
     static parseTX(rtx) {
-        let output = CMD_BASE.parseTX(rtx);
+        let output = {}
+        output.protocol = rtx.out[0].s2;
+        output.nid = rtx.out[0].s3.toLowerCase();
+        const tld = Util.getRegisterProtocolFromPayment(output.protocol)[0];
+        output.domain = output.nid + "." + tld
         return output;
     }
     static fillObj(nidObj, rtx) {
@@ -141,21 +145,30 @@ class CMD_BUY {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            if (output.domain == "100019.a") {
+            if (output.domain == "100860.b") {
                 console.log("found")
             }
             var extra = Util.parseJson(rtx.out[0].s5);
+            //TODO: add end time limitation for old format
             if (!extra || (extra && !extra.sell_txid)) {
                 extra = JSON.parse(rtx.out[0].s6)
                 output.v = 1
                 output.newOwner = rtx.out[0].s5
                 output.sellDomain = output.domain
+                //no need to verify since it's verified by admin
+                let ret = MemDomains.getObj(rtx.chain)[output.sellDomain]
+                if (!ret) ret = this.parser.db.loadDomain(output.sellDomain)
+                if (!ret || !ret.sell_info) {
+                    output.err = output.sellDomain + " is not onsale."
+                }
+                return output
             } else {
                 output.v = 2
                 output.sellDomain = extra.domain
+                output.agent = rtx.out[0].s6;
             }
-            output.transferTx = extra.sell_txid;
-            output.agent = rtx.out[0].s6;
+            output.sell_txid = extra.sell_txid;
+
             const pay1 = rtx.out[2].e
             const pay2 = rtx.out[3].e
             let ret = MemDomains.getObj(rtx.chain)[output.sellDomain]
@@ -183,12 +196,18 @@ class CMD_BUY {
         return output
     }
     static async fillObj(nidObj, rtx, objMap) {
+        if (nidObj.domain == "100860.b") {
+            console.log("found")
+        }
         if (nidObj.owner_key == null) return null
         const sellDomain = rtx.output.sellDomain
         let obj = objMap[sellDomain]
         if (!obj) obj = this.parser.db.loadDomain(sellDomain)
-        if (!obj) return null
-        await Util.resetNid(obj, nidObj.output.newOwner ? nidObj.output.newOwner : nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
+        if (!obj || !obj.sell_info) {
+            console.error(sellDomain + " is not onsale")
+            return null
+        }
+        await Util.resetNid(obj, rtx.output.newOwner ? rtx.output.newOwner : nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
         objMap[sellDomain] = obj
         console.log("bought:", sellDomain)
         return nidObj
@@ -198,6 +217,9 @@ class CMD_SELL {
     static parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
+            if (output.domain == "100860.b") {
+                console.log("found")
+            }
             var extra = JSON.parse(rtx.out[0].s5);
             output.buyer = extra["buyer"];
             output.note = extra["note"];
@@ -210,10 +232,12 @@ class CMD_SELL {
         return output
     }
     static async fillObj(nidObj, rtx) {
+        if (nidObj.domain == "100860.b") {
+            console.log("found")
+        }
         if (nidObj.owner_key == null) return null
-        if (nidObj.owner_key == rtx.publicKey) { //cannot sell public domain
+        if (nidObj.owner_key == rtx.publicKey) {
             nidObj.status = DEF.STATUS_TRANSFERING
-            //nidObj = DomainTool.updateNidObjFromRX(nidObj, rtx);
             nidObj.sell_info = {
                 price: rtx.output.price,
                 buyer: rtx.output.buyer,

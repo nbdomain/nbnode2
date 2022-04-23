@@ -39,8 +39,8 @@ class Crawler {
     this.height = height
     this.hash = hash
 
-    this._pollForNewBlocks()
-    this._expireMempoolTransactions()
+    //TODO: remove test    this._pollForNewBlocks()
+    //TODO: remove test    this._expireMempoolTransactions()
   }
 
   stop() {

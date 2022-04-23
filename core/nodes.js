@@ -72,6 +72,7 @@ class Nodes {
     }
     async refreshPeers(onlyLocal = false) {
         const port = config.server.port
+        this.nodes = []
         let peers2test = [], localPeers = config.peers
 
         const p = await this._fromDNS()
@@ -163,7 +164,6 @@ class Nodes {
             const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
             let remoteData = 0
             if (fullSync) {
-
                 const url1 = apiURL + "/api/dataCount"
                 try {
                     const res = await axios.get(url1)
@@ -191,7 +191,6 @@ class Nodes {
                     }
                     const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
-
                         console.log("syncFromNode: Adding ", tx.txid, "(", all, " left)")
                         affected++
                         if (tx.oDataRecord) {
@@ -212,7 +211,7 @@ class Nodes {
                 }
                 if (fullSync && affected > 0) return affected
             } catch (e) {
-                console.log(e)
+                //console.log(e)
                 console.error("syncFromNode " + apiURL + ": " + e.message)
                 this.cool(apiURL)
             }
@@ -240,7 +239,7 @@ class Nodes {
     async startTxSync(indexers) {
         await this._syncFromNode(indexers.bsv, false, 'bsv')
         await this._syncFromNode(indexers.ar, false, 'ar')
-        await this.FullSyncFromNodes(indexers)
+        //TODO: remove test await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     static inst() {
