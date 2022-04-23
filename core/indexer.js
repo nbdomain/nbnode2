@@ -257,7 +257,7 @@ class Indexer {
     try {
       //just save, no verify
       this.database.setTransactionRaw(txid, rawtx, this.chain)
-      const ret = await Parser.get(this.chain).verify({ rawtx, height, time: block_time });
+      const ret = await Parser.get(this.chain).parse({ rawtx, height, time: block_time });
       //attrib = await Parser.get(this.chain).getAttrib({ rawtx })
       //this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
       if (ret.code == 0) {

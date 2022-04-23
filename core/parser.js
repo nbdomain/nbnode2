@@ -26,7 +26,7 @@ class Parser {
         this.parser_nft.init(db)
         this.db = db
     }
-    async verify({ rawtx, oData, height, time }) {
+    async parse({ rawtx, oData, height, time }) {
         let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
         return { code: rtx ? 0 : 1, rtx: rtx }
     }
@@ -48,16 +48,14 @@ class Parser {
     getAttrib({ rawtx }) {
         return this.chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
     }
-    async parseRaw({ rawtx, oData, height, time, verify = false }) {
-
-        //let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
-        const ret = await this.verify({ rawtx, oData, height, time })
+    async verify({ rawtx, oData, height, time }) {
+        const ret = await this.parse({ rawtx, oData, height, time })
         if (ret.code != 0) {
             return { code: 1, msg: "invalid rawtx format" }
         }
         const rtx = ret.rtx
         try {
-            if (verify && height == -1) { //p2p rawtx
+            if (height == -1) { //p2p rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
                 if (tspan > 120 || tspan < -1) {

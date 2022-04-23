@@ -172,7 +172,7 @@ class Resolver {
                             continue
                         }
                         this.db.setTransactionResolved(item.txid, this.chain)
-                        const res = await Parser.get(this.chain).parseRaw({ rawtx, height: item.height, time: item.time })
+                        const res = await Parser.get(this.chain).parse({ rawtx, height: item.height, time: item.time })
                         if (!res) continue
                         const rtx = { ...res.obj, ...item }
                         if (!rtx.output || rtx.output?.err) {

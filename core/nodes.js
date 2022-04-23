@@ -189,7 +189,7 @@ class Nodes {
                         console.log("syncFromNode: Skipping ", tx.txid, "(", all, " left)")
                         continue
                     }
-                    const ret = await (this.parser.get(chain).verify({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
+                    const ret = await (this.parser.get(chain).parse({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
                     if (ret && ret.code == 0) {
                         console.log("syncFromNode: Adding ", tx.txid, "(", all, " left)")
                         affected++
@@ -239,7 +239,7 @@ class Nodes {
     async startTxSync(indexers) {
         await this._syncFromNode(indexers.bsv, false, 'bsv')
         await this._syncFromNode(indexers.ar, false, 'ar')
-        //TODO: remove test await this.FullSyncFromNodes(indexers)
+        await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     static inst() {
