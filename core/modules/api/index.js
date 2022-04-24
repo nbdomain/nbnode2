@@ -219,7 +219,7 @@ async function handleNewTx(para, from, force = false) {
     }
     const chain = para.chain ? para.chain : 'bsv'
     if (!db.hasTransaction(para.txid, chain) || force) {
-        const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
+        /*const url = from + "/api/p2p/gettx?txid=" + para.txid + "&chain=" + chain
         const res = await axios.get(url)
         if (res.data && res.data.code == 0) {
             const item = res.data.oDataRecord
@@ -230,6 +230,17 @@ async function handleNewTx(para, from, force = false) {
                 console.error("wrong rawtx format. ret:", ret)
             }
             indexer._onMempoolTransaction(para.txid, res.data.rawtx)
+        }*/
+        const data = await Nodes.getTx(para.txid, from, chain)
+        if (data) {
+            const item = data.oDataRecord
+            const ret = await (Parser.get(chain).parse({ rawtx: data.rawtx, oData: item?.raw, height: -1 }));
+            if (ret.code == 0 && ret.rtx?.oHash === item.hash)
+                await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
+            else {
+                console.error("wrong rawtx format. ret:", ret)
+            }
+            indexer._onMempoolTransaction(para.txid, data.rawtx)
         }
     }
 }

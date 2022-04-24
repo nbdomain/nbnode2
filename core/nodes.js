@@ -108,13 +108,22 @@ class Nodes {
         }
     }
 
-    async getTx(txid, chain) {
-        for (const node of this.getNodes()) {
-            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
-            const res = await axios.get(url)
+    async getTx(txid, from, chain) {
+        try {
+            const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}&chain=${chain}`)
             if (res.data) {
-                if (res.data.code == 0) return res.data.rawtx
+                if (res.data.code == 0) return res.data
             }
+        } catch (e) { }
+        for (const node of this.getNodes()) {
+            if (node.id == from) continue
+            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
+            try {
+                const res = await axios.get(url)
+                if (res.data) {
+                    if (res.data.code == 0) return res.data
+                }
+            } catch (e) { }
         }
         return null
     }
