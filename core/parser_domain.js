@@ -148,7 +148,7 @@ class CMD_BUY {
                 extra = Util.parseJson(rtx.out[0].s6);
                 output.v = 2
                 output.sellDomain = extra.domain
-                output.agent = rtx.out[0].s6;
+                output.agent = rtx.out[0].s7;
             } else { //TODO: add end time limitation for old format
                 if (rtx.inputAddress != "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5" && rtx.inputAddress != '14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ' && rtx.inputAddress != '1KEjuiwj5LrUPCswJZDxfkZC8iKF4tLf9H') {
                     output.err = "Wrong Buy format:" + output.domain
@@ -178,7 +178,7 @@ class CMD_BUY {
                     output.err = "not enough payment for:" + output.sellDomain
                     return output
                 }
-                const paymentAddress = Util.getPaymentAddr({ protocol: output.protocol })
+                const paymentAddress = Util.getPaymentAddr({ tld: output.sellDomain.split('.')[1] })
                 if (paymentAddress != pay2.a) {
                     output.err = "wrong fee payment address:" + output.sellDomain
                     return output
