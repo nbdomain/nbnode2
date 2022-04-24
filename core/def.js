@@ -69,10 +69,18 @@ class NIDObject {
     }
 };
 class MemDomains {
-    static getObj(chain) {
+    static getMap(chain) {
         if (!this.objs) this.objs = {}
         if (!this.objs[chain]) this.objs[chain] = {}
         return this.objs[chain]
+    }
+    static get(domain) {
+        if (!this.objs) return null
+        for (const key in this.objs) {
+            if (this.objs[key][domain])
+                return this.objs[key][domain]
+        }
+        return null
     }
     static clearObj() {
         if (this.objs) {

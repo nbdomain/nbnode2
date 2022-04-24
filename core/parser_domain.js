@@ -45,9 +45,36 @@ class Parser_Domain {
     }
     getAllCommands() {
         return {
-            [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_KEYUSER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
-            [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC
+            [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_USER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
+            [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC,
         }
+    }
+}
+class CMD_USER {
+    static parseTX(rtx) {
+        let output = CMD_BASE.parseTX(rtx);
+        if (rtx.out[0].s5 == 'v1') {
+            const extra = Util.parseJson(rtx.out[0].s6)
+            if (!extra) {
+                output.err = "Wrong add_user format"
+                return output
+            }
+            if (!extra.name || !extra.publicKey) {
+                output.err = "name or publicKey missing"
+            }
+            output.extra = extra
+            return output
+        }
+        output.err = "Wrong User format"
+        return output
+    }
+    static fillObj(nidObj, rtx) {
+        const output = rtx.output
+        if (!nidObj.users) nidObj.users = {}
+        const name = output.extra.name
+        delete output.extra.name
+        nidObj.users[name] = output.extra
+        return nidObj
     }
 }
 class CMD_PAY_REGISTER {
@@ -60,6 +87,7 @@ class CMD_PAY_REGISTER {
         return output;
     }
     static fillObj(nidObj, rtx) {
+
         return nidObj
     }
 }
@@ -127,6 +155,9 @@ class CMD_REGISTER {
             output.err = "Invalid format for RegisterOutput class1."
             return output
         }
+        if (verify) { //delay a bit
+
+        }
         return output
     }
     static async fillObj(nidObj, rtx) {
@@ -142,6 +173,7 @@ class CMD_REGISTER {
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
             nidObj.lastUpdateheight = rtx.height;
+            nidObj.users = { root: { publicKey: nidObj.owner_key } }
         } catch (e) {
             rtx.output.err = e.message
             return null //some data is invalid, probably owner_key is not a valid public key
@@ -172,8 +204,7 @@ class CMD_BUY {
                 output.newOwner = rtx.out[0].s5
                 output.sellDomain = output.domain
                 //no need to verify since it's verified by admin
-                let ret = MemDomains.getObj(rtx.chain)[output.sellDomain]
-                if (!ret) ret = this.parser.db.loadDomain(output.sellDomain)
+                let ret = this.parser.db.loadDomain(output.sellDomain)
                 if (!ret || !ret.sell_info) {
                     output.err = output.sellDomain + " is not onsale."
                 }
@@ -183,8 +214,7 @@ class CMD_BUY {
 
             const pay1 = rtx.out[2].e
             const pay2 = rtx.out[3].e
-            let ret = MemDomains.getObj(rtx.chain)[output.sellDomain]
-            if (!ret) ret = this.parser.db.loadDomain(output.sellDomain)
+            let ret = this.parser.db.loadDomain(output.sellDomain)
             if (ret && ret.sell_info) {
                 const delta = Math.abs(ret.sell_info.price - pay1.v)
                 if (delta > 10) {
@@ -213,8 +243,7 @@ class CMD_BUY {
         }
         if (nidObj.owner_key == null) return null
         const sellDomain = rtx.output.sellDomain
-        let obj = objMap[sellDomain]
-        if (!obj) obj = this.parser.db.loadDomain(sellDomain)
+        let obj = this.parser.db.loadDomain(sellDomain)
         if (!obj || !obj.sell_info) {
             console.error(sellDomain + " is not onsale")
             return null

@@ -148,7 +148,7 @@ class Resolver {
             }
         }
         const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
-        const nidObjMap = MemDomains.getObj(this.chain)
+        const nidObjMap = MemDomains.getMap(this.chain)
         try {
             if (rtxArray == null || rtxArray.length == 0) {
                 if (!this.firstFinish) {

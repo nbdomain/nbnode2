@@ -446,7 +446,9 @@ class Database {
     }
   }
   loadDomain(domain) {
-    const res = this.getDomainStmt.get(domain);
+    let res = MemDomains.get(domain)
+    if (res) return res
+    res = this.getDomainStmt.get(domain);
     if (res) {
       return JSON.parse(res.jsonString);
     }
