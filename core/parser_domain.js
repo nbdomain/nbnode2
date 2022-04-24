@@ -1,7 +1,7 @@
 
 const { Util, CMD_BASE } = require("./util.js");
 const { CMD, MemDomains, DEF } = require("./def")
-//const DomainTool = require('./domainTool')
+const { DomainTool } = require('./domainTool')
 
 class Parser_Domain {
     constructor(chain) {
@@ -81,39 +81,48 @@ class CMD_MAKE_PUBLIC {
     }
 }
 class CMD_REGISTER {
-    static async parseTX(rtx) {
+    static async parseTX(rtx, verify) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            output.owner_key = rtx.out[0].s5;
-            if (rtx.out[0].s6) {
-                var extra = JSON.parse(rtx.out[0].s6);
-                output.payTx = extra["pay_txid"];
-            }
-            try {
+            if (rtx.out[0].s5 == 'v2') {
+                const domain = output.domain
+                output.owner_key = rtx.publicKey
+                if (verify) { //check payment
+                    const payment = +rtx.out[2].e.v
+                    const resp = await DomainTool.fetchDomainAvailibility(domain)
+                    if (resp.code != 0 || !resp.price) {
+                        output.err = domain + " cannot be registered"
+                        return output
+                    }
+                    if (+resp.price > payment) {
+                        output.err = `More than ${resp.price} needs to be paid to purchase the domain.`;
+                        return output;
+                    }
+                }
+            } else {//TODO: add end time check for old format
+                let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain);
+                let authorsities = Util.getAdmins(output.protocol, rtx.height);
+                if (!authorsities.includes(addr)) {
+                    output.err = "Input address not in authorities.";
+                }
+                output.owner_key = rtx.out[0].s5;
+                if (rtx.out[0].s6) {
+                    var extra = JSON.parse(rtx.out[0].s6);
+                    output.payTx = extra["pay_txid"];
+                }
                 if (rtx.out[0].s7) output.agent = rtx.out[0].s7;
-            } catch (e) { }
+            }
+
         } catch (err) {
             console.error(rtx.txid)
             console.log(err)
             output.err = "Invalid format for RegisterOutput class."
             return output
         }
-
         if (output.owner_key == null || output.owner_key == "") {
             output.err = "Invalid format for RegisterOutput class1."
             return output
         }
-
-        try {
-            let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain);
-            let authorsities = Util.getAdmins(output.protocol, rtx.height);
-            if (!authorsities.includes(addr)) {
-                output.err = "Input address not in authorities.";
-            }
-        } catch (err) {
-            output.err = "Invalid format for RegisterOutput class2."
-        }
-
         return output
     }
     static async fillObj(nidObj, rtx) {

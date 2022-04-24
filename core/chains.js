@@ -159,6 +159,7 @@ class BSVChain {
                     ? (rtx.out[0]["f" + i] = rtx.out[0]["f" + (i + 2)])
                     : "";
             }
+            rtx.out[0].len -= 2
         }
     }
     static getAttrib({ rawtx }) {
