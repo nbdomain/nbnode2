@@ -84,11 +84,6 @@ class CMD_REGISTER {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            // Suppose the output array has a fixed order.
-            // output 0 - OP_RETURN.
-            if (output.domain == "107493.b") {
-                console.log("found")
-            }
             output.owner_key = rtx.out[0].s5;
             if (rtx.out[0].s6) {
                 var extra = JSON.parse(rtx.out[0].s6);
@@ -145,12 +140,20 @@ class CMD_BUY {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            if (output.domain == "100860.b") {
+            if (output.domain == "100019.b") {
                 console.log("found")
             }
-            var extra = Util.parseJson(rtx.out[0].s5);
-            //TODO: add end time limitation for old format
-            if (!extra || (extra && !extra.sell_txid)) {
+            let extra = null;
+            if (rtx.out[0].s5 == "v2") {
+                extra = Util.parseJson(rtx.out[0].s6);
+                output.v = 2
+                output.sellDomain = extra.domain
+                output.agent = rtx.out[0].s6;
+            } else { //TODO: add end time limitation for old format
+                if (rtx.inputAddress != "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5" && rtx.inputAddress != '14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ' && rtx.inputAddress != '1KEjuiwj5LrUPCswJZDxfkZC8iKF4tLf9H') {
+                    output.err = "Wrong Buy format:" + output.domain
+                    return output
+                }
                 extra = JSON.parse(rtx.out[0].s6)
                 output.v = 1
                 output.newOwner = rtx.out[0].s5
@@ -162,10 +165,6 @@ class CMD_BUY {
                     output.err = output.sellDomain + " is not onsale."
                 }
                 return output
-            } else {
-                output.v = 2
-                output.sellDomain = extra.domain
-                output.agent = rtx.out[0].s6;
             }
             output.sell_txid = extra.sell_txid;
 
@@ -217,7 +216,7 @@ class CMD_SELL {
     static parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            if (output.domain == "100860.b") {
+            if (output.domain == "100014.a") {
                 console.log("found")
             }
             var extra = JSON.parse(rtx.out[0].s5);
@@ -232,7 +231,7 @@ class CMD_SELL {
         return output
     }
     static async fillObj(nidObj, rtx) {
-        if (nidObj.domain == "100860.b") {
+        if (nidObj.domain == "100014.a") {
             console.log("found")
         }
         if (nidObj.owner_key == null) return null
@@ -248,6 +247,9 @@ class CMD_SELL {
                 sell_txid: rtx.txid
             };
             nidObj.tf_update_tx = rtx.txid;
+        } else {
+            console.error("Wrong owner for sell command")
+            return null
         }
         return nidObj
     }
