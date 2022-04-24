@@ -99,6 +99,10 @@ class CMD_REGISTER {
                         return output;
                     }
                 }
+                let attrib = Util.parseJson(rtx.out[0].s6)
+                if (attrib && attrib.toKey) {
+                    output.owner_key = attrib.toKey
+                }
             } else {//TODO: add end time check for old format
                 let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain);
                 let authorsities = Util.getAdmins(output.protocol, rtx.height);
