@@ -445,9 +445,12 @@ class Database {
       return []
     }
   }
-  loadDomain(domain) {
-    let res = MemDomains.get(domain)
-    if (res) return res
+  loadDomain(domain, onlyDB = false) {
+    let res = null
+    if (!onlyDB) {
+      res = MemDomains.get(domain)
+      if (res) return res
+    }
     res = this.getDomainStmt.get(domain);
     if (res) {
       return JSON.parse(res.jsonString);
@@ -466,6 +469,18 @@ class Database {
       tags.map(tag => {
         this.saveTagStmt.run(tag, keyName);
       })
+    }
+  }
+  saveUsers(nidObj) {
+    for (let name in nidObj.users) {
+      const value = nidObj.users[name]
+      if (name == "root") continue
+      const sql = `insert or replace into users (name,address,attributes) VALUES(?,?,?) `
+      try {
+        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, value.address, JSON.stringify(value))
+      } catch (e) {
+        console.error("saveUsers:", e.message)
+      }
     }
   }
   getDataCount() {
@@ -512,6 +527,14 @@ class Database {
       code: 0,
       data: this.dmdb.prepare(sql).all()
     }
+  }
+  readUser(keyName) {
+    const sql = "select attributes from users where name=?"
+    let ret = this.dmdb.prepare(sql).get(keyName)
+    if (ret) {
+      ret = Util.parseJson(ret.attributes)
+    }
+    return ret
   }
   readKey(keyName) {
     try {
@@ -587,12 +610,12 @@ class Database {
       if (this.tickers[keyName]) //notify subscribers
         this.tickers[keyName].broadcast('key_update', value)
     }
-    for (var item in nidObj.users) {
+    /*for (var item in nidObj.users) {
       const value = JSON.stringify(nidObj.users[item]);
       const keyName = item + "@" + nidObj.domain;
       const tags = nidObj.tag_map[item + '@'];
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
-    }
+    }*/
   }
   subscribe(domain, session) {
     if (domain == "all") {
@@ -647,6 +670,7 @@ class Database {
       this.transaction(() => {
         this.saveKeys(obj);
         this.saveTags(obj);
+        this.saveUsers(obj);
         //this.saveNFT(obj);
         let sql = `INSERT INTO "nidobj" 
                 (domain, txCreate,txUpdate,owner, owner_key, status, last_txid, jsonString, tld) 

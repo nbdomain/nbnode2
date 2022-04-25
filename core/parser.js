@@ -79,7 +79,7 @@ class Parser {
             if (!rtx.output) rtx.output = {}
             rtx.output.err = e.message
         }
-        return { code: 0, obj: rtx, msg: rtx.output.err ? rtx.output.err : "success" }
+        return rtx.output.err ? { code: -1, msg: rtx.output.err } : { code: 0, obj: rtx }
     }
     async fillObj(nidObj, rtx, objMap) {
         let retObj = null

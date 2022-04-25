@@ -159,6 +159,9 @@ class BSVChain {
                     ? (rtx.out[0]["f" + i] = rtx.out[0]["f" + (i + 2)])
                     : "";
             }
+            const len = rtx.out[0].len
+            delete rtx.out[0]["s" + (len - 2)]
+            delete rtx.out[0]["s" + (len - 1)]
             rtx.out[0].len -= 2
         }
     }

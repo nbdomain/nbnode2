@@ -72,6 +72,8 @@ class Resolver {
         if (lastAT != -1 && dd.length == 2) { //an email like address
             baseDomain = fullDomain.slice(lastAT + 1);
             subDomain = fullDomain.slice(0, lastAT + 1); //includes @
+            const ret = this.db.readUser(fullDomain)
+            return ret ? { code: 0, domain: fullDomain, obj: { ...ret } } : null
         } else {
             baseDomain = dd[dd.length - 2] + '.' + dd[dd.length - 1];
             dd.pop(); dd.pop();
@@ -180,7 +182,7 @@ class Resolver {
                             console.log("found")
                         }
                         if (!(domain in nidObjMap)) {
-                            let onDiskNid = this.db.loadDomain(domain)
+                            let onDiskNid = this.db.loadDomain(domain, true)
                             if (!onDiskNid) {
                                 nidObjMap[domain] = new NIDObject(domain)
                             } else {

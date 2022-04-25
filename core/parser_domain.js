@@ -45,25 +45,30 @@ class Parser_Domain {
     }
     getAllCommands() {
         return {
-            [CMD.KEY]: CMD_KEYUSER, [CMD.USER]: CMD_USER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
+            [CMD.KEY]: CMD_KEY, [CMD.USER]: CMD_USER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
             [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC,
         }
     }
 }
 class CMD_USER {
-    static parseTX(rtx) {
+    static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
-        if (rtx.out[0].s5 == 'v1') {
-            const extra = Util.parseJson(rtx.out[0].s6)
-            if (!extra) {
-                output.err = "Wrong add_user format"
+        try {
+            if (rtx.out[0].s5 == 'v1') {
+                const extra = Util.parseJson(rtx.out[0].s6)
+                if (!extra) {
+                    output.err = "Wrong add_user format"
+                    return output
+                }
+                if (!extra.name || !extra.publicKey) {
+                    output.err = "name or publicKey missing"
+                }
+                extra.address = await Util.addressFromPublickey(extra.publicKey, rtx.chain)
+                output.extra = extra
                 return output
             }
-            if (!extra.name || !extra.publicKey) {
-                output.err = "name or publicKey missing"
-            }
-            output.extra = extra
-            return output
+        } catch (e) {
+            console.error("CMD_USER.parseTX:", e.message)
         }
         output.err = "Wrong User format"
         return output
@@ -112,8 +117,12 @@ class CMD_REGISTER {
     static async parseTX(rtx, verify) {
         let output = CMD_BASE.parseTX(rtx);
         try {
+            const domain = output.domain
+            if (domain == "10200.test") {
+                console.log("found")
+            }
             if (rtx.out[0].s5 == 'v2') {
-                const domain = output.domain
+
                 output.owner_key = rtx.publicKey
                 if (verify) { //check payment
                     const payment = +rtx.out[2].e.v
@@ -173,7 +182,6 @@ class CMD_REGISTER {
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
             nidObj.lastUpdateheight = rtx.height;
-            nidObj.users = { root: { publicKey: nidObj.owner_key } }
         } catch (e) {
             rtx.output.err = e.message
             return null //some data is invalid, probably owner_key is not a valid public key
@@ -362,19 +370,47 @@ class CMD_ADMIN {
         return nidObj
     }
 }
-class CMD_KEYUSER {
+class CMD_KEY {
+    static verify(rtx, output) {
+        let err = null
+        if (output.domain == "10200.test") {
+            console.log("found")
+        }
+        const obj = this.parser.db.loadDomain(output.domain)
+        if (!obj) { err = "CMD_KEY: domain not exist"; return err; }
+        if (obj.owner_key != rtx.publicKey) {
+            for (const name in obj.users) { //check users
+                if (obj.users[name].publicKey == rtx.publicKey) {
+                    output.user = name
+                    return 1
+                }
+            }
+            for (const name in obj.admins) {
+                const adminAddress = obj.admins[name];
+                if (adminAddress == rtx.inputAddress) {
+                    return 1
+                }
+            }
+            err = "CMD_KEY: no access"
+
+        }
+        if (err) {
+            console.error(err)
+            return err
+        }
+        return 1
+    }
     static parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
             let tags = null, pay = {}, hasPay = false
             output.value = JSON.parse(rtx.out[0].s5);
-            try {
-                tags = JSON.parse(rtx.out[0].s6).tags;
-                if (tags)
-                    rtx.command == "key"
-                        ? (output.tags = tags)
-                        : (output.utags = tags);
-            } catch (e) { }
+            const s6 = Util.parseJson(rtx.out[0].s6)
+            tags = s6 && s6.tags;
+            if (tags) rtx.command == "key"
+                ? (output.tags = tags)
+                : (output.utags = tags);
+
             output.ts = rtx.ts ? rtx.ts : rtx.time
             output.txid = rtx.txid
             for (const out of rtx.out) {
@@ -383,9 +419,12 @@ class CMD_KEYUSER {
                     hasPay = true
                 }
             }
-
             if (hasPay)
                 output.pay = pay
+            //verify
+            const err = this.verify(rtx, output)
+            if (err != 1)
+                output.err = err
         } catch (e) {
             output.err = e.message
         }
@@ -394,20 +433,21 @@ class CMD_KEYUSER {
         }
         return output;
     }
-    static updateKeyAndHistory(obj, key, newValue, output, isUser = false) {
+    static updateKeyAndHistory(obj, key, newValue, output) {
         if (key == "todomain") return false//'todomain' is not a key
-        const oldvalue = isUser ? obj.users[key] : obj.keys[key];
+        const oldvalue = obj.users[key]
         if (oldvalue) {
-            this.parser.db.saveKeyHistory(obj, key, oldvalue, isUser);
+            this.parser.db.saveKeyHistory(obj, key, oldvalue);
         }
         let newKey = { value: newValue, txid: output.txid };
         if (output.ts) newKey.ts = output.ts;
         if (output.pay) newKey.pay = output.pay;
         if (output.tags) {
             newKey.tags = output.tags
-            isUser ? obj.tag_map[key + '@'] = output.tags : obj.tag_map[key + '.'] = output.tags;
+            obj.tag_map[key + '.'] = output.tags;
         }
-        isUser ? obj.users[key] = newKey : obj.keys[key] = newKey;
+        if (output.user) newKey.from = output.user
+        obj.keys[key] = newKey;
         return true
     }
     static async fillObj(nidObj, rtx, objMap) {
@@ -415,61 +455,29 @@ class CMD_KEYUSER {
             rtx.output.err = "No owner"
             return null
         }
-        if ((nidObj.owner_key != rtx.publicKey)) { //different owner
-            let authorized = false; //check admin
-            rtx.output.err = "unAuthorized owner"
-            for (var name in nidObj.admins) {
-                var adminAddress = nidObj.admins[name];
-                if (adminAddress == await Util.addressFromPublickey(rtx.publicKey)) {
-                    authorized = true;
-                    rtx.output.err = null;
-                }
+        if (this.verify(rtx, rtx.output) != 1) return null
+        if (rtx.output?.value?.toDomain) {
+            let obj = objMap[rtx.output.value.toDomain]
+            if (!obj) {
+                obj = this.parser.db.loadDomain(rtx.output.value.toDomain)
+                objMap[rtx.output.value.toDomain] = obj
             }
-            if (!authorized)
-                return null;
-        }
-        //const ts = rtx.txTime ? rtx.txTime : rtx.time
-        if (rtx.command == CMD.KEY) {
-            if (rtx.output?.value?.toDomain) {
-                let obj = objMap[rtx.output.value.toDomain]
-                if (!obj) {
-                    obj = this.parser.db.loadDomain(rtx.output.value.toDomain)
-                    objMap[rtx.output.value.toDomain] = obj
+            if (obj && obj.status == DEF.STATUS_PUBLIC) {
+                for (const key in rtx.output.value) {
+                    let newKey = key.toLowerCase()
+                    let newValue = rtx.output.value[key]
+                    if (CMD_KEY.updateKeyAndHistory(obj, newKey, newValue, rtx.output))
+                        obj.keys[newKey].from = rtx.output.user ? rtx.output.user + "@" + nidObj.domain : nidObj.domain
                 }
-                if (obj && obj.status == DEF.STATUS_PUBLIC) {
-
-                    for (const key in rtx.output.value) {
-                        let newKey = key.toLowerCase()
-                        let newValue = rtx.output.value[key]
-                        if (CMD_KEYUSER.updateKeyAndHistory(obj, newKey, newValue, rtx.output))
-                            obj.keys[newKey].fromDomain = nidObj.domain
-                    }
-                    obj.dirty = true
-                }
-            }
-            for (const key in rtx.output.value) {
-                let newKey = key.toLowerCase()
-                let newValue = rtx.output.value[key]
-                CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
-            }
-
-
-        }
-        if (rtx.command == CMD.USER) {
-            // Change deep merge to shallow merge.
-            for (const key in rtx.output.value) {
-                let lowerKey = key.toLowerCase();
-                let newKey = key.toLowerCase()
-                let newValue = rtx.output.value[key]
-                CMD_KEYUSER.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output, true)
-
-                /* nidObj.users[lowerKey] = { value: rtx.output.value[key], txid: rtx.txid, ts: rtx.output.ts };
-                 nidObj.update_tx[lowerKey + '@'] = rtx.txid;
-                 if (rtx.output.tags) {
-                     nidObj.tag_map[lowerKey + '@'] = rtx.output.tags;
-                 }*/
+                obj.dirty = true
             }
         }
+        for (const key in rtx.output.value) {
+            let newKey = key.toLowerCase()
+            let newValue = rtx.output.value[key]
+            CMD_KEY.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
+        }
+
         return nidObj
     }
 }
