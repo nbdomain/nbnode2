@@ -349,7 +349,9 @@ class Database {
   isTransactionParsed(txid, andValid, chain) {
     const sql = `SELECT txTime from ${chain}_tx WHERE txid = ?`
     const ret = this.txdb.prepare(sql).raw(true).get(txid)
-    return (ret && ret[0] != 0 && (ret[0] != 1 && andValid))
+    if (!ret || ret[0] == 0) return false
+    if (andValid) return ret[0] != 1
+    return true
   }
   isTransactionDownloaded(txid, chain) {
     const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${chain}_tx WHERE txid = ?`

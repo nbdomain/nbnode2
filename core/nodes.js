@@ -177,7 +177,7 @@ class Nodes {
                 try {
                     const res = await axios.get(url1)
                     if (res.data) {
-                        if (dataCount[chain] >= res.data[chain]) continue;
+                        if (dataCount[chain] >= res.data[chain]) break;
                         remoteData = res.data[chain]
                         console.log(`Need sync. self ${chain} count:${dataCount[chain]},${apiURL} count:${res.data[chain]}`)
                     }
