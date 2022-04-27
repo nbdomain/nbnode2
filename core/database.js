@@ -172,6 +172,8 @@ class Database {
       this.dmdb.prepare(sql).run()
       sql = "DELETE from keys"
       this.dmdb.prepare(sql).run()
+      sql = "DELETE from users"
+      this.dmdb.prepare(sql).run()
       sql = "DELETE from tags"
       this.dmdb.prepare(sql).run()
       sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
@@ -477,7 +479,7 @@ class Database {
     for (let name in nidObj.users) {
       const value = nidObj.users[name]
       if (name == "root") continue
-      const sql = `insert or replace into users (name,address,attributes) VALUES(?,?,?) `
+      const sql = `insert or replace into users (account,address,attributes) VALUES(?,?,?) `
       try {
         this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, value.address, JSON.stringify(value))
       } catch (e) {
@@ -486,7 +488,7 @@ class Database {
     }
   }
   readUser(account) {
-    const sql = "select * from users where name = ?"
+    const sql = "select * from users where account = ?"
     return this.dmdb.prepare(sql).get(account)
   }
   getDataCount() {
@@ -566,22 +568,20 @@ class Database {
     }
     return null;
   }
-  saveKeyHistory(nidObj, keyName, value, isUser = false) {
+  saveKeyHistory(nidObj, keyName, value) {
     try {
       this.transaction(() => {
         if (nidObj.domain == "10200.test") {
           console.log("found")
         }
-        if (isUser) {
-          console.log("found")
-        }
-        const separator = isUser ? "@" : ".";
+
+        const separator = ".";
         const lenKey = keyName + separator + nidObj.domain + "/len";
         let lenRet = this.readKeyStmt.get(lenKey);
         let count = 0;
         if (lenRet) count = +lenRet.value;
         count++;
-        const tags = isUser ? nidObj.users[keyName].tags : nidObj.keys[keyName].tags;
+        const tags = nidObj.keys[keyName].tags;
         this.saveKeysStmt.run(lenKey, count.toString(), null, count.toString(), null); //save len
         const hisKey = keyName + separator + nidObj.domain + "/" + count;
         this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, JSON.stringify(value), tags); //save len
