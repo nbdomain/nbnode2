@@ -485,6 +485,10 @@ class Database {
       }
     }
   }
+  readUser(account) {
+    const sql = "select * from users where name = ?"
+    return this.dmdb.prepare(sql).get(account)
+  }
   getDataCount() {
     let sql = `select (select count(*) from bsv_tx where txTime!=1) as bsv , (select count(*) from ar_tx where txTime!=1) as ar`
     const ret = this.txdb.prepare(sql).get()
@@ -529,14 +533,6 @@ class Database {
       code: 0,
       data: this.dmdb.prepare(sql).all()
     }
-  }
-  readUser(keyName) {
-    const sql = "select attributes from users where name=?"
-    let ret = this.dmdb.prepare(sql).get(keyName)
-    if (ret) {
-      ret = Util.parseJson(ret.attributes)
-    }
-    return ret
   }
   readKey(keyName) {
     try {

@@ -141,6 +141,16 @@ class Resolver {
     addController(controller) {
         this.controllers.push(controller)
     }
+    async readUser(account) {
+        const dd = account.split('@')
+        if (dd.length < 2) return { code: 1, msg: "wrong account format" }
+        if (dd[0].toLowerCase() === 'root') {
+            const obj = await this.db.loadDomain(dd[1])
+            return obj ? { code: 0, name: account, address: obj.owner, attributes: { publicKey: obj.owner_key } } : { code: 1, msg: dd[1] + " is not registered" }
+        }
+        const res = this.db.readUser(account)
+        return { code: res ? 0 : 1, ...res }
+    }
     async resolveNextBatch() {
         if (!this.started) return
         for (const controller of this.controllers) {

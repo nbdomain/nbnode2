@@ -136,6 +136,12 @@ app.get('/qf/*', async function (req, res) {
     const ret = await getAllItems(para, true, from)
     res.json(ret)
 })
+app.get('/user/:account', async function (req, res) {
+    const account = req.params['account']
+    const resolver = indexers.resolver(Util.getchain(account))
+    const ret = await resolver.readUser(account)
+    res.json(ret)
+})
 app.get('/t/addtx/:txid', (req, res) => {
     const txid = req.params['txid']
     const chain = req.query['chain']

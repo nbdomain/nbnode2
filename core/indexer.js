@@ -47,7 +47,7 @@ class Indexer {
 
     this.crawler = new Crawler(api, db, this.chain)
     this.resolver = new Resolver(this.chain, this.database)
-    this.resolver.addController(this.api)
+    //this.resolver.addController(this.api)
     this.resolver.addController(Nodes)
     Parser.get(this.chain).init(this.database)
 
@@ -90,7 +90,7 @@ class Indexer {
       hash = null
     }
 
-    if (this.api.connect) await this.api.connect(height, this.chain)
+    //if (this.api.connect) await this.api.connect(height, this.chain)
     this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))
     this.crawler.start(height, hash)
     this.resolver.start()
@@ -104,7 +104,7 @@ class Indexer {
     this.logger.info('stopping...')
     this.resolver.stop()
     this.crawler.stop()
-    if (this.api.disconnect) await this.api.disconnect()
+    // if (this.api.disconnect) await this.api.disconnect()
     //    this.downloader.stop()
   }
 

@@ -435,18 +435,22 @@ class CMD_KEY {
     }
     static updateKeyAndHistory(obj, key, newValue, output) {
         if (key == "todomain") return false//'todomain' is not a key
-        const oldvalue = obj.users[key]
+        const oldvalue = obj.keys[key]
         if (oldvalue) {
             this.parser.db.saveKeyHistory(obj, key, oldvalue);
         }
         let newKey = { value: newValue, txid: output.txid };
+        if (output.user) {
+            newKey.from = output.user
+            key = key + '.*' + output.user
+        }
         if (output.ts) newKey.ts = output.ts;
         if (output.pay) newKey.pay = output.pay;
         if (output.tags) {
             newKey.tags = output.tags
             obj.tag_map[key + '.'] = output.tags;
         }
-        if (output.user) newKey.from = output.user
+
         obj.keys[key] = newKey;
         return true
     }
