@@ -97,10 +97,10 @@ class Database {
 
     const saveKeysSql = `
     INSERT INTO "keys" 
-                (key, value,tags) 
-                VALUES ( ?, ?, ?)
+                (key, value,tags,ts) 
+                VALUES ( ?, ?, ?,?)
                 ON CONFLICT( key ) DO UPDATE
-                SET value=?,tags=?`
+                SET value=?,tags=?,ts=?`
     this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
     this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
     this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
@@ -502,7 +502,7 @@ class Database {
     const ret3 = this.dmdb.prepare(sql).get()
     return { ...ret, ...ret1, ...ret2, ...ret3 }
   }
-  queryKeys({ v, num, startID, tags }) {
+  queryKeys({ v, num, startID, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
     if (v != "1") {
       return { code: 1, message: "invalid v" };
@@ -522,6 +522,9 @@ class Database {
         const addTag = tags.split('+').join("','");
         const count = tags.split('+').length;
         sql += "where key in (select key from tags where tag in ('" + addTag + "') group by key having count(*)>=" + count + ") "
+      }
+      if (from) {
+        sql += `AND ts > ${from} `
       }
     }
     if (startID != 0) {
@@ -582,9 +585,9 @@ class Database {
         if (lenRet) count = +lenRet.value;
         count++;
         const tags = nidObj.keys[keyName].tags;
-        this.saveKeysStmt.run(lenKey, count.toString(), null, count.toString(), null); //save len
+        this.saveKeysStmt.run(lenKey, count.toString(), null, 0, count.toString(), null, 0); //save len
         const hisKey = keyName + separator + nidObj.domain + "/" + count;
-        this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, JSON.stringify(value), tags); //save len
+        this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, value.ts, JSON.stringify(value), tags, value.ts); //save len
         if (tags) {
           const tag1 = tags.split(';')
           tag1.map(tag => {
@@ -598,13 +601,13 @@ class Database {
   }
   saveKeys(nidObj) {
     for (var item in nidObj.keys) {
-      const value = JSON.stringify(nidObj.keys[item]);
       const keyName = item + "." + nidObj.domain;
       const tags = nidObj.keys[item].tags;
       if (tags) {
         console.log("tags:", tags)
       }
-      this.saveKeysStmt.run(keyName, value, tags, value, tags)
+      const value = nidObj.keys[item];
+      this.saveKeysStmt.run(keyName, JSON.stringify(value), tags, value.ts, JSON.stringify(value), tags, value.ts)
       if (this.tickers[keyName]) //notify subscribers
         this.tickers[keyName].broadcast('key_update', value)
     }
