@@ -21,7 +21,7 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 7
+const VER_DMDB = 8
 const VER_TXDB = 5
 
 // ------------------------------------------------------------------------------------------------

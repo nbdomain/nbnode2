@@ -142,13 +142,6 @@ app.get('/user/:account', async function (req, res) {
     const ret = await resolver.readUser(account)
     res.json(ret)
 })
-app.get('/t/addtx/:txid', (req, res) => {
-    const txid = req.params['txid']
-    const chain = req.query['chain']
-    if (!chain) chain = 'bsv'
-    const indexer = indexers.get(chain)
-    if (indexer) indexer.add(txid)
-})
 
 app.get('/util/verify', async function (req, res) {
     try {
@@ -164,7 +157,6 @@ app.get('/util/verify', async function (req, res) {
             }
             publicKey = ret.obj.owner_key
         }
-
         let sig = bsv.crypto.Signature.fromString(strSig)
         let pubKey = bsv.PublicKey.fromString(publicKey)
         let hash2 = bsv.crypto.Hash.sha256(bsv.deps.Buffer.from(data, 'hex'))
