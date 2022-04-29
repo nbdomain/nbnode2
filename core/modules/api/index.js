@@ -348,11 +348,10 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
 })
 app.get('/queryKeys', function (req, res) {
     const num = req.query['num'] ? req.query['num'] : 50;
-    const startID = req.query['startID'] ? req.query['startID'] : 0;
     const tags = req.query['tags'] ? req.query['tags'] : null;
     const from = req.query['from'] ? req.query['from'] : null;
     const includeHistory = req.query['includeHistory'] ? req.query['includeHistory'] : 0;
-    const result = indexers.db.queryKeys({ v: 1, num: num, startID: startID, tags: tags, from: from });
+    const result = indexers.db.queryKeys({ v: 1, num: num, tags: tags, from: from });
     if (includeHistory == 0) {
         result.data = result.data.filter(item => item.key.indexOf('/') == -1)
     }

@@ -502,7 +502,7 @@ class Database {
     const ret3 = this.dmdb.prepare(sql).get()
     return { ...ret, ...ret1, ...ret2, ...ret3 }
   }
-  queryKeys({ v, num, startID, tags, from }) {
+  queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
     if (v != "1") {
       return { code: 1, message: "invalid v" };
@@ -526,9 +526,6 @@ class Database {
       if (from) {
         sql += `AND ts > ${from} `
       }
-    }
-    if (startID != 0) {
-      sql += "and id>" + startID + " ";
     }
     if (num) {
       sql += "limit " + num;
