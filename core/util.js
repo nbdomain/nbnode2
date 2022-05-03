@@ -205,7 +205,15 @@ class Util {
     static async sendRawtx(rawtx, chain = 'bsv') {
         let ret = { code: 1 }
         const lib = await CoinFly.create(chain)
-        return await lib.send({ rawtx: rawtx })
+        ret = await lib.send({ rawtx: rawtx })
+        if (chain === 'ar' && ret.code != 0) {
+            let newAPI = arNodes.get()
+            if (!newAPI) newAPI = "https://www.arweave.net"
+            console.log("change ar api to:", newAPI)
+            lib.changeNode(newAPI)
+            return await lib.send({ rawtx: rawtx })
+        }
+        return ret
     }
     static tsNowTime() {
         return Number(new Date().getTime());
