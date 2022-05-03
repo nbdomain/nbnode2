@@ -2,7 +2,7 @@ const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-let node = null
+let g_node = null
 class Nodes {
     constructor() {
         this.nodes = []
@@ -86,6 +86,8 @@ class Nodes {
             this.nodes.push({ id: node, weight: 50 })
         }
         localPeers.forEach(item => {
+            if (this.nodes.find(i => i.id == item))
+                return;
             this.nodes.push({ id: item, weight: 50, local: true })
         })
 
@@ -204,7 +206,7 @@ class Nodes {
                         affected++
                         if (tx.oDataRecord) {
                             const item = tx.oDataRecord
-                            indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time })
+                            indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time, from: "nods.js" })
                         }
                         indexer.add(tx.txid, tx.rawtx, tx.height, tx.time)
                     } else {
@@ -252,10 +254,10 @@ class Nodes {
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     static inst() {
-        if (node == null) {
-            node = new Nodes()
+        if (g_node == null) {
+            g_node = new Nodes()
         }
-        return node
+        return g_node
     }
 }
-module.exports = Nodes.inst()
+module.exports.Nodes = Nodes.inst()

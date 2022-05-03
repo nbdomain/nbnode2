@@ -2,7 +2,7 @@ const TXO = require("./txo.js");
 const { DEF } = require("./def");
 const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
-const Nodes = require('./nodes')
+
 
 class ARChain {
     static async verify(rawtx, height, time, db) {
@@ -67,10 +67,11 @@ class ARChain {
                 if (!oData) {
                     oData = db.readData(attrib.hash).raw
                     if (!oData) { //read from other peer
+                        const { Nodes } = require('./nodes')
                         const d = await Nodes.getData(attrib.hash, { string: true })
                         if (d.raw) {
                             oData = d.raw
-                            db.saveData({ data: d.raw, owner: d.owner, time: d.time })
+                            db.saveData({ data: d.raw, owner: d.owner, time: d.time, from: "chains.js" })
                         }
                     }
                 }
@@ -105,7 +106,6 @@ class ARChain {
                 for (const item of oPay) {
                     out.push({ e: { a: item.address, v: item.value, txid: item.txid } })
                 }
-
             }
             rtx.out = out
             rtx.inputAddress = await Util.addressFromPublickey(rtx.publicKey, 'ar')
@@ -204,10 +204,11 @@ class BSVChain {
                 if (!oData) {
                     oData = db.readData(attrib.hash).raw
                     if (!oData) { //read from other peer
+                        const { Nodes } = require('./nodes')
                         const d = await Nodes.getData(attrib.hash, { string: true })
                         oData = d.raw
                         if (oData) {
-                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts })
+                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts, from: "chains.js" })
                         }
                     }
                 }
@@ -246,6 +247,5 @@ class BSVChain {
     }
 }
 
-module.exports = {
-    ARChain, BSVChain
-}
+module.exports.ARChain = ARChain
+module.exports.BSVChain = BSVChain

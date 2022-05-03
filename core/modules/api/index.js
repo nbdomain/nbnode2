@@ -199,7 +199,7 @@ app.post('/sendTx', async function (req, res) {
         console.log("send tx successfully. txid:", ret1.txid)
         if (ret.obj && ret.obj.oHash) {
             console.log("saving oData... owner:", ret.obj.output.domain)
-            await indexers.db.saveData({ data: obj.oData, owner: ret.obj.output.domain, time: ret.obj.ts })
+            await indexers.db.saveData({ data: obj.oData, owner: ret.obj.output.domain, time: ret.obj.ts, from: "api/sendtx" })
         }
         indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
         Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
@@ -220,7 +220,7 @@ async function handleNewTx(para, from, force = false) {
             const item = data.oDataRecord
             const ret = await (Parser.get(chain).parse({ rawtx: data.rawtx, oData: item?.raw, height: -1 }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
-                await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash })
+                await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
             else {
                 console.error("wrong rawtx format. ret:", ret)
             }

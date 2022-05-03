@@ -150,7 +150,8 @@ class Util {
             try {
                 return await lib.getBalance(address)
             } catch (e) {
-                const newAPI = arNodes.get()
+                let newAPI = arNodes.get()
+                if (!newAPI) newAPI = "https://www.arweave.net"
                 console.log("change ar api to:", newAPI)
                 lib.changeNode(newAPI)
                 return await lib.getBalance(address)

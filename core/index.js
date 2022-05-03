@@ -7,7 +7,7 @@
 const Indexer = require('./indexer')
 const Server = require('./server')
 const Database = require('./database')
-const Nodes = require('./nodes')
+const { Nodes } = require('./nodes')
 const CONSTS = require('./const')
 const Parser = require('./parser')
 

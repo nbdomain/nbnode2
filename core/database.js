@@ -530,7 +530,7 @@ class Database {
     if (num) {
       sql += "limit " + num;
     }
-    sql += ";";
+    sql += "order by ts;";
     return {
       code: 0,
       data: this.dmdb.prepare(sql).all()
@@ -725,12 +725,12 @@ class Database {
     }
     fs.writeFileSync(Path.join(path, sub, hash), buf)
   }
-  async saveData({ data, owner, time }) {
+  async saveData({ data, owner, time, from }) {
     let hash = null
     try {
       hash = await Util.dataHash(data)
       const buf = Util.toBuffer(data)
-      console.log("saving odata.......hash:", hash)
+      console.log(`saving odata from ${from}.......hash:${hash}`)
       let sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
       this.dtdb.prepare(sql).run(hash, buf.length, time, owner, buf)
     } catch (e) {
