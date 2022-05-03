@@ -22,10 +22,14 @@ const SUB_PROTOCOL_MAP = CONSTS.tld_config
 
 class ArNodes {
     async _getPeers(seed) {
-        const url = seed + '/peers';
+        const url = seed + '/health';
         const res = await axios.get(url);
         if (res.data) {
-            let peers = res.data;
+            let peers = []
+            for (const item of res.data.origins) {
+                if (item.status == 200)
+                    peers.push(item.endpoint)
+            }
             return peers;
         }
         return []
@@ -55,7 +59,8 @@ class ArNodes {
                 axios.get(node.id + "/info").then(res => {
                     if (res.data) {
                         newNodes.push(node)
-                        if (useable++ > 10) {
+                        useable++
+                        if (useable > 10 || useable >= this.nodes.length) {
                             this.nodes = newNodes
                             resolve(true)
                         }
