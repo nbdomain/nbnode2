@@ -45,10 +45,10 @@ class ArNodes {
         const data = await this._getPeers(seed);
         data.forEach((node) => {
             if (!node.startsWith('http')) node = 'http://' + node;
-            this.nodes.push({ id: node, weight: 10 });
+            this.nodes.push({ id: node, weight: 50 });
         });
         await this.detectFastest()
-        this.nodes.push({ id: "https://arweave.net", weight: 10 })
+        this.nodes.push({ id: "https://arweave.net", weight: 40 })
         console.log("useable nodes:", this.nodes)
         Storage.setItem("arPeers", JSON.stringify(this.nodes))
     }
@@ -95,7 +95,6 @@ arNodes.init("https://www.arweave.net")
 class CMD_BASE {
     static parseTX(rtx) {
         let output = {}
-
         output.protocol = rtx.out[0].s2;
         output.nid = rtx.out[0].s3.toLowerCase();
         const tld = Util.getTLDFromRegisterProtocol(output.protocol)[0];
