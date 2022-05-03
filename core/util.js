@@ -33,11 +33,11 @@ class ArNodes {
     async init(seed) {
         this.nodes = [];
         let peers = JSON.parse(Storage.getItem("arPeers"))
-        if (peers) {
-            this.nodes = this.nodes.concat(peers);
+        /*if (peers) {
+            this.nodes = peers
             console.log("useable nodes:", this.nodes)
             return;
-        }
+        }*/
         const data = await this._getPeers(seed);
         data.forEach((node) => {
             if (!node.startsWith('http')) node = 'http://' + node;
