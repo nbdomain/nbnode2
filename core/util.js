@@ -60,7 +60,7 @@ class ArNodes {
                             resolve(true)
                         }
                     }
-                }).catch(e => { console.log(e.code) })
+                }).catch(e => { })
                     .finally(() => { if (all++ >= this.nodes.length) resolve(false) })
             }
         })
