@@ -104,6 +104,10 @@ class ARChain {
             if (tags.otherPay) {
                 const oPay = Util.parseJson(tags.otherPay)
                 for (const item of oPay) {
+                    if (rtx.inputAddress == item.address) {
+                        console.error("ar chain does not allow send to self")
+                        return null
+                    }
                     out.push({ e: { a: item.address, v: item.value, txid: item.txid } })
                 }
             }

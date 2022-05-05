@@ -476,6 +476,19 @@ app.get('/tools/:chain/status/:txid', async (req, res) => {
     const ret = await Util.getTxStatus(txid, chain)
     res.json(ret)
 })
+app.get('/tools/market/rates/:symbol', async (req, res) => {
+    const symbol = req.params['symbol']
+    const url = "https://api.huobi.pro/market/trade?symbol=" + symbol
+    try {
+        let ret = await axios.get(url)
+        if (ret && ret.data) {
+            ret = ret.data.tick.data[0].price
+        }
+        res.json({ [symbol]: ret })
+    } catch (e) {
+        res.json({ err: e.message })
+    }
+})
 
 module.exports = function (env) {
     indexers = env.indexers;
