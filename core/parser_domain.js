@@ -414,7 +414,7 @@ class CMD_KEY {
             output.ts = rtx.ts ? rtx.ts : rtx.time
             output.txid = rtx.txid
             for (const out of rtx.out) {
-                if (out.e.a && out.e.a != rtx.inputAddress) {
+                if (out.e && out.e.a && out.e.a != rtx.inputAddress) {
                     pay[out.e.a] = out.e.v
                     hasPay = true
                 }
