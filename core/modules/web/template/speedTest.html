@@ -1,34 +1,37 @@
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Loading...</title>
-  </head>
-  <body>
-    <div id="msg">Dectecting the fastest node...</div>
-    <script>
-      async function detectGateway() {
-          return new Promise(resolve => {
-              const gw = ["https://cloudflare-ipfs.com/ipfs/",
-                  "https://gateway.pinata.cloud/ipfs/",
-                  "https://ipfs.io/ipfs/",
-              ];
-              gw.forEach((item, i) => {
-                  fetch(item + "QmeCGMURVkuAFvE7dVrwrpNKXJdMkqgg1UVXmAwnBmZ2eS/").then(res => res.text()).then(txt => {
-                      if (txt == "helloNBdomain") {
-                          resolve(item);
-                          return;
-                      }
-                  })
-              })
 
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loading...</title>
+</head>
+
+<body>
+  <div id="msg">Dectecting the fastest node...</div>
+  <script>
+    async function detectGateway() {
+      return new Promise(resolve => {
+        const gw = ["https://cloudflare-ipfs.com/ipfs/",
+          "https://dweb.link/ipfs/",
+
+        ];
+        gw.forEach((item, i) => {
+          fetch(item + "QmeCGMURVkuAFvE7dVrwrpNKXJdMkqgg1UVXmAwnBmZ2eS/").then(res => res.text()).then(txt => {
+            if (txt == "helloNBdomain") {
+              resolve(item);
+              return;
+            }
           })
-      }
-      detectGateway().then( result=>{
-        document.cookie = "IPFSgateway="+result;
-        //document.querySelector("#msg").innerHTML = "Using:" + result;
-        console.log("Using:"+result);
-        setTimeout("window.location.href = window.location.href",1000);
+        })
+
       })
+    }
+    detectGateway().then(result => {
+      document.cookie = "IPFSgateway=" + result;
+      //document.querySelector("#msg").innerHTML = "Using:" + result;
+      console.log("Using:" + result);
+      setTimeout("window.location.href = window.location.href", 1000);
+    })
   </script>
-  </body>
+</body>
+
 </html>

@@ -14,8 +14,12 @@ class nbweb_mgr {
   }
   output_md(res, jsonReturn) {
     let text_template = fs.readFileSync(__dirname + "/template/text.html").toString();
-    let text = text_template.replace("**OBJ**", JSON.stringify(jsonReturn));
-    text = text.replace("nb://", this.env.urls.web);
+    let text = text_template.replace("NIDOBJ", JSON.stringify(jsonReturn));
+    let url = `http://${this.env.server.domain}:${this.env.server.port}`
+    if (this.env.server.https) {
+      url = `https://${this.env.server.domain}`
+    }
+    text = text.replace("nb://", url);
     //console.log(text);
     res.send(text);
   }
@@ -23,16 +27,16 @@ class nbweb_mgr {
 
     return false;
   }
-  async readDomain(domain){
-    const url = "http://localhost:" + this.env.node_info.port + "/api/?nid="+domain;
-    try{
+  async readDomain(domain) {
+    const url = "http://localhost:" + this.env.server.port + "/api/?nid=" + domain;
+    try {
       return (await axios.get(url)).data;
-    }catch(e){
+    } catch (e) {
       console.log(e.message);
       return null
     }
   }
-  async handleURL(req,res, addr) {
+  async handleURL(req, res, addr) {
     addr = "https://" + addr;
     let q = url.parse(addr, true);
     //console.log(q);
@@ -58,7 +62,7 @@ class nbweb_mgr {
 
         //console.log(obj)
         if (obj.t == "web") {
-          await this._handle_data(req,res, obj, q);
+          await this._handle_data(req, res, obj, q);
           return;
         } else {
           this.output_md(res, res_content)
@@ -69,11 +73,11 @@ class nbweb_mgr {
       } else {
         if (res_content.code != 102) {
           const domain = q.hostname.split('.');
-          const redirectUrl = "https://www.nbdomain.com/#/search?nid=" + domain[0] + "&tld=." + domain[1];
+          const redirectUrl = "https://www.nbdomain.com/#/search?nid=" + domain[0];
           res.redirect(redirectUrl);
         }
         else {
-          res.send("No website at: " + q.hostname + ".<p><a href='https://www.nbdomain.com'>Manage</a>");
+          res.send("No website at: " + q.hostname + " <p><a href='https://www.nbdomain.com'>Manage</a>");
         }
         //res.sendFile(__dirname + "/template/welcome.html");
         return;
@@ -91,7 +95,7 @@ class nbweb_mgr {
   async _handle_data(req, res, obj, q) {
     console.log(q.path);
     if (obj.format.toLowerCase() == "ipfs") {
-      await ipfs.handle_Data(req,res, obj,q.path);
+      await ipfs.handle_Data(req, res, obj, q.path);
       return;
     }
     let handled = false;
