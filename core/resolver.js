@@ -1,6 +1,7 @@
 const { DomainTool } = require('./domainTool')
 const { ERR, MemDomains, NIDObject } = require('./def')
 const Parser = require('./parser')
+const { Util } = require('./util')
 
 
 
@@ -142,14 +143,21 @@ class Resolver {
         this.controllers.push(controller)
     }
     async readUser(account) {
+        let res = {}
         const dd = account.split('@')
         if (dd.length < 2) return { code: 1, msg: "wrong account format" }
         if (dd[0].toLowerCase() === 'root') {
             const obj = await this.db.loadDomain(dd[1])
-            return obj ? { code: 0, account: account, address: obj.owner, attributes: { publicKey: obj.owner_key } } : { code: 1, msg: dd[1] + " is not registered" }
+            if (!obj) return { code: 1, msg: dd[1] + " is not registered" }
+            res = { code: 0, account: account, address: obj.owner, attributes: { publicKey: obj.owner_key } }
+        } else {
+            res = this.db.readUser(account)
         }
-        const res = this.db.readUser(account)
-        return { code: res ? 0 : 1, ...res }
+        if (!res) return { code: 1 }
+        if (!res.attributes.uid) {
+            res.attributes.uid = await Util.dataHash(res.account + res.address)
+        }
+        return { code: 0, ...res }
     }
     async resolveNextBatch() {
         if (!this.started) return

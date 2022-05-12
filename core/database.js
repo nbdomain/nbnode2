@@ -481,7 +481,10 @@ class Database {
       if (name == "root") continue
       const sql = `insert or replace into users (account,address,attributes) VALUES(?,?,?) `
       try {
-        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, value.address, JSON.stringify(value))
+        value.uid = Util.dataHash(name + "@" + nidObj.domain + value.address)
+        const address = value.address
+        delete value.address
+        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(value))
       } catch (e) {
         console.error("saveUsers:", e.message)
       }
@@ -489,7 +492,9 @@ class Database {
   }
   readUser(account) {
     const sql = "select * from users where account = ?"
-    return this.dmdb.prepare(sql).get(account)
+    const res = this.dmdb.prepare(sql).get(account)
+    if (res && res.attributes) res.attributes = Util.parseJson(res.attributes)
+    return res
   }
   getDataCount() {
     let sql = `select (select count(*) from bsv_tx where txTime!=1) as bsv , (select count(*) from ar_tx where txTime!=1) as ar`
