@@ -73,12 +73,14 @@ class CMD_USER {
         output.err = "Wrong User format"
         return output
     }
-    static fillObj(nidObj, rtx) {
+    static async fillObj(nidObj, rtx) {
         const output = rtx.output
         if (!nidObj.users) nidObj.users = {}
         const name = output.extra.name
         delete output.extra.name
         nidObj.users[name] = output.extra
+        nidObj.users[name].txid = rtx.txid
+        nidObj.users[name].uid = await Util.dataHash(name + "@" + nidObj.domain + output.extra.address)
         return nidObj
     }
 }

@@ -21,7 +21,7 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 8
+const VER_DMDB = 9
 const VER_TXDB = 5
 
 // ------------------------------------------------------------------------------------------------
@@ -481,7 +481,6 @@ class Database {
       if (name == "root") continue
       const sql = `insert or replace into users (account,address,attributes) VALUES(?,?,?) `
       try {
-        value.uid = Util.dataHash(name + "@" + nidObj.domain + value.address)
         const address = value.address
         delete value.address
         this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(value))
