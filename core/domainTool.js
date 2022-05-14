@@ -1,19 +1,22 @@
-const { Util } = require('./util')
 const CONSTS = require('./const')
-const { CMD, DEF } = require('./def')
-const Parser = require('./parser')
+const { NBLib, Util } = require('./Util')
 var axios = require("axios");
-const { urlencoded } = require('body-parser');
 
 class DomainTool {
     /**
    * Fetch NidOject from remote endpoint.
    * @param {!NidObject} domain 
    */
-    static async fetchDomainAvailibility(domain) {
+    static async fetchDomainPrice(domain, newTx = false) {
         try {
+            await Util.initNBLib()
+            const key = domain + ".prices.nbinfo.b"
+            const r = await NBLib.readDomain(key)
+            if (r.code == 0) {
+                return { code: 0, price: r.obj.value.price }
+            }
             domain = encodeURIComponent(domain)
-            let url = `${CONSTS.nidcheck_endpoint}${domain}`;
+            let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
             console.log(`Sending request to URL ${url}`);
             let res = await axios.get(url, { timeout: 10000 });
             return res.data;

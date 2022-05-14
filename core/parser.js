@@ -48,14 +48,14 @@ class Parser {
     getAttrib({ rawtx }) {
         return this.chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
     }
-    async parseTX({ rawtx, oData, height, time, verify = false }) {
+    async parseTX({ rawtx, oData, height, time, newTx = false }) {
         const ret = await this.parse({ rawtx, oData, height, time })
         if (ret.code != 0) {
             return { code: 1, msg: "invalid rawtx format" }
         }
         const rtx = ret.rtx
         try {
-            if (verify && height == -1) { //p2p rawtx
+            if (newTx && height == -1) { //p2p rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
                 if (tspan > 120 || tspan < -1) {
@@ -65,7 +65,7 @@ class Parser {
             }
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
-            if (handler) rtx.output = await handler.parseTX(rtx, verify)
+            if (handler) rtx.output = await handler.parseTX(rtx, newTx)
             if (!handler) {
                 console.error("no handler for command:", rtx.command)
             }

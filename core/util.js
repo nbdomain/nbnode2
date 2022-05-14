@@ -11,6 +11,9 @@ const arweave = require('arweave')
 const CoinFly = require('coinfly');
 const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
+const { CONFIG } = require('./config')
+const NBLib = require("nblib2");
+
 const rwc = require("random-weighted-choice")
 const LocalStorage = require('node-localstorage').LocalStorage;
 Storage = new LocalStorage('./storage');
@@ -107,6 +110,14 @@ class CMD_BASE {
 };
 
 class Util {
+    static async initNBLib() {
+        await NBLib.init({
+            API: "http://localhost:" + CONFIG.server.port + "/api/",
+            debug: true, //enable debug or not. 
+            tld_config: CONSTS.tld_config,
+            enable_write: false  //enable functions that can update and write value to NBdomain
+        });
+    }
     static toBuffer(data) {
         let buf = null
         if (Buffer.isBuffer(data)) {
@@ -398,4 +409,4 @@ class ArUtil {
         };
     };
 }
-module.exports = { ArUtil, Util, CMD_BASE }
+module.exports = { ArUtil, Util, CMD_BASE, NBLib }

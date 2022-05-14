@@ -175,7 +175,7 @@ app.post('/sendTx', async function (req, res) {
     if (!obj.oData) {
         console.error("old sendtx format")
     }
-    let ret = await (Parser.get(chain).parseTX({ rawtx: obj.rawtx, oData: obj.oData, height: -1, verify: true }));
+    let ret = await (Parser.get(chain).parseTX({ rawtx: obj.rawtx, oData: obj.oData, height: -1, newTx: true }));
     if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
         console.error("parseRaw error err:", ret)
         res.json({ code: -1, message: ret.msg })

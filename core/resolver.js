@@ -123,7 +123,7 @@ class Resolver {
                 }
                 return { code: 0, obj: obj, domain: fullDomain }
             }
-            let ret = await DomainTool.fetchDomainAvailibility(fullDomain);
+            let ret = await DomainTool.fetchDomainPrice(fullDomain);
             ret.domain = fullDomain;
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;

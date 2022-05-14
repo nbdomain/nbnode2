@@ -116,7 +116,7 @@ class CMD_MAKE_PUBLIC {
     }
 }
 class CMD_REGISTER {
-    static async parseTX(rtx, verify) {
+    static async parseTX(rtx, newTx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
             const domain = output.domain
@@ -124,11 +124,10 @@ class CMD_REGISTER {
                 console.log("found")
             }
             if (rtx.out[0].s5 == 'v2') {
-
                 output.owner_key = rtx.publicKey
-                if (verify) { //check payment
+                if (rtx.ts && rtx.ts > 1652505824) { //enforce price check after this time
                     const payment = +rtx.out[2].e.v
-                    const resp = await DomainTool.fetchDomainAvailibility(domain)
+                    const resp = await DomainTool.fetchDomainPrice(domain, newTx)
                     if (resp.code != 0 || !resp.price) {
                         output.err = domain + " cannot be registered"
                         return output
@@ -165,9 +164,6 @@ class CMD_REGISTER {
         if (output.owner_key == null || output.owner_key == "") {
             output.err = "Invalid format for RegisterOutput class1."
             return output
-        }
-        if (verify) { //delay a bit
-
         }
         return output
     }
