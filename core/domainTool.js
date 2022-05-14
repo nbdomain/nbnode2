@@ -1,5 +1,5 @@
 const CONSTS = require('./const')
-const { NBLib, Util } = require('./Util')
+const { NBLib, Util } = require('./util')
 var axios = require("axios");
 
 class DomainTool {
