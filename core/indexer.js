@@ -10,6 +10,7 @@ const Downloader = require('./downloader')
 const Crawler = require('./crawler')
 const Resolver = require('./resolver')
 const Parser = require('./parser')
+const { BSVChain } = require('./chains')
 const { Nodes } = require('./nodes')
 const { CONFIG } = require('./config')
 const { DEF } = require('./def')
@@ -20,7 +21,7 @@ const process = require('process')
 // ------------------------------------------------------------------------------------------------
 
 class Indexer {
-  constructor(db, api, chain, numParallelDownloads, numParallelExecutes, logger, startHeight, mempoolExpiration, reOrg) {
+  constructor(db, chain, numParallelDownloads, logger) {
     this.logger = logger || {}
     this.logger.info = this.logger.info || (() => { })
     this.logger.warn = this.logger.warn || (() => { })
@@ -34,37 +35,27 @@ class Indexer {
     this.onBlock = null
     this.onReorg = null
 
-    this.api = api
+    //this.api = api
     this.chain = chain
-    this.startHeight = startHeight
-    this.mempoolExpiration = mempoolExpiration
-    this.reorg = reOrg
-
-    const fetchFunction = this.api.fetch ? this.api.fetch.bind(this.api) : null
 
     this.database = db; //new Database(chain, txdb, dmdb, this.logger)
-    this.downloader = new Downloader(fetchFunction, numParallelDownloads)
+    this.downloader = new Downloader(BSVChain.fetchRaw, numParallelDownloads)
 
-    this.crawler = new Crawler(api, db, this.chain)
+    //this.crawler = new Crawler(api, db, this.chain)
     this.resolver = new Resolver(this.chain, this.database)
-    //this.resolver.addController(this.api)
     this.resolver.addController(Nodes)
     Parser.get(this.chain).init(this.database)
-
-    //this.database.onAddTransaction = this._onAddTransaction.bind(this)
-    //this.database.onDeleteTransaction = this._onDeleteTransaction.bind(this)
-    //this.database.onUnindexTransaction = this._onUnindexTransaction.bind(this)
 
     this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)
     this.downloader.onFailedToDownloadTransaction = this._onFailedToDownloadTransaction.bind(this)
     this.downloader.onRetryingDownload = this._onRetryingDownload.bind(this)
 
-    this.crawler.onCrawlError = this._onCrawlError.bind(this)
+    /*this.crawler.onCrawlError = this._onCrawlError.bind(this)
     this.crawler.onCrawlBlockTransactions = this._onCrawlBlockTransactions.bind(this)
     this.crawler.onRewindBlocks = this._onRewindBlocks.bind(this)
     this.crawler.onMempoolTransaction = this._onMempoolTransaction.bind(this)
     this.crawler.onExpireMempoolTransactions = this._onExpireMempoolTransactions.bind(this)
-    this.crawler.onConfirmTransactions = this._onConfirmTransactions.bind(this)
+    this.crawler.onConfirmTransactions = this._onConfirmTransactions.bind(this)*/
   }
   async restart() {
     await this.stop();
@@ -75,37 +66,21 @@ class Indexer {
   pauseResolve(pause) {
     this.resolver.pauseResolve = pause
   }
-  async reCrawlAll() {
+  /*async reCrawlAll() {
     this.database.setHeightAndHash(this.startHeight, "", this.chain)
     await this.stop();
     this.start()
-  }
+  }*/
   async start() {
-
-    let height = this.database.getHeight(this.chain) || this.startHeight
-    console.log("startHeight:", this.startHeight, " height:", height)
-    let hash = this.database.getHash(this.chain)
-    if (this.reorg) {
-      height -= this.reorg
-      hash = null
-    }
-
-    //if (this.api.connect) await this.api.connect(height, this.chain)
-    this.database.getTransactionsToDownload(this.chain).forEach(txid => this.downloader.add(txid))
-    this.crawler.start(height, hash)
     this.resolver.start()
     if (CONFIG.exit_count != 0)
       this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * CONFIG.exit_count);
-
   }
 
 
   async stop() {
     this.logger.info('stopping...')
     this.resolver.stop()
-    this.crawler.stop()
-    // if (this.api.disconnect) await this.api.disconnect()
-    //    this.downloader.stop()
   }
 
   add(txid, hex = null, height = null, time = null) {
@@ -130,13 +105,6 @@ class Indexer {
   time(txid) {
     txid = this._parseTxid(txid)
     return this.database.getTransactionTime(txid, this.chain)
-  }
-  status() {
-    return {
-      height: this.crawler.height,
-      hash: this.crawler.hash,
-      downloading: this.downloader.remaining()
-    }
   }
   async _onConfirmTransactions(txobjs) {
     for (const item of txobjs) {
@@ -209,21 +177,9 @@ class Indexer {
     this._addTransactions([txid], [hex], Database.HEIGHT_MEMPOOL, null)
   }
 
-  _onExpireMempoolTransactions() {
-    const expirationTime = Math.round(Date.now() / 1000) - this.mempoolExpiration
-
-    const expired = this.database.getMempoolTransactionsBeforeTime(expirationTime, this.chain)
-    const deleted = new Set()
-    this.database.transaction(() => expired.forEach(txid => this.database.deleteTransaction(txid, this.chain)))
-  }
-
   _addTransactions(txids, txhexs, height, time) {
-    this.resolver.pauseResolve = true //pause resolve while adding new tx
     this.database.transaction(() => {
       txids.forEach((txid, i) => {
-        if (txid === "_n9hX_1RceozQ6rPEE6ofidnI_5hLZFZk2A8uFM0TpA") {
-          console.log("found")
-        }
         this.database.addNewTransaction(txid, this.chain)
         if (height) this.database.setTransactionHeight(txid, height, this.chain)
         if (time) this.database.setTransactionTime(txid, time, this.chain)
@@ -241,9 +197,13 @@ class Indexer {
         }
       })
     })
-    this.resolver.pauseResolve = false
   }
-
+  async addTxFull(txid, rawtx, oData, time) {
+    if (this.database.isTransactionParsed(txid, false, this.chain)) return false
+    const ret = await Parser.get(this.chain).parse({ rawtx, oData, time });
+    const ts = ret.code == 0 ? (ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2) : DEF.TX_INVALIDTX
+    //this.database.addTxFull(...)
+  }
   async _parseAndStoreTransaction(txid, rawtx) {
     if (this.database.isTransactionParsed(txid, false, this.chain)) return
 

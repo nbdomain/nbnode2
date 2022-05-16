@@ -214,11 +214,11 @@ class Nodes {
                     }
                 }
                 if (fullSync && remoteData > 0) {
-                    const dataCount = indexer.database.getDataCount()
-                    if (dataCount[chain] < remoteData) {
-                        console.log("recrawl all from chain:", chain)
-                        indexer.reCrawlAll()
-                    }
+                    /* const dataCount = indexer.database.getDataCount()
+                     if (dataCount[chain] < remoteData) {
+                         console.log("recrawl all from chain:", chain)
+                         indexer.reCrawlAll()
+                     } */
                 }
                 if (fullSync && affected > 0) return affected
             } catch (e) {

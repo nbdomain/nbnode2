@@ -2,6 +2,7 @@ const TXO = require("./txo.js");
 const { DEF } = require("./def");
 const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
+const axios = require('axios')
 
 
 class ARChain {
@@ -177,6 +178,23 @@ class BSVChain {
                 return {}
         }
         return attrib ? attrib : {}
+    }
+    static async fetchRaw(txid) {
+        let response;
+        let hex;
+        try {
+            response = await axios.get(`https://api.whatsonchain.com/v1/bsv/main/tx/${txid}/hex`)
+            hex = response.data
+        } catch (e) {
+            response = await axios.get(`https://api.run.network/v1/main/tx/${txid}`)
+            hex = response.data.hex
+        }
+        if (!hex) {
+            console.error("Download rawtx failed");
+        }
+        const height = typeof response.data.blockheight === 'number' ? response.data.blockheight : null
+        const time = typeof response.data.blocktime === 'number' ? response.data.blocktime : null
+        return { hex, height, time }
     }
     static async raw2rtx({ rawtx, oData, height, time: block_time, db }) {
         //check sig

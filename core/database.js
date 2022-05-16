@@ -327,7 +327,6 @@ class Database {
   }
 
   deleteTransaction(txid, chain) {
-
     this.transaction(() => {
       const sql = `DELETE FROM ${chain}_tx WHERE txid = ?`
       this.txdb.prepare(sql).run(txid)
@@ -377,7 +376,6 @@ class Database {
     return this.txdb.prepare(sql).get().count
   }
   getIndexedCount() { return this.getTransactionsIndexedCountStmt.get().count }
-  getNumQueuedForExecution() { return this.numQueuedForExecution }
 
 
   // --------------------------------------------------------------------------
@@ -632,7 +630,9 @@ class Database {
     let sql = ""
     if (option.address) {
       sql = 'SELECT domain FROM nidobj WHERE owner = ? '
-      return this.dmdb.prepare(sql).all(option.address);
+      let ret = this.dmdb.prepare(sql).all(option.address);
+      sql = 'SELECT account FROM users WHERE address = ? '
+      return ret.concat(this.dmdb.prepare(sql).all(option.address));
     } else if (option.time) {
       const from = option.time.from ? option.time.from : 0
       const to = option.time.to ? option.time.to : 9999999999

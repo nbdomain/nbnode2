@@ -422,7 +422,7 @@ app.get('/getData', (req, res) => {
 })
 app.get('/find_domain', (req, res) => {
     var addr = req.query.address;
-    let result = bsv_resolver.db.findDomains({ address: addr });
+    let result = indexers.db.findDomains({ address: addr });
     const arr = []
     result.forEach(item => {
         const dd = item.domain.split('.')
@@ -440,10 +440,10 @@ app.get('/findDomain', function (req, res) {
     try {
         let addr = req.query.address, result = [];
         if (addr) {
-            result = bsv_resolver.db.findDomains({ address: addr });
+            result = indexers.db.findDomains({ address: addr });
         } else if (req.query.option) {
             let option = JSON.parse(req.query.option)
-            result = bsv_resolver.db.findDomains(option);
+            result = indexers.db.findDomains(option);
         }
         res.json({
             code: 0,

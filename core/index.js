@@ -60,8 +60,8 @@ class Indexers {
       //default: throw new Error(`Unknown API: ${API}`)
     }
 
-    this.bsv = new Indexer(this.db, apiBSV, "bsv", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.bsv, CONSTS.MEMPOOL_EXPIRATION, REORG)
-    this.ar = new Indexer(this.db, apiAR, "ar", CONSTS.FETCH_LIMIT, CONSTS.WORKERS, logger, CONSTS.START_HEIGHT.ar, CONSTS.MEMPOOL_EXPIRATION, REORG)
+    this.bsv = new Indexer(this.db, "bsv", CONSTS.FETCH_LIMIT, logger)
+    this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
     this.bsv.indexers = this
     this.ar.indexers = this
   }
