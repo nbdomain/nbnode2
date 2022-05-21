@@ -277,6 +277,14 @@ class Database {
       console.log(e)
     }
   }
+  addFullTx({ txid, rawtx, time, oDataRecord, chain }) {
+    const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
+    const sql = `insert into ${chain}_tx (txid,bytes,time,txTime) VALUES(?,?,?,?) `
+    this.txdb.prepare(sql).run(txid, bytes, time, time)
+    if (oDataRecord)
+      this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
+    return true
+  }
   setTransactionRaw(txid, rawtx, chain) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
     const sql = `UPDATE ${chain}_tx SET bytes = ? WHERE txid = ?`
@@ -433,11 +441,11 @@ class Database {
     try {
       let list = [];
       if (chain == 'bsv') {
-        const sql = `SELECT * FROM ${chain}_tx WHERE height <= ${HEIGHT_TMSTAMP} AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+        const sql = `SELECT * FROM ${chain}_tx WHERE time <= 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
         list = this.txdb.prepare(sql).raw(false).all(count);
       }
       if (list.length == 0) { //no more old format tx
-        const sql = `SELECT * FROM ${chain}_tx WHERE height > ${HEIGHT_TMSTAMP} AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+        const sql = `SELECT * FROM ${chain}_tx WHERE time > 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
         const list1 = this.txdb.prepare(sql).raw(false).all(count);
         list = list.concat(list1)
       }

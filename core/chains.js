@@ -144,8 +144,8 @@ class BSVChain {
         }
         return null
     }
-    static async verify(rawtx, height, block_time, db) {
-        const rtx = await BSVChain.raw2rtx({ rawtx, height, time: block_time, db })
+    static async verify(rawtx, height, time, db) {
+        const rtx = await BSVChain.raw2rtx({ rawtx, height, time: time, db })
         return { code: rtx ? 0 : -1, rtx: rtx }
     }
     static _reArrage(rtx) {
@@ -196,9 +196,9 @@ class BSVChain {
         const time = typeof response.data.blocktime === 'number' ? response.data.blocktime : null
         return { hex, height, time }
     }
-    static async raw2rtx({ rawtx, oData, height, time: block_time, db }) {
+    static async raw2rtx({ rawtx, oData, time, db }) {
         //check sig
-        if (!height || height == -1 || height > DEF.BLOCK_SIGNATURE_UPDATE) {
+        if (time > 1591283538 || !time) {
             const publicKey = BSVChain.verifySig(rawtx)
             if (!publicKey) {
                 console.error("Failed to verify transaction signature")
@@ -207,14 +207,12 @@ class BSVChain {
         }
         const tx = TXO.fromRaw(rawtx);
         let rtx = {
-            height: height,
-            time: block_time,
+            time: time,
             txid: tx.tx.h,
             publicKey: tx.in[0].h1.toString(),
             output: null,
             in: tx.in,
-            out: tx.out,
-            ts: 0,
+            out: tx.out
         };
         const attrib = Util.parseJson(tx.out[0].s3)
         if (attrib && typeof attrib == "object") {
@@ -258,11 +256,11 @@ class BSVChain {
         tx.in.forEach(inp => { if (inp.e.a) rtx.inputAddress = inp.e.a.toString() })
         BSVChain._reArrage(rtx)
 
-        //check txtime
-        if (block_time && rtx.ts && rtx.ts > block_time) {
+        //TODO: check txtime
+        /*if (time && rtx.ts && rtx.ts > time) {
             console.error("rtx.ts:", rtx.ts, "block_time:", block_time)
             return null
-        }
+        }*/
 
         rtx.chain = 'bsv'
         return rtx

@@ -189,7 +189,7 @@ class Resolver {
                         this.db.setTransactionResolved(item.txid, this.chain)
                         const res = await Parser.get(this.chain).parseTX({ rawtx, height: item.height, time: item.time })
                         if (!res) continue
-                        const rtx = { ...res.obj, ...item }
+                        const rtx = { ...res.rtx, ...item }
                         if (!rtx.output || rtx.output?.err) {
                             //console.error(item.txid, " parse error:", rtx.output?.err)
                             continue

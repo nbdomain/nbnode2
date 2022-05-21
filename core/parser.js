@@ -63,6 +63,7 @@ class Parser {
                     return { code: 1, msg: "invalid timestamp" }
                 }
             }
+            if (rtx.ts) rtx.time = rtx.ts
             let handler = this.domainParser().getHandler(rtx.command)
             if (!handler) handler = this.nftParser().getHandler(rtx.command)
             if (handler) rtx.output = await handler.parseTX(rtx, newTx)
@@ -79,11 +80,10 @@ class Parser {
             if (!rtx.output) rtx.output = {}
             rtx.output.err = e.message
         }
-        return rtx.output.err ? { code: -1, msg: rtx.output.err } : { code: 0, obj: rtx }
+        return rtx.output.err ? { code: -1, msg: rtx.output.err } : { code: 0, rtx: rtx }
     }
     async fillObj(nidObj, rtx, objMap) {
         let retObj = null
-        nidObj.lastUpdateheight = rtx.height;
         nidObj.last_txid = rtx.txid
         nidObj.last_ts = rtx.ts ? rtx.ts : rtx.time
         nidObj.last_cmd = rtx.command

@@ -193,32 +193,9 @@ class Nodes {
                 const res = await axios.get(url)
                 let all = res.data.length
                 for (const tx of res.data) {
-                    let oData = null
-                    --all
-                    if (tx.oDataRecord) oData = tx.oDataRecord.raw
-                    if (indexer.database.isTransactionParsed(tx.txid, false, chain)) {
-                        console.log("syncFromNode: Skipping ", tx.txid, "(", all, " left)")
-                        continue
+                    if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain })) {
+                        affected++;
                     }
-                    const ret = await (this.parser.get(chain).parse({ rawtx: tx.rawtx, oData: oData, height: tx.height, time: tx.time }));
-                    if (ret && ret.code == 0) {
-                        console.log("syncFromNode: Adding ", tx.txid, "(", all, " left)")
-                        affected++
-                        if (tx.oDataRecord) {
-                            const item = tx.oDataRecord
-                            indexer.database.saveData({ data: item.raw, owner: item.owner, time: item.time, from: "nods.js" })
-                        }
-                        indexer.add(tx.txid, tx.rawtx, tx.height, tx.time)
-                    } else {
-                        console.error("invalid tx:", tx.txid)
-                    }
-                }
-                if (fullSync && remoteData > 0) {
-                    /* const dataCount = indexer.database.getDataCount()
-                     if (dataCount[chain] < remoteData) {
-                         console.log("recrawl all from chain:", chain)
-                         indexer.reCrawlAll()
-                     } */
                 }
                 if (fullSync && affected > 0) return affected
             } catch (e) {

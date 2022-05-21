@@ -198,11 +198,25 @@ class Indexer {
       })
     })
   }
-  async addTxFull(txid, rawtx, oData, time) {
-    if (this.database.isTransactionParsed(txid, false, this.chain)) return false
-    const ret = await Parser.get(this.chain).parse({ rawtx, oData, time });
-    const ts = ret.code == 0 ? (ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2) : DEF.TX_INVALIDTX
-    //this.database.addTxFull(...)
+  async addTxFull({ txid, rawtx, time, oDataRecord, noVerify = false, chain }) {
+    if (this.database.isTransactionParsed(txid, false, chain)) {
+      console.log("Skipping:", txid)
+      return false
+    }
+    if (noVerify && time) {
+      return await this.database.addFullTx({ txid, rawtx, time, oDataRecord, chain })
+    }
+    let ret = await (Parser.get(chain).parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time }));
+
+    const ts = ret.code == 0 ? ret.rtx.time : DEF.TX_INVALIDTX
+    if (ret.rtx.time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
+      await this.database.addFullTx({ txid, rawtx, time: ts, oDataRecord, chain })
+      console.log("Added txid:", txid)
+    }
+    else {
+      console.error("Invalid txid:", txid)
+    }
+    return ret.code == 0;
   }
   async _parseAndStoreTransaction(txid, rawtx) {
     if (this.database.isTransactionParsed(txid, false, this.chain)) return

@@ -143,7 +143,7 @@ class CMD_REGISTER {
                 }
             } else {//TODO: add end time check for old format
                 let addr = await Util.addressFromPublickey(rtx.publicKey, rtx.chain);
-                let authorsities = Util.getAdmins(output.protocol, rtx.height);
+                let authorsities = Util.getAdmins(output.protocol, rtx.time);
                 if (!authorsities.includes(addr)) {
                     output.err = "Input address not in authorities.";
                 }
@@ -179,7 +179,6 @@ class CMD_REGISTER {
             nidObj.txid = rtx.txid;
             nidObj.status = DEF.STATUS_VALID;
             nidObj.domain = rtx.output.domain;
-            nidObj.lastUpdateheight = rtx.height;
         } catch (e) {
             rtx.output.err = e.message
             return null //some data is invalid, probably owner_key is not a valid public key

@@ -155,7 +155,7 @@ app.get('/util/verify', async function (req, res) {
                 res.json({ code: -1, message: ret.message })
                 return
             }
-            publicKey = ret.obj.owner_key
+            publicKey = ret.rtx.owner_key
         }
         let sig = bsv.crypto.Signature.fromString(strSig)
         let pubKey = bsv.PublicKey.fromString(publicKey)
@@ -175,8 +175,8 @@ app.post('/sendTx', async function (req, res) {
     if (!obj.oData) {
         console.error("old sendtx format")
     }
-    let ret = await (Parser.get(chain).parseTX({ rawtx: obj.rawtx, oData: obj.oData, height: -1, newTx: true }));
-    if (ret.code != 0 || !ret.obj.output || ret.obj.output.err) {
+    let ret = await (Parser.get(chain).parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true }));
+    if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
         console.error("parseRaw error err:", ret)
         res.json({ code: -1, message: ret.msg })
         return
@@ -197,26 +197,25 @@ app.post('/sendTx', async function (req, res) {
     const ret1 = await Util.sendRawtx(obj.rawtx, chain);
     if (ret1.code == 0) {
         console.log("send tx successfully. txid:", ret1.txid)
-        if (ret.obj && ret.obj.oHash) {
-            console.log("saving oData... owner:", ret.obj.output.domain)
-            await indexers.db.saveData({ data: obj.oData, owner: ret.obj.output.domain, time: ret.obj.ts, from: "api/sendtx" })
+        let oDataRecord = null
+        if (ret.rtx && ret.rtx.oHash) {
+            oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
         }
-        indexers.get(chain)._onMempoolTransaction(ret1.txid, obj.rawtx)
-        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
+        if (await indexers.get(chain).addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain }))
+            Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
     } else {
         console.log("send tx failed")
     }
     res.json(ret1);
 });
 async function handleNewTx(para, from, force = false) {
-    let db = indexers.db, indexer = indexers.bsv;
-    if (para.chain == "ar") {
-        indexer = indexers.ar
-    }
+    let db = indexers.db
     const chain = para.chain ? para.chain : 'bsv'
-    if (!db.hasTransaction(para.txid, chain) || force) {
+    if (!db.isTransactionParsed(para.txid, false, chain) || force) {
         const data = await Nodes.getTx(para.txid, from, chain)
         if (data) {
+            console.log("handleNewTx:", para.txid)
+            await indexers.get(chain).addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
             const item = data.oDataRecord
             const ret = await (Parser.get(chain).parse({ rawtx: data.rawtx, oData: item?.raw, height: -1 }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
@@ -224,7 +223,9 @@ async function handleNewTx(para, from, force = false) {
             else {
                 console.error("wrong rawtx format. ret:", ret)
             }
-            indexer._onMempoolTransaction(para.txid, data.rawtx)
+            await indexers.get(chain).addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
+
+            //indexer._onMempoolTransaction(para.txid, data.rawtx)
         }
     }
 }
@@ -440,7 +441,10 @@ app.get('/findDomain', function (req, res) {
     try {
         let addr = req.query.address, result = [];
         if (addr) {
-            result = indexers.db.findDomains({ address: addr });
+            const arrAdd = addr.split(',')
+            for (const addr of arrAdd) {
+                result.push({ address: addr, result: indexers.db.findDomains({ address: addr }) });
+            }
         } else if (req.query.option) {
             let option = JSON.parse(req.query.option)
             result = indexers.db.findDomains(option);
@@ -460,6 +464,7 @@ app.get('/findDomain', function (req, res) {
         return;
     }
 });
+
 
 //-----------------------Blockchain tools---------------------------------//
 app.get('/tools/:chain/balance/:address', async (req, res) => {

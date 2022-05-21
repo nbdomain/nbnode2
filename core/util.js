@@ -233,16 +233,16 @@ class Util {
     static tsNowTime() {
         return Number(new Date().getTime());
     }
-    static getAdmins(protocol, blockId) {
+    static getAdmins(protocol, time) {
         let admins = [];
 
         for (let tld in SUB_PROTOCOL_MAP) {
             if (SUB_PROTOCOL_MAP[tld].address.protocol == protocol) {
                 admins.push(SUB_PROTOCOL_MAP[tld].address.admin);
                 let otherAdmins = SUB_PROTOCOL_MAP[tld].address.other_admins;
-                if (blockId) {
+                if (time) {
                     for (let i = 0; i < otherAdmins.length; i++) {
-                        if (blockId > otherAdmins[i].start_block && blockId <= otherAdmins[i].end_block) {
+                        if (blockId > otherAdmins[i].start_time && blockId <= otherAdmins[i].end_time) {
                             admins.push(otherAdmins[i].address);
                         }
                     }
