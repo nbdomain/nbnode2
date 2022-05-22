@@ -304,7 +304,6 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
 
         }
         ret.msg = "pong";
-        ret.token = Nodes.getToken()
     }
     if (cmd === "newtx") {
         const d = req.query['data'];
