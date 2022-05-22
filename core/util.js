@@ -39,57 +39,20 @@ class ArNodes {
     }
     async init(seed) {
         this.nodes = [];
-        let peers = JSON.parse(Storage.getItem("arPeers"))
-        /*if (peers) {
-            this.nodes = peers
-            console.log("useable nodes:", this.nodes)
-            return;
-        }*/
+        this.iNode = 0;
+        this.nodes.push("https://arweave.net")
         const data = await this._getPeers(seed);
         data.forEach((node) => {
             if (!node.startsWith('http')) node = 'http://' + node;
-            this.nodes.push({ id: node, weight: 50 });
+            this.nodes.push(node);
         });
-        await this.detectFastest()
-        this.nodes.push({ id: "https://arweave.net", weight: 40 })
         console.log("useable nodes:", this.nodes)
-        Storage.setItem("arPeers", JSON.stringify(this.nodes))
-    }
-    async detectFastest() {
-        return new Promise(resolve => {
-            let newNodes = [], useable = 0, all = 0
-            for (const node of this.nodes) {
-                axios.get(node.id + "/info").then(res => {
-                    if (res.data) {
-                        newNodes.push(node)
-                        useable++
-                        if (useable > 10 || useable >= this.nodes.length) {
-                            this.nodes = newNodes
-                            resolve(true)
-                        }
-                    }
-                }).catch(e => { })
-                    .finally(() => { if (all++ >= this.nodes.length) resolve(false) })
-            }
-        })
-
     }
     get() {
-        const node = rwc(this.nodes);
-        Storage.setItem("arAPI", node);
+        this.iNode++;
+        if (this.iNode >= this.node.length) this.iNode = 0
+        const node = this.nodes[this.iNode];
         return node;
-    }
-    cool(url) {
-        const node = this.nodes.find((node) => node.id == url);
-        if (node) {
-            node.weight--;
-        }
-    }
-    warm(url) {
-        const node = this.nodes.find((node) => node.id == url);
-        if (node) {
-            node.weight++;
-        }
     }
 }
 const arNodes = new ArNodes()

@@ -2,10 +2,14 @@ const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
+const { createChannel } = require("better-sse")
+const { timeStamp } = require('console');
 let g_node = null
 class Nodes {
     constructor() {
         this.nodes = []
+        this.snodes = []
+        this.tickerAll = createChannel()
         this._canResolve = true
     }
     async sleep(seconds) {
@@ -13,28 +17,9 @@ class Nodes {
             setTimeout(resolve, seconds * 1000);
         })
     }
-    async validatNodes(nodes, count = 1) {
-        return new Promise(async resolve => {
-            let i = 1, selected_nodes = [], j = 1;
-            for (const node of nodes) {
-                axios.get(node + "/api/p2p/ping").then(res => {
-                    if (res.data && res.data.msg == "pong") {
-                        selected_nodes.push(node)
-                        ++i
-                    }
-                }).catch(e => {
-                    console.log(e)
-                }).finally(() => j++)
-            }
-            while (i <= count && j <= nodes.length) {
-                await this.sleep(1)
-            }
-            resolve(selected_nodes.length == 0 ? [] : selected_nodes)
-        })
-    }
-    get() {
-        const node = rwc(this.nodes)
-        //log("choose:",node)
+
+    get(isSuper = true) {
+        const node = isSuper ? rwc(this.snodes) : rwc(this.nodes)
         return node
     }
     cool(url) {
@@ -56,11 +41,13 @@ class Nodes {
         await this.refreshPeers(true)
         return true
     }
+    subscribe(session) {
+        this.tickerAll.register(session)
+    }
     async _fromDNS() {
         return new Promise(resolve => {
             const domain = "nodes.nbdomain.com"
             dns.resolve(domain, "TXT", (err, data) => {
-                //console.log(data)
                 let nodes = []
                 for (let i = 0; i < data?.length; i++) {
                     const items = data[i][0].toLowerCase().split(',')
@@ -70,35 +57,47 @@ class Nodes {
             })
         })
     }
+    isSuper() {
+        return this.isSuper
+    }
+    async validatNode(url) {
+        try {
+            const res = await axios.get(url + "/api/p2p/ping")
+            if (res.data) {
+                return res.data
+            }
+        } catch (e) {
+            return null
+        }
+    }
+    async addNode(url, isSuper = true) {
+        const res = await this.validatNode(url)
+        if (!res) return
+        var add = function (nodes) {
+            if (nodes.find(item => item.id == url) || url.indexOf(config.server.domain) != -1) return false
+            nodes.push({ id: url, token: res.token, weight: isSuper ? 50 : 20 })
+        }
+        isSuper ? (add(this.snodes), add(this.nodes)) : add(this.nodes)
+    }
     async refreshPeers(onlyLocal = false) {
         const port = config.server.port
-        this.nodes = []
-        let peers2test = [], localPeers = config.peers
-
+        this.nodes = [], this.snodes = []
+        let localPeers = config.peers
+        //get super nodes from DNS
         const p = await this._fromDNS()
-        peers2test = peers2test.concat(p)
-        if (config.server.domain)
-            peers2test = peers2test.filter(item => item.indexOf(config.server.domain) == -1)
-
-        const peers = new Set(peers2test)
-        for (const node of peers) {
-            console.log("Adding node:", node)
-            this.nodes.push({ id: node, weight: 50 })
-        }
-        localPeers.forEach(item => {
-            if (this.nodes.find(i => i.id == item))
-                return;
-            this.nodes.push({ id: item, weight: 50, local: true })
+        p.forEach(async item => {
+            await this.addNode(item)
+            if (item.indexOf(config.server.domain) != -1) this.isSuper = true
         })
+        //local nodes
+        localPeers.forEach(async item => { await this.addNode(item, false) })
 
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
-    getNodes() {
-        return this.nodes
+    getNodes(isSuper = true) {
+        return isSuper ? this.snodes : this.nodes
     }
-    addNode(url) {
-        this.nodes.push({ id: url, weight: 50 })
-    }
+
     async notifyPeers({ cmd, data }) {
         for (const peer of this.nodes) {
             const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)

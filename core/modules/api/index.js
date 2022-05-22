@@ -215,7 +215,6 @@ async function handleNewTx(para, from, force = false) {
         const data = await Nodes.getTx(para.txid, from, chain)
         if (data) {
             console.log("handleNewTx:", para.txid)
-            await indexers.get(chain).addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
             const item = data.oDataRecord
             const ret = await (Parser.get(chain).parse({ rawtx: data.rawtx, oData: item?.raw, height: -1 }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
@@ -224,8 +223,6 @@ async function handleNewTx(para, from, force = false) {
                 console.error("wrong rawtx format. ret:", ret)
             }
             await indexers.get(chain).addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
-
-            //indexer._onMempoolTransaction(para.txid, data.rawtx)
         }
     }
 }
@@ -307,6 +304,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
 
         }
         ret.msg = "pong";
+        ret.token = Nodes.getToken()
     }
     if (cmd === "newtx") {
         const d = req.query['data'];

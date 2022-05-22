@@ -10,10 +10,12 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 var dns = require("dns");
 var axios = require("axios");
+const { ExpressPeerServer } = require('peer');
 const { CONFIG } = require('./config')
 const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
+const { Nodes } = require('./nodes');
 
 
 // ------------------------------------------------------------------------------------------------
@@ -208,6 +210,14 @@ class Server {
         res.status(500).send('Something broke!')
       })
     })
+    if (Nodes.isSuper()) {
+      console.log("Start PeerServer")
+      //peer server
+      const peerServer = ExpressPeerServer(this.listener, {
+        path: '/super'
+      });
+      app.use('/peerjs', peerServer);
+    }
   }
 
   stop() {
