@@ -38,6 +38,7 @@
     "node-localstorage": "^2.2.1",
     "p-limit": "3.1.0",
     "peer": "^0.6.1",
+    "peerjs": "^1.4.4",
     "random-weighted-choice": "^0.1.4",
     "reconnecting-eventsource": "^1.4.0",
     "superagent": "^7.1.3"

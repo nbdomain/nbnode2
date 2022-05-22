@@ -2,14 +2,13 @@ const config = require('./config').CONFIG
 const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const { createChannel } = require("better-sse")
 const { timeStamp } = require('console');
+const Peer = require('peerjs')
 let g_node = null
 class Nodes {
     constructor() {
         this.nodes = []
         this.snodes = []
-        this.tickerAll = createChannel()
         this._canResolve = true
     }
     async sleep(seconds) {
@@ -41,8 +40,15 @@ class Nodes {
         await this.refreshPeers(true)
         return true
     }
-    subscribe(session) {
-        this.tickerAll.register(session)
+    startPeerServer() {
+        if (!this.isSuper()) {
+            console.error("Not super node")
+            return false
+        }
+        var peer = new Peer(this.endpoint);
+        peer.on('open', function (id) {
+            console.log('My peer ID is: ' + id);
+        });
     }
     async _fromDNS() {
         return new Promise(resolve => {
@@ -58,7 +64,8 @@ class Nodes {
         })
     }
     isSuper() {
-        return this.isSuper
+        return true
+        //return this.isSuperNode
     }
     async validatNode(url) {
         try {
@@ -87,7 +94,7 @@ class Nodes {
         const p = await this._fromDNS()
         p.forEach(async item => {
             await this.addNode(item)
-            if (item.indexOf(config.server.domain) != -1) this.isSuper = true
+            if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
         })
         //local nodes
         localPeers.forEach(async item => { await this.addNode(item, false) })

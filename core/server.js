@@ -217,6 +217,7 @@ class Server {
         path: '/super'
       });
       app.use('/peerjs', peerServer);
+      // Nodes.startPeerServer()
     }
   }
 
