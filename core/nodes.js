@@ -3,7 +3,7 @@ const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { timeStamp } = require('console');
-const Peer = require('peerjs-on-node')
+//const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
     constructor() {
@@ -41,14 +41,14 @@ class Nodes {
         return true
     }
     startPeerServer() {
-        if (!this.isSuper()) {
-            console.error("Not super node")
-            return false
-        }
-        var peer = new Peer(this.endpoint);
-        peer.on('open', function (id) {
-            console.log('My peer ID is: ' + id);
-        });
+        /* if (!this.isSuper()) {
+             console.error("Not super node")
+             return false
+         }
+         var peer = new Peer(this.endpoint);
+         peer.on('open', function (id) {
+             console.log('My peer ID is: ' + id);
+         });*/
     }
     async _fromDNS() {
         return new Promise(resolve => {
