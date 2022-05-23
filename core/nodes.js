@@ -3,7 +3,7 @@ const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { timeStamp } = require('console');
-//const Peer = require('peerjs')
+const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
     constructor() {

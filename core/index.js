@@ -5,7 +5,7 @@
  */
 
 const Indexer = require('./indexer')
-const Server = require('./server')
+const LocalServer = require('./server')
 const Database = require('./database')
 const { Nodes } = require('./nodes')
 const CONSTS = require('./const')
@@ -95,7 +95,7 @@ async function main() {
   const seedNode = await Nodes.init(Parser)
   Indexers.init()
 
-  server = new Server(Indexers, logger)
+  server = new LocalServer(Indexers, logger)
   server.start()
 
   await Indexers.start()

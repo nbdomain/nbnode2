@@ -16,6 +16,7 @@ const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
 const { Nodes } = require('./nodes');
+const { Server } = require('socket.io')
 
 
 // ------------------------------------------------------------------------------------------------
@@ -82,10 +83,10 @@ function isAPICall(host) {
 }
 
 // ------------------------------------------------------------------------------------------------
-// Server
+// LocalServer
 // ------------------------------------------------------------------------------------------------
 
-class Server {
+class LocalServer {
   constructor(indexers, logger, port) {
     this.indexers = indexers
     this.logger = logger
@@ -213,11 +214,11 @@ class Server {
     if (Nodes.isSuper()) {
       console.log("Start PeerServer")
       //peer server
-      const peerServer = ExpressPeerServer(this.listener, {
-        path: '/super'
-      });
-      app.use('/peerjs', peerServer);
+      //const peerServer = ExpressPeerServer(this.listener, {path: '/super'});
+      //app.use('/peerjs', peerServer);
       // Nodes.startPeerServer()
+      const ios = new Server()
+      ios.attach(this.listener)
     }
   }
 
@@ -286,4 +287,4 @@ class Server {
 
 // ------------------------------------------------------------------------------------------------
 
-module.exports = Server
+module.exports = LocalServer
