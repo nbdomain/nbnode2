@@ -94,10 +94,10 @@ class Nodes {
         let localPeers = config.peers
         //get super nodes from DNS
         const p = await this._fromDNS()
-        p.forEach(async item => {
+        for (const item of p) {
             await this.addNode(item)
             if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
-        })
+        }
         //local nodes
         localPeers.forEach(async item => { await this.addNode(item, false) })
 
