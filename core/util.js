@@ -198,14 +198,13 @@ class Util {
     }
     static getAdmins(protocol, time) {
         let admins = [];
-
         for (let tld in SUB_PROTOCOL_MAP) {
             if (SUB_PROTOCOL_MAP[tld].address.protocol == protocol) {
                 admins.push(SUB_PROTOCOL_MAP[tld].address.admin);
                 let otherAdmins = SUB_PROTOCOL_MAP[tld].address.other_admins;
                 if (time) {
                     for (let i = 0; i < otherAdmins.length; i++) {
-                        if (blockId > otherAdmins[i].start_time && blockId <= otherAdmins[i].end_time) {
+                        if (time > otherAdmins[i].start_time && time <= otherAdmins[i].end_time) {
                             admins.push(otherAdmins[i].address);
                         }
                     }

@@ -41,6 +41,7 @@
     "random-weighted-choice": "^0.1.4",
     "reconnecting-eventsource": "^1.4.0",
     "socket.io": "^4.5.1",
+    "socket.io-client": "^4.5.1",
     "superagent": "^7.1.3"
   }
 }

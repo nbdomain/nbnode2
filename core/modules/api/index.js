@@ -17,8 +17,7 @@ const Parser = require('../../parser')
 const { Nodes } = require('../../nodes')
 var app = express();
 const { createSession } = require("better-sse");
-const { bsv } = require('nbpay');
-const { add } = require('bsv/lib/networks');
+const coinfly = require("coinfly")
 
 
 app.use(cors());
@@ -141,30 +140,6 @@ app.get('/user/:account', async function (req, res) {
     const resolver = indexers.resolver(Util.getchain(account))
     const ret = await resolver.readUser(account)
     res.json(ret)
-})
-
-app.get('/util/verify', async function (req, res) {
-    try {
-        const domain = req.query['domain']
-        let publicKey = req.query['publicKey']
-        const strSig = req.query['sig']
-        const data = req.query['data']
-        if (domain) {
-            const ret = await bsv_resolver.readDomain(domain, false)
-            if (ret.code != 0) {
-                res.json({ code: -1, message: ret.message })
-                return
-            }
-            publicKey = ret.rtx.owner_key
-        }
-        let sig = bsv.crypto.Signature.fromString(strSig)
-        let pubKey = bsv.PublicKey.fromString(publicKey)
-        let hash2 = bsv.crypto.Hash.sha256(bsv.deps.Buffer.from(data, 'hex'))
-        res.json({ code: bsv.crypto.ECDSA.verify(hash2, sig, pubKey) ? 0 : -1 })
-
-    } catch (e) {
-        res.json({ code: -1, message: e.message })
-    }
 })
 
 app.post('/sendTx', async function (req, res) {
@@ -354,10 +329,12 @@ app.get('/queryTags', function (req, res) {
     res.json(result);
     return;
 });
-app.get('/nodeInfo', (req, res) => {
-    let info = { ...CONFIG.node_info, ...CONSTS.node_info };
+app.get('/nodeInfo', async (req, res) => {
+    let info = { ...CONFIG.server, ...CONSTS.node_info };
     info.version = "1.5.1." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
     info.tld = CONSTS.tld_config
+    const lib = await coinfly.create('bsv')
+    info.pkey = await lib.getPublicKey(CONFIG.key)
     //info.dataCount = indexers.db.getDataCount()
     res.json(info);
 })

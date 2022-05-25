@@ -3,6 +3,7 @@ const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { timeStamp } = require('console');
+const { NodeServer, NodeClient } = require('./nodeAPI')
 //const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
@@ -10,6 +11,7 @@ class Nodes {
         this.nodes = []
         this.snodes = []
         this._canResolve = true
+        this.isSuperNode = config.isProducer
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -34,21 +36,21 @@ class Nodes {
         }
     }
     async init(parser) {
+        this.nodeClient = new NodeClient()
         this.parser = parser
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
-        await this.refreshPeers(true)
+        await this.getSuperNodes(true)
+        this.connectSuperNode()
         return true
     }
-    startPeerServer() {
-        /* if (!this.isSuper()) {
-             console.error("Not super node")
-             return false
-         }
-         var peer = new Peer(this.endpoint);
-         peer.on('open', function (id) {
-             console.log('My peer ID is: ' + id);
-         });*/
+    startNodeServer(httpServer) {
+        if (!this.isSuper()) {
+            console.error("Not super node")
+            return false
+        }
+        if (!this.nodeServer) this.nodeServer = new NodeServer()
+        this.nodeServer.start(httpServer)
     }
     async _fromDNS() {
         return new Promise(resolve => {
@@ -69,7 +71,7 @@ class Nodes {
     }
     async validatNode(url) {
         try {
-            const res = await axios.get(url + "/api/p2p/ping")
+            const res = await axios.get(url + "/api/nodeinfo")
             if (res.data) {
                 return res.data
             }
@@ -82,11 +84,11 @@ class Nodes {
         if (!res) return
         var add = function (nodes) {
             if (nodes.find(item => item.id == url) || url.indexOf(config.server.domain) != -1) return false
-            nodes.push({ id: url, token: res.token, weight: isSuper ? 50 : 20 })
+            nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
         }
         isSuper ? (add(this.snodes), add(this.nodes)) : add(this.nodes)
     }
-    async refreshPeers(onlyLocal = false) {
+    async getSuperNodes(onlyLocal = false) {
         const port = config.server.port
         this.nodes = [], this.snodes = []
         let localPeers = config.peers
@@ -100,6 +102,15 @@ class Nodes {
         localPeers.forEach(async item => { await this.addNode(item, false) })
 
         //setTimeout(this.refreshPeers.bind(this), 60000)
+    }
+    async connectSuperNode() {
+        for (const node of this.snodes) {
+            if (await this.nodeClient.connect(node)) {
+                return true
+            }
+        }
+        console.error("cannot connect to producer node")
+        return false
     }
     getNodes(isSuper = true) {
         return isSuper ? this.snodes : this.nodes

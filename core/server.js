@@ -16,7 +16,7 @@ const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
 const { Nodes } = require('./nodes');
-const { Server } = require('socket.io')
+
 
 
 // ------------------------------------------------------------------------------------------------
@@ -216,9 +216,10 @@ class LocalServer {
       //peer server
       //const peerServer = ExpressPeerServer(this.listener, {path: '/super'});
       //app.use('/peerjs', peerServer);
-      // Nodes.startPeerServer()
-      const ios = new Server()
-      ios.attach(this.listener)
+      // Nodes.startNodeServer(http)
+      Nodes.startNodeServer(this.listener)
+      //const ios = new Server()
+      //ios.attach(this.listener)
     }
   }
 
