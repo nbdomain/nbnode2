@@ -1,6 +1,8 @@
 const { Server } = require('socket.io')
 const axios = require('axios')
-
+const coinfly = require('coinfly')
+let bsvlib = null
+coinfly.create('bsv').then(res => bsvlib = res)
 class NodeServer {
     start(httpServer) {
         const io = new Server()
@@ -30,7 +32,7 @@ class NodeClient {
             return false
         }
         if (!socketUrl) return false
-
+        const self = this
         return new Promise(resolve => {
             const manager = new Manager(socketUrl, { autoConnect: false });
             const socket = manager.socket("/");
@@ -45,13 +47,13 @@ class NodeClient {
             });
             socket.connect()
             socket.on('connect', function () {
-                console.log('Connected!');
+                console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
                 socket.emit("hello", datav, (res) => {
                     console.log("reply from hello:", res)
                 })
-                this.socket = socket
-                this._setup()
+                self.socket = socket
+                self._setup()
                 resolve(true)
             });
         })

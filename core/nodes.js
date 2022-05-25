@@ -69,10 +69,10 @@ class Nodes {
         return true
         //return this.isSuperNode
     }
-    async validatNode(url) {
+    async validatNode(url, isSuper) {
         try {
             const res = await axios.get(url + "/api/nodeinfo")
-            if (res.data) {
+            if (res.data && (!isSuper || res.data.pkey)) {
                 return res.data
             }
         } catch (e) {
@@ -80,7 +80,7 @@ class Nodes {
         }
     }
     async addNode(url, isSuper = true) {
-        const res = await this.validatNode(url)
+        const res = await this.validatNode(url, isSuper)
         if (!res) return
         var add = function (nodes) {
             if (nodes.find(item => item.id == url) || url.indexOf(config.server.domain) != -1) return false

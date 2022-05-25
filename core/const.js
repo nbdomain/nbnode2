@@ -43,8 +43,8 @@ const CONSTS = {
                 "other_admins": [
                     {
                         "address": "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5",
-                        "start_block": 0,
-                        "end_block": 658652
+                        "start_time": 0,
+                        "end_time": 1603775745
                     },
                 ]
             },
