@@ -108,6 +108,7 @@ class Nodes {
             if (await this.nodeClient.connect(node)) {
                 return true
             }
+            console.log("next")
         }
         console.error("cannot connect to producer node")
         return false

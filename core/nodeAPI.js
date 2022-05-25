@@ -1,6 +1,7 @@
 const { Server } = require('socket.io')
 const axios = require('axios')
 const coinfly = require('coinfly')
+const CONFIG = require('./config').CONFIG
 let bsvlib = null
 coinfly.create('bsv').then(res => bsvlib = res)
 class NodeServer {
@@ -9,9 +10,10 @@ class NodeServer {
         io.attach(httpServer)
         io.on("connection", (socket) => {
             console.log(socket.handshake.auth); //
-            socket.on("hello", (data, ret) => {
+            socket.on("hello", async (data, ret) => {
                 console.log("got hello data:", data)
-                ret("hahahah")
+                const r = await bsvlib.sign(CONFIG.key, data)
+                ret(r)
             })
         });
     }
@@ -51,10 +53,17 @@ class NodeClient {
                 const datav = Date.now().toString()
                 socket.emit("hello", datav, (res) => {
                     console.log("reply from hello:", res)
+                    bsvlib.verify(node.pkey, datav, res).then(r => {
+                        if (r) {
+                            self.socket = socket
+                            self._setup()
+                        } else {
+                            console.log(socketUrl + " verification failed. Disconnect")
+                            socket.disconnect()
+                        }
+                        resolve(r)
+                    })
                 })
-                self.socket = socket
-                self._setup()
-                resolve(true)
             });
         })
     }
