@@ -41,7 +41,7 @@ class Nodes {
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
         await this.getSuperNodes(true)
-        this.connectSuperNode()
+        //this.connectSuperNode()
         return true
     }
     startNodeServer(httpServer) {
@@ -95,7 +95,7 @@ class Nodes {
         //get super nodes from DNS
         const p = await this._fromDNS()
         for (const item of p) {
-            await this.addNode(item)
+            await this.addNode(item, false)
             if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
         }
         //local nodes
@@ -186,7 +186,7 @@ class Nodes {
             console.log(": perform full sync check...")
         }
         const dataCount = indexer.database.getDataCount()
-        for (const node of this.getNodes()) {
+        for (const node of this.getNodes(false)) {
             let apiURL = node.id
             if (fullSync) apiURL = this.get() //select based on weight
             console.log("Selected node:", apiURL)

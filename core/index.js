@@ -66,7 +66,7 @@ class Indexers {
   }
   static async start() {
     //await this.db.verifyTxDB('bsv')
-    //await Nodes.startTxSync(this)
+    await Nodes.startTxSync(this)
     await this.indexer.start()
   }
   static async stop() {
