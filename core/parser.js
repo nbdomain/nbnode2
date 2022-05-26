@@ -5,51 +5,28 @@ const { CMD } = require('./def');
 
 const parsers = {}
 class Parser {
-    static get(chain) {
-        if (chain == 'bsv') {
-            if (!parsers.bsv) parsers.bsv = new Parser('bsv')
-            return parsers.bsv
-        }
-        if (chain == 'ar') {
-            if (!parsers.ar) parsers.ar = new Parser('ar')
-            return parsers.ar
-        }
-        throw ("Unsupported chain")
-    }
-    constructor(chain) {
-        this.chain = chain
-        this.parser_domain = new Parser_Domain(chain)
-        this.parser_nft = new Parser_NFT(chain)
-    }
-    init(db) {
-        this.parser_domain.init(db)
-        this.parser_nft.init(db)
+    static init(db) {
+        this.domainParser().init(db)
+        this.nftParser().init(db)
         this.db = db
     }
-    async parse({ rawtx, oData, height, time }) {
-        let rtx = (this.chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+    static async parse({ rawtx, oData, height, time, chain }) {
+        let rtx = (chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
         return { code: rtx ? 0 : 1, rtx: rtx }
     }
-    domainParser() {
-        /*switch(this.chain){
-            case 'bsv': return Parser_Domain
-            case 'ar': return AR_Parser_Domain
-        }
-        return null*/
+    static domainParser() {
+        if (!this.parser_domain) this.parser_domain = new Parser_Domain()
         return this.parser_domain
     }
-    nftParser() {
-        /* switch(this.chain){
-             case 'bsv': return Parser_NFT
-             case 'ar': return null
-         }*/
+    static nftParser() {
+        if (!this.parser_nft) this.parser_nft = new Parser_NFT()
         return this.parser_nft
     }
-    getAttrib({ rawtx }) {
-        return this.chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
+    static getAttrib({ rawtx, chain }) {
+        return chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
     }
-    async parseTX({ rawtx, oData, height, time, newTx = false }) {
-        const ret = await this.parse({ rawtx, oData, height, time })
+    static async parseTX({ rawtx, oData, height, time, chain, newTx = false }) {
+        const ret = await this.parse({ rawtx, oData, height, time, chain })
         if (ret.code != 0) {
             return { code: 1, msg: "invalid rawtx format" }
         }
@@ -82,7 +59,7 @@ class Parser {
         }
         return rtx.output.err ? { code: -1, msg: rtx.output.err } : { code: 0, rtx: rtx }
     }
-    async fillObj(nidObj, rtx, objMap) {
+    static async fillObj(nidObj, rtx, objMap) {
         let retObj = null
         nidObj.last_txid = rtx.txid
         nidObj.last_ts = rtx.ts ? rtx.ts : rtx.time

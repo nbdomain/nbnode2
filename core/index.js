@@ -60,34 +60,24 @@ class Indexers {
       //default: throw new Error(`Unknown API: ${API}`)
     }
 
-    this.bsv = new Indexer(this.db, "bsv", CONSTS.FETCH_LIMIT, logger)
-    this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
-    this.bsv.indexers = this
-    this.ar.indexers = this
+    this.indexer = new Indexer(this.db, CONSTS.FETCH_LIMIT, logger)
+    //this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
+    this.indexer.indexers = this
   }
   static async start() {
-    await Nodes.startTxSync(this)
-    await this.ar.start()
-    await this.bsv.start()
+    await this.db.verifyTxDB('bsv')
+    //await Nodes.startTxSync(this)
+    await this.indexer.start()
   }
   static async stop() {
-    await this.ar.stop();
-    await this.bsv.stop();
+    await this.indexer.stop();
     this.db.close();
   }
   static resolver(chain) {
-    return this.get(chain)?.resolver
+    return this.indexer.resolver
   }
   static get(chain) {
-    switch (chain) {
-      case 'bsv':
-        return this.bsv
-      case 'ar':
-        return this.ar
-      default:
-        break;
-    }
-    return null
+    return this.indexer
   }
 }
 async function main() {

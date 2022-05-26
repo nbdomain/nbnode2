@@ -16,9 +16,10 @@ class NodeServer {
                 ret(r)
             })
         });
+        this.io = io
     }
     close() {
-
+        this.io.close()
     }
 }
 const { Manager } = require('socket.io-client');

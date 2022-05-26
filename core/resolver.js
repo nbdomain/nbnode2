@@ -35,8 +35,8 @@ function reduceKeys_(data, includeKeyUser) {
 
 
 class Resolver {
-    constructor(chain, database) {
-        this.chain = chain
+    constructor(database) {
+
         this.db = database
         this.resolveNextBatchInterval = 5000
         this.resolveNextBatchTimerId = 0
@@ -123,7 +123,7 @@ class Resolver {
                 }
                 return { code: 0, obj: obj, domain: fullDomain }
             }
-            let ret = await DomainTool.fetchDomainPrice(fullDomain);
+            let ret = await DomainTool.fetchDomainPrice(fullDomain, this.db);
             ret.domain = fullDomain;
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;
@@ -137,7 +137,7 @@ class Resolver {
         return this.db.readKeyHistoryLen(domain)
     }
     async readNBTX(fromTime, toTime) {
-        return await this.db.queryTX(fromTime, toTime, this.chain)
+        return await this.db.queryTX(fromTime, toTime)
     }
     addController(controller) {
         this.controllers.push(controller)
@@ -167,27 +167,30 @@ class Resolver {
                 return
             }
         }
-        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT, this.chain)
-        const nidObjMap = MemDomains.getMap(this.chain)
+        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+        const nidObjMap = MemDomains.getMap()
         try {
             if (rtxArray == null || rtxArray.length == 0) {
                 if (!this.firstFinish) {
-                    console.warn(`--${this.chain}----Handled All current TX from DB-------`)
+                    console.warn(`--$----Handled All current TX from DB-------`)
                     this.firstFinish = true
-                    MemDomains.clearObj(this.chain); //release memory
+                    MemDomains.clearObj(); //release memory
                 }
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
                 for (const item of rtxArray) {
                     try {
-                        const rawtx = item.bytes && (this.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+                        const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
                         delete item.bytes
                         if (!rawtx) {
                             console.log("found")
                             continue
                         }
-                        this.db.setTransactionResolved(item.txid, this.chain)
-                        const res = await Parser.get(this.chain).parseTX({ rawtx, height: item.height, time: item.time })
+                        if (item.txid == "7661b057d372fb247ff5f86f17f66ab804c7b17bc41e837b98ff699396c4ba32") {
+                            console.log("found")
+                        }
+                        this.db.setTransactionResolved(item.txid, item.chain)
+                        const res = await Parser.parseTX({ rawtx, height: item.height, time: item.time, chain: item.chain })
                         if (!res) continue
                         const rtx = { ...res.rtx, ...item }
                         if (!rtx.output || rtx.output?.err) {
@@ -196,7 +199,7 @@ class Resolver {
                         }
 
                         let domain = rtx.output.domain
-                        if (domain == "10200.test") {
+                        if (domain == "nbinfo.b") {
                             console.log("found")
                         }
                         if (!(domain in nidObjMap)) {
@@ -207,7 +210,7 @@ class Resolver {
                                 nidObjMap[domain] = onDiskNid
                             }
                         }
-                        const obj = await (Parser.get(this.chain).fillObj(nidObjMap[domain], rtx, nidObjMap))
+                        const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
                         if (obj) {
                             nidObjMap[domain] = obj
                             nidObjMap[domain].dirty = true

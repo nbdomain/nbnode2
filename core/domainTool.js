@@ -7,13 +7,13 @@ class DomainTool {
    * Fetch NidOject from remote endpoint.
    * @param {!NidObject} domain 
    */
-    static async fetchDomainPrice(domain, newTx = false) {
+    static async fetchDomainPrice(domain, db, newTx = false) {
         try {
             await Util.initNBLib()
-            const key = domain + ".prices.nbinfo.b"
-            const r = await NBLib.readDomain(key)
-            if (r.code == 0) {
-                return { code: 0, price: r.obj.value.price }
+            const key = domain + ".prices"
+            const obj = await db.loadDomain("nbinfo.b")
+            if (obj && obj.keys[key]) {
+                return { code: 0, price: r.obj.keys[key].value.price }
             }
             domain = encodeURIComponent(domain)
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;

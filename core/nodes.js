@@ -229,22 +229,18 @@ class Nodes {
     }
     async FullSyncFromNodes(indexers) {
         this._canResolve = false
-        let affected = await this._syncFromNode(indexers.bsv, true, 'bsv')
-        let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
+        let affected = await this._syncFromNode(indexers.indexer, true, 'bsv')
+        //let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
         const time = Math.floor(Date.now() / 1000).toString()
-        if (affected > 0)
+        if (affected > 0) {
             indexers.db.saveLastFullSyncTime(time, 'bsv')
-        if (affected1 > 0)
-            indexers.db.saveLastFullSyncTime(time, 'ar')
-
-        if (affected + affected1 > 0) {
             indexers.db.resetDB("domain")
         }
         this._canResolve = true
     }
     async startTxSync(indexers) {
-        await this._syncFromNode(indexers.bsv, false, 'bsv')
-        await this._syncFromNode(indexers.ar, false, 'ar')
+        await this._syncFromNode(indexers.indexer, false, 'bsv')
+        //await this._syncFromNode(indexers.ar, false, 'ar')
         await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }

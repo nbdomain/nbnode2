@@ -150,7 +150,7 @@ app.post('/sendTx', async function (req, res) {
     if (!obj.oData) {
         console.error("old sendtx format")
     }
-    let ret = await (Parser.get(chain).parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true }));
+    let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain });
     if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
         console.error("parseRaw error err:", ret)
         res.json({ code: -1, message: ret.msg })
@@ -191,7 +191,7 @@ async function handleNewTx(para, from, force = false) {
         if (data) {
             console.log("handleNewTx:", para.txid)
             const item = data.oDataRecord
-            const ret = await (Parser.get(chain).parse({ rawtx: data.rawtx, oData: item?.raw, height: -1 }));
+            const ret = await (Parser.parse({ rawtx: data.rawtx, oData: item?.raw, height: -1, chain }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
                 await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
             else {
@@ -298,7 +298,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
         } else {
-            const attrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+            const attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain });
             if (attrib.hash) {
                 ret.oDataRecord = indexers.db.readData(attrib.hash)
             }
@@ -364,11 +364,11 @@ app.get('/test', async (req, res) => {
     //res.json(await handleNewTx({ chain: 'bsv', txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }, "https://tnode.nbdomain.com", true))
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
-    //await indexers.db.verifyTxDB('bsv')
+    await indexers.db.verifyTxDB('bsv')
     //await indexers.db.verifyTxDB('ar')
     //indexers.ar.reCrawlAll()
     //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
-    indexers.db.resetDB()
+    //indexers.db.resetDB()
     //Nodes.startTxSync(indexers)
     res.end("ok")
 })
@@ -388,7 +388,7 @@ app.get('/getData', (req, res) => {
     ret.rawtx = indexers.db.getRawTransaction(txid, chain)
 
     if (ret.rawtx) {
-        ret.attrib = Parser.get(chain).getAttrib({ rawtx: ret.rawtx });
+        ret.attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain });
         if (ret.attrib.hash) {
             ret.oDataRecord = indexers.db.readData(ret.attrib.hash)
         }

@@ -12,6 +12,7 @@ const { CONFIG } = require('./config')
 const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
+const { default: axios } = require('axios')
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -195,14 +196,15 @@ class Database {
     //const ret = this.txdb.prepare(sql).run()
     //return ret
     try {
-      let sql = `CREATE TABLE IF NOT EXISTS config([key] TEXT PRIMARY KEY NOT NULL UNIQUE, value TEXT )`
+      this.combineTXDB();
+      /*let sql = `CREATE TABLE IF NOT EXISTS config([key] TEXT PRIMARY KEY NOT NULL UNIQUE, value TEXT )`
       this.txdb.prepare(sql).run();
       sql = 'INSERT OR IGNORE INTO config (key, value) VALUES( ?, ?) '
       this.txdb.prepare(sql).run("bsv_tip", null);
       this.txdb.prepare(sql).run("ar_tip", null);
 
       //migrate txdb data table
-      /* sql = "SELECT * from data"
+       sql = "SELECT * from data"
        const data = this.txdb.prepare(sql).all()
        sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
        try {
@@ -215,6 +217,47 @@ class Database {
     } catch (e) { }
       sql = "ALTER TABLE data ADD attributes TEXT";
       this.dtdb.prepare(sql).run()*/
+    } catch (e) {
+      console.log(e)
+    }
+  }
+  combineTXDB() {
+    try {
+      let sql = `
+    CREATE TABLE txs(id INTEGER PRIMARY KEY AUTOINCREMENT DEFAULT (1),
+                                  txid     TEXT    UNIQUE NOT NULL,
+                                  bytes    BLOB,
+                                  height   INTEGER,
+                                  time     INTEGER,
+                                  txTime   INTEGER DEFAULT (0),
+                                  chain    TEXT,
+                                  resolved BOOLEAN DEFAULT (0)  )
+    `
+      this.txdb.prepare(sql).run();
+      sql = 'select * from ar_tx'
+      const artxs = this.txdb.prepare(sql).all()
+      for (const item of artxs) {
+        if (item.txTime === item.time) item.time = 9999999999
+        item.chain = 'ar'
+      }
+      sql = 'select * from bsv_tx'
+      const bsvtxs = this.txdb.prepare(sql).all()
+      for (const item of bsvtxs) {
+        if (item.txTime === 2) item.txTime = item.id + 100
+        if (item.txTime === item.time) item.time = 9999999999
+        item.chain = 'bsv'
+      }
+      const alltxs = bsvtxs.concat(artxs)
+      alltxs.sort((a, b) => {
+        //if (a.txTime === 2 || b.txTime === 2) return 0
+        if (a.txTime === 1 || b.txTime === 1) return 0
+        return a.txTime > b.txTime ? 1 : -1
+      })
+      for (const item of alltxs) {
+        sql = 'insert into txs (txid,bytes,height,time,txTime,chain) values (?,?,?,?,?,?)';
+        this.txdb.prepare(sql).run(item.txid, item.bytes, item.height, item.time, item.txTime, item.chain)
+      }
+      console.log("finish")
     } catch (e) {
       console.log(e)
     }
@@ -250,13 +293,13 @@ class Database {
   addNewTransaction(txid, chain) {
     if (this.hasTransaction(txid, chain)) return
 
-    const sql = `INSERT OR IGNORE INTO ${chain}_tx (txid, height, time, bytes) VALUES (?, null, ?, null)`
+    const sql = `INSERT OR IGNORE INTO txs (txid, height, time, bytes) VALUES (?, null, ?, null)`
     this.txdb.prepare(sql).run(txid, 9999999999)
 
     if (this.onAddTransaction) this.onAddTransaction(txid)
   }
   getLatestTxTime(chain) {
-    const sql = `SELECT txTime from ${chain}_tx ORDER BY txTime DESC`
+    const sql = `SELECT txTime from txs ORDER BY txTime DESC`
     const res = this.txdb.prepare(sql).get()
     return res ? res.txTime : -1
   }
@@ -279,148 +322,90 @@ class Database {
   }
   addFullTx({ txid, rawtx, time, oDataRecord, chain }) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-    const sql = `insert into ${chain}_tx (txid,bytes,time,txTime) VALUES(?,?,?,?) `
-    this.txdb.prepare(sql).run(txid, bytes, time, time)
+    const sql = `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
+    this.txdb.prepare(sql).run(txid, bytes, 9999999999, time, chain)
     if (oDataRecord)
       this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
     return true
   }
   setTransactionRaw(txid, rawtx, chain) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-    const sql = `UPDATE ${chain}_tx SET bytes = ? WHERE txid = ?`
+    const sql = `UPDATE txs SET bytes = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(bytes, txid)
   }
-  setTxTime(txid, txTime, chain) {
-    const sql = `UPDATE ${chain}_tx SET txTime = ? WHERE txid = ?`
+  setTxTime(txid, txTime) {
+    const sql = `UPDATE txs SET txTime = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(txTime, txid)
   }
-  setTransactionResolved(txid, chain) {
-    this.txdb.prepare(`UPDATE ${chain}_tx set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
+  setTransactionResolved(txid) {
+    this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
   }
-  setTransactionHeight(txid, height, chain) {
-    const sql = `UPDATE ${chain}_tx SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
+  setTransactionHeight(txid, height) {
+    const sql = `UPDATE txs SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
     this.txdb.prepare(sql).run(height, txid)
   }
 
-  setTransactionTime(txid, time, chain) {
-    const sql = `UPDATE ${chain}_tx SET time = ? WHERE txid = ?`
+  setTransactionTime(txid, time) {
+    const sql = `UPDATE txs SET time = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(time, txid)
   }
 
-  getRawTransaction(txid, chain) {
-    const sql = `SELECT bytes AS raw FROM ${chain}_tx WHERE txid = ?`
+  getRawTransaction(txid) {
+    const sql = `SELECT bytes AS raw,chain FROM txs WHERE txid = ?`
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     const data = row && row[0]
     if (!data) return null
-    if (chain == 'bsv') {
+    if (row.chain == 'bsv') {
       return data.toString('hex')
     }
-    if (chain == 'ar') {
+    if (row.chain == 'ar') {
       return data.toString()
     }
     console.error("database.js getRawTransaction: unsupported chain")
     return null
   }
 
-  getTransactionTime(txid, chain) {
-    const sql = `SELECT time FROM ${chain}_tx WHERE txid = ?`
+  getTransactionTime(txid) {
+    const sql = `SELECT time FROM txs WHERE txid = ?`
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
-  getTransactionHeight(txid, chain) {
-    const sql = `SELECT height FROM ${chain}_tx WHERE txid = ?`
+  getTransactionHeight(txid) {
+    const sql = `SELECT height FROM txs WHERE txid = ?`
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
 
-  deleteTransaction(txid, chain) {
+  deleteTransaction(txid) {
     this.transaction(() => {
-      const sql = `DELETE FROM ${chain}_tx WHERE txid = ?`
+      const sql = `DELETE FROM txs WHERE txid = ?`
       this.txdb.prepare(sql).run(txid)
       if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
     })
   }
 
-  unconfirmTransaction(txid, chain) {
-    const sql = `UPDATE ${chain}_tx SET height = ${HEIGHT_MEMPOOL} WHERE txid = ?`
-    this.txdb.prepare(sql).run(txid)
-  }
-
-  getTransaction(txid, chain) {
-    const sql = `select * from ${chain}_tx WHERE txid = ?`
+  getTransaction(txid) {
+    const sql = `select * from txs WHERE txid = ?`
     return this.txdb.prepare(sql).get(txid)
   }
-  hasTransaction(txid, chain) {
-    const sql = `SELECT txid FROM ${chain}_tx WHERE txid = ?`
+  hasTransaction(txid) {
+    const sql = `SELECT txid FROM txs WHERE txid = ?`
     return !!this.txdb.prepare(sql).get(txid)
   }
-  isTransactionParsed(txid, andValid, chain) {
-    const sql = `SELECT txTime from ${chain}_tx WHERE txid = ?`
+  isTransactionParsed(txid, andValid) {
+    const sql = `SELECT txTime from txs WHERE txid = ?`
     const ret = this.txdb.prepare(sql).raw(true).get(txid)
     if (!ret || ret[0] == 0) return false
     if (andValid) return ret[0] != 1
     return true
   }
-  isTransactionDownloaded(txid, chain) {
-    const sql = `SELECT bytes IS NOT NULL AS downloaded FROM ${chain}_tx WHERE txid = ?`
-    const ret = this.txdb.prepare(sql).raw(true).get(txid)
-    return ret && !!ret[0]
-  }
-  getTransactionsAboveHeight(height, chain) {
-    const sql = `SELECT txid FROM ${chain}_tx WHERE height > ?`
-    return this.txdb.prepare(sql).raw(true).all(height).map(row => row[0])
-  }
-  getMempoolTransactionsBeforeTime(time, chain) {
-    const sql = `SELECT txid FROM ${chain}_tx WHERE txTime < ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
+
+  getMempoolTransactionsBeforeTime(time) {
+    const sql = `SELECT txid FROM txs WHERE txTime < ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
     return this.txdb.prepare(sql).raw(true).all(time).map(row => row[0])
   }
-  getTransactionsToDownload(chain) {
-    const sql = `SELECT txid FROM ${chain}_tx WHERE bytes IS NULL`
-    return this.txdb.prepare(sql).raw(true).all().map(row => row[0])
-  }
-  getDownloadedCount(chain) {
-    const sql = `SELECT COUNT(*) AS count FROM ${chain}_tx WHERE bytes IS NOT NULL`
-    return this.txdb.prepare(sql).get().count
-  }
-  getIndexedCount() { return this.getTransactionsIndexedCountStmt.get().count }
 
-
-  // --------------------------------------------------------------------------
-  // crawl
-  // --------------------------------------------------------------------------
-
-  getHeight(chain) {
-    const sql = `SELECT value FROM config WHERE key = ?`
-    const row = this.txdb.prepare(sql).get(`${chain}_tip`)
-    if (row.value) {
-      try {
-        const value = JSON.parse(row.value)
-        return value.height
-      } catch (e) { }
-    }
-    return null
-  }
-
-  getHash(chain) {
-    const sql = `SELECT value FROM config WHERE key = ?`
-    const row = this.txdb.prepare(sql).get(`${chain}_tip`)
-    if (row.value) {
-      try {
-        const value = JSON.parse(row.value)
-        return value.hash
-      } catch (e) { }
-    }
-    return null
-  }
-
-  setHeightAndHash(height, hash, chain) {
-    const sql = `UPDATE config SET value = ? WHERE key = ?`
-    const value = JSON.stringify({
-      height: height, hash: hash
-    })
-    this.txdb.prepare(sql).run(value, `${chain}_tip`)
-  }
 
   // --------------------------------------------------------------------------
   // resolver
@@ -437,18 +422,28 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
-  async getUnresolvedTX(count, chain) {
+  /*async getUnresolvedTX(count, chain) {
     try {
       let list = [];
       if (chain == 'bsv') {
-        const sql = `SELECT * FROM ${chain}_tx WHERE time <= 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
+        const sql = `SELECT * FROM txs WHERE time <= 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
         list = this.txdb.prepare(sql).raw(false).all(count);
       }
       if (list.length == 0) { //no more old format tx
-        const sql = `SELECT * FROM ${chain}_tx WHERE time > 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
+        const sql = `SELECT * FROM txs WHERE time > 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
         const list1 = this.txdb.prepare(sql).raw(false).all(count);
         list = list.concat(list1)
       }
+      return list;
+    } catch (e) {
+      console.error(e)
+      return []
+    }
+  }*/
+  async getUnresolvedTX(count) {
+    try {
+      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY txTime ASC LIMIT ?`
+      const list = this.txdb.prepare(sql).raw(false).all(count);
       return list;
     } catch (e) {
       console.error(e)
@@ -488,8 +483,9 @@ class Database {
       const sql = `insert or replace into users (account,address,attributes) VALUES(?,?,?) `
       try {
         const address = value.address
-        delete value.address
-        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(value))
+        const v1 = JSON.parse(JSON.stringify(value))
+        delete v1.address
+        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(v1))
       } catch (e) {
         console.error("saveUsers:", e.message)
       }
@@ -502,7 +498,7 @@ class Database {
     return res
   }
   getDataCount() {
-    let sql = `select (select count(*) from bsv_tx where txTime!=1) as bsv , (select count(*) from ar_tx where txTime!=1) as ar`
+    let sql = `select (select count(*) from txs where txTime!=1) as txs`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
@@ -705,17 +701,17 @@ class Database {
       this.logger.error(e)
     }
   }
-  async queryTX(fromTime, toTime, chain) {
+  async queryTX(fromTime, toTime) {
     if (toTime == -1) toTime = 9999999999
-    let sql = `SELECT * from ${chain}_tx where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime=2) `
+    let sql = `SELECT * from txs where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime<1000) `
     //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
     //console.log(ret)
     for (const item of ret) {
-      const rawtx = item.bytes && (chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+      const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
       item.rawtx = rawtx
       if (rawtx) {
-        const attrib = await (Parser.get(chain).getAttrib({ rawtx }));
+        const attrib = await (Parser.getAttrib({ rawtx, chain: item.chain }));
         if (attrib && attrib.hash) {
           item.oDataRecord = this.readData(attrib.hash)
         }
@@ -775,25 +771,18 @@ class Database {
     return ret
   }
   async verifyTxDB(chain) {
-    console.log("verifying...", chain)
-    /*   let sql = `select * from ${chain}_tx`
-       const ret = this.txdb.prepare(sql).all()
-       for (const item of ret) {
-         const rawtx = chain === 'bsv' ? item.bytes.toString('hex') : item.bytes.toString()
-         const res = await Parser.get(chain).parse(rawtx, item.height, item.time)
-         if (res.code != 0) {
-           console.log("found invalid tx", item.txid)
-           this.deleteTransaction(item.txid, chain)
-         }
-       } */
-    let sql = `select txid, txTime from ${chain}_tx where txTime=0`
+    /*console.log("verifying...", chain)
+    let sql = `select txid,bytes from txs where bytes IS NULL`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
-      const rawtx = this.getRawTransaction(item.txid, chain)
-      const attrib = await Parser.get(chain).getAttrib({ rawtx })
-      this.setTxTime(item.txid, attrib.ts ? attrib.ts : 2, chain)
+      if (!item.bytes) {
+        const res = await axios.get("https://tnode.nbdomain.com/api/getdata?txid=" + item.txid)
+        if (res.data) {
+          this.setTransactionRaw(item.txid, res.data.tx.rawtx, chain)
+        }
+      }
     }
-    console.log("verify finish")
+    console.log("verify finish")*/
   }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {

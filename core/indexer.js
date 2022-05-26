@@ -21,7 +21,7 @@ const process = require('process')
 // ------------------------------------------------------------------------------------------------
 
 class Indexer {
-  constructor(db, chain, numParallelDownloads, logger) {
+  constructor(db, numParallelDownloads, logger) {
     this.logger = logger || {}
     this.logger.info = this.logger.info || (() => { })
     this.logger.warn = this.logger.warn || (() => { })
@@ -35,20 +35,18 @@ class Indexer {
     this.onBlock = null
     this.onReorg = null
 
-    //this.api = api
-    this.chain = chain
 
     this.database = db; //new Database(chain, txdb, dmdb, this.logger)
-    this.downloader = new Downloader(BSVChain.fetchRaw, numParallelDownloads)
+    //    this.downloader = new Downloader(BSVChain.fetchRaw, numParallelDownloads)
 
     //this.crawler = new Crawler(api, db, this.chain)
-    this.resolver = new Resolver(this.chain, this.database)
+    this.resolver = new Resolver(this.database)
     this.resolver.addController(Nodes)
-    Parser.get(this.chain).init(this.database)
+    Parser.init(this.database)
 
-    this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)
-    this.downloader.onFailedToDownloadTransaction = this._onFailedToDownloadTransaction.bind(this)
-    this.downloader.onRetryingDownload = this._onRetryingDownload.bind(this)
+    //    this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)
+    //    this.downloader.onFailedToDownloadTransaction = this._onFailedToDownloadTransaction.bind(this)
+    //    this.downloader.onRetryingDownload = this._onRetryingDownload.bind(this)
 
     /*this.crawler.onCrawlError = this._onCrawlError.bind(this)
     this.crawler.onCrawlBlockTransactions = this._onCrawlBlockTransactions.bind(this)
@@ -91,113 +89,20 @@ class Indexer {
   remove(txid) {
     txid = this._parseTxid(txid)
     this.downloader.remove(txid)
-    this.database.deleteTransaction(txid, this.chain)
+    this.database.deleteTransaction(txid)
   }
-
-
 
   rawtx(txid) {
     txid = this._parseTxid(txid)
-    const ret = this.database.getRawTransaction(txid, this.chain)
+    const ret = this.database.getRawTransaction(txid)
     return ret
   }
 
   time(txid) {
     txid = this._parseTxid(txid)
-    return this.database.getTransactionTime(txid, this.chain)
-  }
-  async _onConfirmTransactions(txobjs) {
-    for (const item of txobjs) {
-      if (!item.err)
-        this.add(item.txid, null, item.height, item.time)
-    }
-
-  }
-  async _onDownloadTransaction(txid, hex, height, time) {
-    this.logger.info(`Downloaded ${txid} (${this.downloader.remaining()} remaining)`)
-    if (!this.database.hasTransaction(txid, this.chain)) return
-    if (height) this.database.setTransactionHeight(txid, height, this.chain)
-    if (time) this.database.setTransactionTime(txid, time, this.chain)
-    await this._parseAndStoreTransaction(txid, hex)
-    if (this.onDownload) this.onDownload(txid)
+    return this.database.getTransactionTime(txid)
   }
 
-  _onFailedToDownloadTransaction(txid, e) {
-    this.logger.error('Failed to download', txid, e.toString())
-    if (this.onFailToDownload) this.onFailToDownload(txid)
-  }
-
-  _onRetryingDownload(txid, secondsToRetry) {
-    this.logger.info('Retrying download', txid, 'after', secondsToRetry, 'seconds')
-  }
-
-  _onAddTransaction(txid) {
-    this.logger.info('Added', txid)
-  }
-
-  _onDeleteTransaction(txid) {
-    this.logger.info('Removed', txid)
-  }
-
-  _onUnindexTransaction(txid) {
-    this.logger.info('Unindexed', txid)
-  }
-
-
-  _onCrawlError(e) {
-    console.error(e)
-    this.logger.error(`Crawl error: ${e.toString()}`)
-  }
-
-  _onCrawlBlockTransactions(height, hash, time, txids, txhexs) {
-    this.logger.info(`${this.chain}: Crawled block ${height} for ${txids.length} transactions`, txids)
-    this._addTransactions(txids, txhexs, height, time)
-    this.database.setHeightAndHash(height, hash, this.chain)
-    if (this.onBlock) this.onBlock(height)
-  }
-
-  _onRewindBlocks(newHeight) {
-    this.logger.info(`Rewinding to block ${newHeight}`)
-
-    const txids = this.database.getTransactionsAboveHeight(newHeight, this.chain)
-
-    this.database.transaction(() => {
-      // Put all transactions back into the mempool. This is better than deleting them, because
-      // when we assume they will just go into a different block, we don't need to re-execute.
-      // If they don't make it into a block, then they will be expired in time.
-      txids.forEach(txid => this.database.unconfirmTransaction(txid, this.chain))
-
-      this.database.setHeightAndHash(newHeight, null, this.chain)
-    })
-
-    if (this.onReorg) this.onReorg(newHeight)
-  }
-
-  _onMempoolTransaction(txid, hex) {
-    this._addTransactions([txid], [hex], Database.HEIGHT_MEMPOOL, null)
-  }
-
-  _addTransactions(txids, txhexs, height, time) {
-    this.database.transaction(() => {
-      txids.forEach((txid, i) => {
-        this.database.addNewTransaction(txid, this.chain)
-        if (height) this.database.setTransactionHeight(txid, height, this.chain)
-        if (time) this.database.setTransactionTime(txid, time, this.chain)
-      })
-
-      txids.forEach(async (txid, i) => {
-        let parsed = this.database.isTransactionParsed(txid, false, this.chain)
-        if (parsed) return
-
-        const hex = txhexs && txhexs[i] ? txhexs[i] : this.database.getRawTransaction(txid, this.chain)//txhexs && txhexs[i]
-        if (hex) {
-          await this._parseAndStoreTransaction(txid, hex)
-        } else {
-          this.downloader.add(txid)
-        }
-      })
-    })
-  }
   async addTxFull({ txid, rawtx, time, oDataRecord, noVerify = false, chain }) {
     if (this.database.isTransactionParsed(txid, false, chain)) {
       console.log("Skipping:", txid)
@@ -206,7 +111,7 @@ class Indexer {
     if (noVerify && time) {
       return await this.database.addFullTx({ txid, rawtx, time, oDataRecord, chain })
     }
-    let ret = await (Parser.get(chain).parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time }));
+    let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 
     const ts = ret.code == 0 ? ret.rtx.time : DEF.TX_INVALIDTX
     if (ret.rtx.time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
@@ -218,37 +123,34 @@ class Indexer {
     }
     return ret.code == 0;
   }
-  async _parseAndStoreTransaction(txid, rawtx) {
-    if (this.database.isTransactionParsed(txid, false, this.chain)) return
-
-    if (!rawtx) {
-      this.logger.warn(txid, ":", "no rawtx");
-      return
-    }
-    const height = this.database.getTransactionHeight(txid, this.chain);
-    const block_time = this.database.getTransactionTime(txid, this.chain);
-    let attrib = {}
-    try {
-      //just save, no verify
-      this.database.setTransactionRaw(txid, rawtx, this.chain)
-      const ret = await Parser.get(this.chain).parse({ rawtx, height, time: block_time });
-      //attrib = await Parser.get(this.chain).getAttrib({ rawtx })
-      //this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
-      if (ret.code == 0) {
-        this.database.setTxTime(txid, ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2, this.chain)
-      } else {
+  /*  async _parseAndStoreTransaction(txid, rawtx) {
+      if (this.database.isTransactionParsed(txid, false, this.chain)) return
+  
+      if (!rawtx) {
+        this.logger.warn(txid, ":", "no rawtx");
+        return
+      }
+      const height = this.database.getTransactionHeight(txid, this.chain);
+      const block_time = this.database.getTransactionTime(txid, this.chain);
+      let attrib = {}
+      try {
+        //just save, no verify
+        this.database.setTransactionRaw(txid, rawtx, this.chain)
+        const ret = await Parser.parse({ rawtx, height, time: block_time,chain:this.chain });
+        //attrib = await Parser.getAttrib({ rawtx,chain })
+        //this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
+        if (ret.code == 0) {
+          this.database.setTxTime(txid, ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2, this.chain)
+        } else {
+          this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
+        }
+      } catch (e) {
+        // console.error(e);
         this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
       }
-    } catch (e) {
-      // console.error(e);
-      this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
-    }
-
-    return
-
-
-
-  }
+  
+      return
+    } */
 
   _parseTxid(txid) {
     //  txid = txid.trim().toLowerCase()
