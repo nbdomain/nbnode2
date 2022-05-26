@@ -298,27 +298,44 @@ class Database {
 
     if (this.onAddTransaction) this.onAddTransaction(txid)
   }
-  getLatestTxTime(chain) {
+  getLatestTxTime() {
     const sql = `SELECT txTime from txs ORDER BY txTime DESC`
     const res = this.txdb.prepare(sql).get()
     return res ? res.txTime : -1
   }
-  getLastFullSyncTime(chain) {
+  getLastFullSyncTime() {
     try {
-      const sql = `SELECT ${chain}_fullSyncTime1 from config`
+      const sql = `SELECT fullSyncTime from config`
       const res = this.txdb.prepare(sql).get()
       return res ? res : 0
     } catch (e) {
       return 0
     }
   }
-  saveLastFullSyncTime(time, chain) {
+  saveLastFullSyncTime(time) {
     try {
-      const sql = `insert or replace into config (key,value) VALUES('${chain}_fullSyncTime1',?) `
+      const sql = `insert or replace into config (key,value) VALUES('fullSyncTime',?) `
       this.txdb.prepare(sql).run(time)
     } catch (e) {
       console.log(e)
     }
+  }
+  getFullTx({ txid }) {
+    const tx = this.getTransaction(txid);
+    if (!tx) return null
+    if (tx && tx.bytes)
+      delete tx.bytes
+    let ret = {
+      tx: tx
+    }
+    ret.rawtx = this.getRawTransaction(txid)
+    if (ret.rawtx) {
+      ret.attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain: tx.chain });
+      if (ret.attrib.hash) {
+        ret.oDataRecord = indexers.db.readData(ret.attrib.hash)
+      }
+    }
+    return ret
   }
   addFullTx({ txid, rawtx, time, oDataRecord, chain }) {
     const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
@@ -352,8 +369,8 @@ class Database {
 
   getRawTransaction(txid) {
     const sql = `SELECT bytes AS raw,chain FROM txs WHERE txid = ?`
-    const row = this.txdb.prepare(sql).raw(true).get(txid)
-    const data = row && row[0]
+    const row = this.txdb.prepare(sql).get(txid)
+    const data = row && row.raw
     if (!data) return null
     if (row.chain == 'bsv') {
       return data.toString('hex')

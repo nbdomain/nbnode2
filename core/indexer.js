@@ -114,7 +114,7 @@ class Indexer {
     let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 
     const ts = ret.code == 0 ? ret.rtx.time : DEF.TX_INVALIDTX
-    if (ret.rtx.time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
+    if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
       await this.database.addFullTx({ txid, rawtx, time: ts, oDataRecord, chain })
       console.log("Added txid:", txid)
     }

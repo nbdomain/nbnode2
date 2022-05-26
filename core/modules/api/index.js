@@ -350,7 +350,6 @@ app.get('/onSale', (req, res) => {
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']
-    const chain = req.query['chain']
     const resolver = indexers.get(chain).resolver
     res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
@@ -372,27 +371,18 @@ app.get('/test', async (req, res) => {
     //Nodes.startTxSync(indexers)
     res.end("ok")
 })
+app.get('/reverify', async (req, res) => {
+    const txid = req.query['txid']
+    const ret = indexers.db.getFullTx({ txid })
+    const tx = ret.tx
+    indexers.indexer.addTxFull({ txid: tx.txid, rawtx: ret.rawtx, time: tx.time, chain: tx.chain })
+})
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())
 })
 app.get('/getData', (req, res) => {
     const txid = req.query['txid']
-    const chain = req.query['chain'] ? req.query['chain'] : 'bsv'
-    const tx = indexers.db.getTransaction(txid, chain);
-    if (tx && tx.bytes)
-        delete tx.bytes
-    let ret = {
-        tx: tx
-    }
-
-    ret.rawtx = indexers.db.getRawTransaction(txid, chain)
-
-    if (ret.rawtx) {
-        ret.attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain });
-        if (ret.attrib.hash) {
-            ret.oDataRecord = indexers.db.readData(ret.attrib.hash)
-        }
-    }
+    const ret = indexers.db.getFullTx({ txid })
     res.json(ret)
 })
 app.get('/find_domain', (req, res) => {

@@ -179,27 +179,27 @@ class Nodes {
         }
         return {}
     }
-    async _syncFromNode(indexer, fullSync, chain) {
-        let latestTime = fullSync ? indexer.database.getLastFullSyncTime(chain) : indexer.database.getLatestTxTime(chain)
+    async _syncFromNode(indexer, fullSync) {
+        let latestTime = fullSync ? indexer.database.getLastFullSyncTime() : indexer.database.getLatestTxTime()
         let affected = 0
         if (fullSync) {
-            console.log(chain + ": perform full sync check...")
+            console.log(": perform full sync check...")
         }
         const dataCount = indexer.database.getDataCount()
         for (const node of this.getNodes()) {
             let apiURL = node.id
             if (fullSync) apiURL = this.get() //select based on weight
             console.log("Selected node:", apiURL)
-            const url = apiURL + "/api/queryTX?from=" + latestTime + "&chain=" + chain
+            const url = apiURL + "/api/queryTX?from=" + latestTime
             let remoteData = 0
             if (fullSync) {
                 const url1 = apiURL + "/api/dataCount"
                 try {
                     const res = await axios.get(url1)
                     if (res.data) {
-                        if (dataCount[chain] >= res.data[chain]) break;
-                        remoteData = res.data[chain]
-                        console.log(`Need sync. self ${chain} count:${dataCount[chain]},${apiURL} count:${res.data[chain]}`)
+                        if (dataCount.txs >= res.data.txs) break;
+                        remoteData = res.data.txs
+                        console.log(`Need sync. self tx count:${dataCount.txs},${apiURL} count:${res.data.txs}`)
                     }
                 } catch (e) {
                     console.error(url1 + ":", e.message)
@@ -211,7 +211,7 @@ class Nodes {
                 const res = await axios.get(url)
                 let all = res.data.length
                 for (const tx of res.data) {
-                    if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain })) {
+                    if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain: tx.chain })) {
                         affected++;
                     }
                 }
@@ -239,8 +239,7 @@ class Nodes {
         this._canResolve = true
     }
     async startTxSync(indexers) {
-        await this._syncFromNode(indexers.indexer, false, 'bsv')
-        //await this._syncFromNode(indexers.ar, false, 'ar')
+        await this._syncFromNode(indexers.indexer, false)
         await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
