@@ -523,7 +523,7 @@ class Database {
     const ret2 = this.dtdb.prepare(sql).get()
     sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
     const ret3 = this.dmdb.prepare(sql).get()
-    return { ...ret, ...ret1, ...ret2, ...ret3 }
+    return { ...ret, ...ret1, ...ret2, ...ret3, v: 2 }
   }
   queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";

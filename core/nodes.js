@@ -188,7 +188,7 @@ class Nodes {
         const dataCount = indexer.database.getDataCount()
         for (const node of this.getNodes(false)) {
             let apiURL = node.id
-            if (fullSync) apiURL = this.get() //select based on weight
+            if (fullSync) apiURL = this.get(false) //select based on weight
             console.log("Selected node:", apiURL)
             const url = apiURL + "/api/queryTX?from=" + latestTime
             let remoteData = 0
@@ -197,7 +197,7 @@ class Nodes {
                 try {
                     const res = await axios.get(url1)
                     if (res.data) {
-                        if (dataCount.txs >= res.data.txs) break;
+                        if (dataCount.txs >= res.data.txs || res.data.v != 2) break;
                         remoteData = res.data.txs
                         console.log(`Need sync. self tx count:${dataCount.txs},${apiURL} count:${res.data.txs}`)
                     }
