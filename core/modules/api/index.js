@@ -350,7 +350,7 @@ app.get('/onSale', (req, res) => {
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']
-    const resolver = indexers.get(chain).resolver
+    const resolver = indexers.get().resolver
     res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', async (req, res) => {
