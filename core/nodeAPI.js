@@ -7,7 +7,7 @@ coinfly.create('bsv').then(res => bsvlib = res)
 class NodeServer {
     start(httpServer) {
         const io = new Server()
-        io.attach(httpServer)
+        io.attach(CONFIG.server.socketPort)
         io.on("connection", (socket) => {
             console.log(socket.handshake.auth); //
             socket.on("hello", async (data, ret) => {
@@ -17,6 +17,11 @@ class NodeServer {
             })
         });
         this.io = io
+    }
+    notify(para) {
+        if (!this.io) return false
+        this.io.emit("notify", para)
+        return true
     }
     close() {
         this.io.close()
@@ -29,7 +34,10 @@ class NodeClient {
         try {
             const res = await axios.get(url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
-                socketUrl = "http://" + res.data.domain + ":" + res.data.port
+                socketUrl = "ws://" + res.data.domain + ":" + res.data.socketPort
+                if (res.data.socketServer) {
+                    socketUrl = "ws://" + res.data.socketServer + ":" + res.data.socketPort
+                }
             }
         } catch (e) {
             return false

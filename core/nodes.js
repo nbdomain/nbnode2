@@ -41,7 +41,7 @@ class Nodes {
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
         await this.getSuperNodes(true)
-        //this.connectSuperNode()
+        await this.connectSuperNode()
         return true
     }
     startNodeServer(httpServer) {
@@ -95,7 +95,7 @@ class Nodes {
         //get super nodes from DNS
         const p = await this._fromDNS()
         for (const item of p) {
-            await this.addNode(item, false)
+            await this.addNode(item, true)
             if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
         }
         //local nodes
@@ -103,15 +103,33 @@ class Nodes {
 
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
-    async connectSuperNode() {
-        for (const node of this.snodes) {
-            if (await this.nodeClient.connect(node)) {
-                return true
-            }
-            console.log("next")
+    async connectOneNode(node) {
+        if (!this.nodeClients) this.nodeClients = {}
+        if (this.nodeClients[node.id]) {
+            //disconnect lastone
         }
-        console.error("cannot connect to producer node")
+        const client = new NodeClient();
+        if (await client.connect(node)) {
+            console.log("connected to:", node.id)
+            this.nodeClients[node.id] = client
+            return true
+        }
+        console.error("failed to connect:", node.id)
         return false
+    }
+    async connectSuperNode() {
+        this.isSuperNode = true
+        for (const node of this.snodes) {
+            if (await this.connectOneNode(node)) {
+                if (!this.isSuperNode)
+                    return true
+            }
+        }
+        if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
+            console.error("cannot connect to any super node")
+            return false
+        }
+        return true
     }
     getNodes(isSuper = true) {
         return isSuper ? this.snodes : this.nodes

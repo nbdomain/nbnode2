@@ -370,7 +370,7 @@ app.get('/reverify', async (req, res) => {
     const txid = req.query['txid']
     const ret = indexers.db.getFullTx({ txid })
     const tx = ret.tx
-    indexers.indexer.addTxFull({ txid: tx.txid, rawtx: ret.rawtx, time: tx.time, chain: tx.chain })
+    indexers.indexer.addTxFull({ txid: tx.txid, rawtx: ret.rawtx, time: tx.time, force: true, chain: tx.chain })
 })
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())

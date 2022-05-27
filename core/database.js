@@ -332,7 +332,7 @@ class Database {
     if (ret.rawtx) {
       ret.attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain: tx.chain });
       if (ret.attrib.hash) {
-        ret.oDataRecord = indexers.db.readData(ret.attrib.hash)
+        ret.oDataRecord = this.readData(ret.attrib.hash)
       }
     }
     return ret
