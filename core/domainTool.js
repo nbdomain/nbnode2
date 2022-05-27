@@ -13,7 +13,7 @@ class DomainTool {
             const key = domain + ".prices"
             const obj = await db.loadDomain("nbinfo.b")
             if (obj && obj.keys[key]) {
-                return { code: 0, price: r.obj.keys[key].value.price }
+                return { code: 0, price: obj.keys[key].value.price }
             }
             domain = encodeURIComponent(domain)
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
