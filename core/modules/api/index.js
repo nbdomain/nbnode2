@@ -25,8 +25,6 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
 let indexers = null;
-let bsv_resolver = null;
-let ar_resolver = null;
 const today = new Date();
 
 const day = today.getDate();
@@ -260,10 +258,7 @@ app.get('/nodes', (_, res) => {
 app.get('/sub/:domain/', async (req, res) => {
     const domain = req.params['domain']
     const session = await createSession(req, res);
-    let db = bsv_resolver.db;
-    if (domain.indexOf('.a') != -1) {
-        db = ar_resolver.db
-    }
+    let db = indexers.db;
     db.subscribe(domain, session)
     req.on("close", () => {
         res.end()
@@ -293,7 +288,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     if (cmd === 'gettx') {
         let chain = req.query['chain'] ? req.query['chain'] : 'bsv'
-        let indexer = chain == 'bsv' ? indexers.bsv : indexers.ar
+        let indexer = indexers.index
         ret.rawtx = indexer.rawtx(req.query['txid'])
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
@@ -461,8 +456,6 @@ app.get('/tools/market/rates/:symbol', async (req, res) => {
 
 module.exports = function (env) {
     indexers = env.indexers;
-    bsv_resolver = indexers.bsv ? indexers.bsv.resolver : null;
-    ar_resolver = indexers.ar ? indexers.ar.resolver : null
     return new Promise((resolve) => {
         const server = app.listen(0, function () {
             const port = server.address().port;
