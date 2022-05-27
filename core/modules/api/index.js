@@ -288,7 +288,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     if (cmd === 'gettx') {
         let chain = req.query['chain'] ? req.query['chain'] : 'bsv'
-        let indexer = indexers.index
+        let indexer = indexers.indexer
         ret.rawtx = indexer.rawtx(req.query['txid'])
         if (!ret.rawtx) {
             ret.code = 1; ret.msg = 'not found';
