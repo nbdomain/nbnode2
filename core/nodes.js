@@ -108,7 +108,7 @@ class Nodes {
         if (this.nodeClients[node.id]) {
             //disconnect lastone
         }
-        const client = new NodeClient();
+        const client = new NodeClient(this.indexers);
         if (await client.connect(node)) {
             console.log("connected to:", node.id)
             this.nodeClients[node.id] = client
@@ -136,26 +136,27 @@ class Nodes {
     }
 
     async notifyPeers({ cmd, data }) {
-        for (const peer of this.nodes) {
-            const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
+        for (const client of this.nodeClients) {
+            client.notify({ cmd, data })
+            /*const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
             try {
                 axios.get(url)
             } catch (e) {
                 console.log("error getting: ", url)
-            }
+            }*/
         }
     }
 
     async getTx(txid, from, chain) {
         try {
-            const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}&chain=${chain}`)
+            const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}`)
             if (res.data) {
                 if (res.data.code == 0) return res.data
             }
         } catch (e) { }
         for (const node of this.getNodes()) {
             if (node.id == from) continue
-            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
+            const url = node.id + "/api/p2p/gettx?txid=" + txid
             try {
                 const res = await axios.get(url)
                 if (res.data) {
@@ -257,6 +258,7 @@ class Nodes {
         this._canResolve = true
     }
     async startTxSync(indexers) {
+        this.indexers = indexers
         await this._syncFromNode(indexers.indexer, false)
         await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes

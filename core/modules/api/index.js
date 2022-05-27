@@ -70,7 +70,7 @@ app.get('/', async function (req, res, next) {
         return;
     }
     try {
-        const resolver = indexers.resolver(Util.getchain(domain))
+        const resolver = indexers.resolver
         if (!resolver) {
             throw "unsupported domain:" + domain
         }
@@ -93,7 +93,7 @@ async function getAllItems(para, forceFull = false, from = null) {
             const moreHis = his[1].split('-') //check '-'
             if (moreHis.length == 1) {
                 if (his[1] == 'all') {
-                    const resolver = indexers.resolver(Util.getchain(his[0]))
+                    const resolver = indexers.resolver
                     if (!resolver) return
                     const count = resolver.getDomainHistoryLen(his[0])
                     for (let i = 1; i <= count; i++) {
@@ -113,7 +113,7 @@ async function getAllItems(para, forceFull = false, from = null) {
     for (const item of items) {
         if (item === '') continue;
         const dd = item.split('/')
-        const resolver = indexers.resolver(Util.getchain(dd[0]))
+        const resolver = indexers.resolver
         if (!resolver) continue;
         const result = await resolver.readDomain(dd[0], forceFull, dd[1])
         if (from && result.obj.ts <= from) continue
@@ -135,7 +135,7 @@ app.get('/qf/*', async function (req, res) {
 })
 app.get('/user/:account', async function (req, res) {
     const account = req.params['account']
-    const resolver = indexers.resolver(Util.getchain(account))
+    const resolver = indexers.resolver
     const ret = await resolver.readUser(account)
     res.json(ret)
 })
@@ -174,7 +174,8 @@ app.post('/sendTx', async function (req, res) {
         if (ret.rtx && ret.rtx.oHash) {
             oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
         }
-        if (await indexers.get(chain).addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain }))
+        const indexer = indexers.indexer
+        if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain }))
             Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
     } else {
         console.log("send tx failed")
@@ -189,13 +190,13 @@ async function handleNewTx(para, from, force = false) {
         if (data) {
             console.log("handleNewTx:", para.txid)
             const item = data.oDataRecord
-            const ret = await (Parser.parse({ rawtx: data.rawtx, oData: item?.raw, height: -1, chain }));
+            const ret = await (Parser.parse({ rawtx: data.tx.rawtx || data.rawtx, oData: item?.raw, height: -1, chain }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
                 await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
             else {
                 console.error("wrong rawtx format. ret:", ret)
             }
-            await indexers.get(chain).addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
+            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, oDataRecord: data.oDataRecord, chain })
         }
     }
 }
@@ -287,17 +288,9 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
         Nodes.addNode(d)
     }
     if (cmd === 'gettx') {
-        let chain = req.query['chain'] ? req.query['chain'] : 'bsv'
-        let indexer = indexers.indexer
-        ret.rawtx = indexer.rawtx(req.query['txid'])
-        if (!ret.rawtx) {
-            ret.code = 1; ret.msg = 'not found';
-        } else {
-            const attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain });
-            if (attrib.hash) {
-                ret.oDataRecord = indexers.db.readData(attrib.hash)
-            }
-        }
+        const txid = req.query['txid']
+        if (txid)
+            ret = indexers.db.getFullTx({ txid })
     }
     if (cmd === 'getdata') {
         ret = await indexers.db.readData(req.query['hash'], { string: req.query['string'] })
@@ -345,7 +338,7 @@ app.get('/onSale', (req, res) => {
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']
-    const resolver = indexers.get().resolver
+    const resolver = indexers.resolver
     res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
 app.get('/test', async (req, res) => {
@@ -355,10 +348,12 @@ app.get('/test', async (req, res) => {
         console.log("count:",ret.length)
         res.end("ok")*/
     //res.json(indexers.db.getAllPaytx('register'))
-    //res.json(await handleNewTx({ chain: 'bsv', txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }, "https://tnode.nbdomain.com", true))
+    const { rpcHandler } = require('../../nodeAPI')
+    const para = { txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }
+    await rpcHandler.handleNewTx({ indexers, para, from: "https://tnode.nbdomain.com", force: true })
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
-    await indexers.db.verifyTxDB('bsv')
+    //await indexers.db.verifyTxDB('bsv')
     //await indexers.db.verifyTxDB('ar')
     //indexers.ar.reCrawlAll()
     //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))

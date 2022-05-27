@@ -63,6 +63,9 @@ class Indexers {
     this.indexer = new Indexer(this.db, CONSTS.FETCH_LIMIT, logger)
     //this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
     this.indexer.indexers = this
+    this.Nodes = Nodes
+    this.Parser = Parser
+    this.resolver = this.indexer.resolver
   }
   static async start() {
     //await this.db.verifyTxDB('bsv')
@@ -72,12 +75,6 @@ class Indexers {
   static async stop() {
     await this.indexer.stop();
     this.db.close();
-  }
-  static resolver(chain) {
-    return this.indexer.resolver
-  }
-  static get(chain) {
-    return this.indexer
   }
 }
 async function main() {

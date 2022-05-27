@@ -328,11 +328,11 @@ class Database {
     let ret = {
       tx: tx
     }
-    ret.rawtx = this.getRawTransaction(txid)
+    ret.tx.rawtx = this.getRawTransaction(txid)
     if (ret.rawtx) {
-      ret.attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain: tx.chain });
-      if (ret.attrib.hash) {
-        ret.oDataRecord = this.readData(ret.attrib.hash)
+      const attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain: tx.chain });
+      if (attrib.hash) {
+        ret.oDataRecord = this.readData(attrib.hash)
       }
     }
     return ret
