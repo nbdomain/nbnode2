@@ -251,9 +251,9 @@ class Nodes {
     }
     async startTxSync(indexers) {
         this.indexers = indexers
-        await this._syncFromNode(indexers.indexer, false)
-        await this.FullSyncFromNodes(indexers)
-        setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
+        //await this._syncFromNode(indexers.indexer, false)
+        //await this.FullSyncFromNodes(indexers)
+        //setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     async pullNewTxs(fullSync = false) {
         const { db } = this.indexers

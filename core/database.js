@@ -329,8 +329,8 @@ class Database {
       tx: tx
     }
     ret.tx.rawtx = this.getRawTransaction(txid)
-    if (ret.rawtx) {
-      const attrib = Parser.getAttrib({ rawtx: ret.rawtx, chain: tx.chain });
+    if (ret.tx.rawtx) {
+      const attrib = Parser.getAttrib({ rawtx: ret.tx.rawtx, chain: tx.chain });
       if (attrib.hash) {
         ret.oDataRecord = this.readData(attrib.hash)
       }
