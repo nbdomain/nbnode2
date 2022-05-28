@@ -23,11 +23,13 @@ class NodeServer {
     }
     async _setup(socket, indexers) {
         socket.on("getTx", async (txid, ret) => {
+            console.log("getTx:", txid)
             const { db } = indexers
             const data = db.getFullTx(txid)
             ret(data)
         })
         socket.on("queryTx", async (para, ret) => {
+            console.log("queryTx:", para)
             const { resolver } = indexers
             const { from, to } = para
             ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
