@@ -348,9 +348,9 @@ app.get('/test', async (req, res) => {
         console.log("count:",ret.length)
         res.end("ok")*/
     //res.json(indexers.db.getAllPaytx('register'))
-    const { rpcHandler } = require('../../nodeAPI')
-    const para = { txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }
-    await rpcHandler.handleNewTx({ indexers, para, from: "https://tnode.nbdomain.com", force: true })
+    //const { rpcHandler } = require('../../nodeAPI')
+    //const para = { txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }
+    //await rpcHandler.handleNewTx({ indexers, para, from: "https://tnode.nbdomain.com", force: true })
     //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
     //res.json(indexers.db.getDataCount())
     //await indexers.db.verifyTxDB('bsv')
@@ -359,6 +359,7 @@ app.get('/test', async (req, res) => {
     //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
     //indexers.db.resetDB()
     //Nodes.startTxSync(indexers)
+    Nodes.pullNewTxs()
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

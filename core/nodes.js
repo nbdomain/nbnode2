@@ -35,9 +35,9 @@ class Nodes {
             node.weight++
         }
     }
-    async init(parser) {
+    async init(indexers) {
+        this.indexers = indexers
         this.nodeClient = new NodeClient()
-        this.parser = parser
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
         await this.getSuperNodes(true)
@@ -136,8 +136,8 @@ class Nodes {
     }
 
     async notifyPeers({ cmd, data }) {
-        for (const client of this.nodeClients) {
-            client.notify({ cmd, data })
+        for (const id in this.nodeClients) {
+            this.nodeClients[id].notify({ cmd, data })
             /*const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
             try {
                 axios.get(url)
@@ -262,6 +262,13 @@ class Nodes {
         await this._syncFromNode(indexers.indexer, false)
         await this.FullSyncFromNodes(indexers)
         setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
+    }
+    async pullNewTxs(fullSync = false) {
+        const { db } = this.indexers
+        let latestTime = fullSync ? db.getLastFullSyncTime() : db.getLatestTxTime()
+        for (const id in this.nodeClients) {
+            await this.nodeClients[id].pullNewTxs({ from: latestTime })
+        }
     }
     static inst() {
         if (g_node == null) {

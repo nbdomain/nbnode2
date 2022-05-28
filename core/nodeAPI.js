@@ -5,7 +5,9 @@ const CONFIG = require('./config').CONFIG
 let bsvlib = null
 coinfly.create('bsv').then(res => bsvlib = res)
 class NodeServer {
-    start(httpServer) {
+    start(indexers) {
+        this.indexers = indexers
+        const self = this
         const io = new Server()
         io.attach(CONFIG.server.socketPort || 31415)
         io.on("connection", (socket) => {
@@ -15,8 +17,21 @@ class NodeServer {
                 const r = await bsvlib.sign(CONFIG.key, data)
                 ret(r)
             })
+            self._setup(socket, indexers)
         });
         this.io = io
+    }
+    async _setup(socket, indexers) {
+        socket.on("getTx", async (txid, ret) => {
+            const { db } = indexers
+            const data = db.getFullTx(txid)
+            ret(data)
+        })
+        socket.on("queryTx", async (para, ret) => {
+            const { resolver } = indexers
+            const { from, to } = para
+            ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
+        })
     }
     notify(para) {
         if (!this.io) return false
@@ -80,40 +95,50 @@ class NodeClient {
         })
     }
     async _setup() {
+        const self = this
         this.socket.on('notify', (arg) => {
             if (arg.cmd === "newtx") {
                 const d = para.data;
                 const para = JSON.parse(d)
                 const from = req.query['from']
-                rpcHandler.handleNewTx({ indexers: this.indexers, para, from })
+                rpcHandler.handleNewTx({ indexers: this.indexers, para, socket: self.socket })
             }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
 
         })
     }
+    async pullNewTxs(para) { //para = { from:12121233,to:-1}
+        const { indexer } = this.indexers
+        this.socket.emit("queryTx", para, async (res) => {
+            console.log("get reply from queryTx:")
+            for (const tx of res) {
+                if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain: tx.chain })) {
 
+                }
+            }
+        })
+    }
     close() {
-
+        this.socket.close()
     }
 }
 class rpcHandler {
-    static async handleNewTx({ indexers, para, from, force = false }) {
-        let { db, Nodes, Parser, indexer } = indexers
-        const chain = para.chain ? para.chain : 'bsv'
+    static async handleNewTx({ indexers, para, socket, force = false }) {
+        let { db, Parser, indexer } = indexers
         if (!db.isTransactionParsed(para.txid, false) || force) {
-            const data = await Nodes.getTx(para.txid, from)
-            if (data) {
+            socket.emit("getTx", para.txid, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 const item = data.oDataRecord
-                const ret = await (Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain }));
+                const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
                 if (ret.code == 0 && ret.rtx?.oHash === item.hash)
                     await db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
                 else {
                     console.error("wrong rawtx format. ret:", ret)
                 }
-                await indexer.addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain })
-            }
+                await indexer.addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })
+            })
+
         }
     }
 }

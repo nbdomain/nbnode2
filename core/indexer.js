@@ -104,7 +104,7 @@ class Indexer {
   }
 
   async addTxFull({ txid, rawtx, time, oDataRecord, noVerify = false, force = false, chain }) {
-    if (!force && this.database.isTransactionParsed(txid, false, chain)) {
+    if (!force && this.database.isTransactionParsed(txid, false)) {
       console.log("Skipping:", txid)
       return false
     }

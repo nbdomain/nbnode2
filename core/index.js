@@ -79,7 +79,7 @@ class Indexers {
 }
 async function main() {
   Indexers.initDB()
-  const seedNode = await Nodes.init(Parser)
+  const seedNode = await Nodes.init(Indexers)
   Indexers.init()
 
   server = new LocalServer(Indexers, logger)
