@@ -25,7 +25,7 @@ class NodeServer {
         socket.on("getTx", async (txid, ret) => {
             console.log("getTx:", txid)
             const { db } = indexers
-            const data = db.getFullTx(txid)
+            const data = db.getFullTx({ txid })
             ret(data)
         })
         socket.on("queryTx", async (para, ret) => {
@@ -100,9 +100,8 @@ class NodeClient {
         const self = this
         this.socket.on('notify', (arg) => {
             if (arg.cmd === "newtx") {
-                const d = para.data;
+                const d = arg.data;
                 const para = JSON.parse(d)
-                const from = req.query['from']
                 rpcHandler.handleNewTx({ indexers: this.indexers, para, socket: self.socket })
             }
         })
@@ -131,6 +130,7 @@ class rpcHandler {
         if (!db.isTransactionParsed(para.txid, false) || force) {
             socket.emit("getTx", para.txid, async (data) => {
                 console.log("handleNewTx:", para.txid)
+                if (!data) return
                 const item = data.oDataRecord
                 const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
                 if (ret.code == 0 && ret.rtx?.oHash === item.hash)
