@@ -136,15 +136,7 @@ class Nodes {
     }
 
     async notifyPeers({ cmd, data }) {
-        for (const id in this.nodeClients) {
-            this.nodeClients[id].notify({ cmd, data })
-            /*const url = peer.id + "/api/p2p/" + cmd + "?data=" + (data) + "&&from=" + (this.endpoint)
-            try {
-                axios.get(url)
-            } catch (e) {
-                console.log("error getting: ", url)
-            }*/
-        }
+        this.nodeServer.notify({ cmd, data })
     }
 
     async getTx(txid, from, chain) {
