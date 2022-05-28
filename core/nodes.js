@@ -50,7 +50,7 @@ class Nodes {
             return false
         }
         if (!this.nodeServer) this.nodeServer = new NodeServer()
-        this.nodeServer.start(httpServer)
+        this.nodeServer.start(this.indexers)
     }
     async _fromDNS() {
         return new Promise(resolve => {
