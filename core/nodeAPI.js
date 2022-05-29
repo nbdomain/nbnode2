@@ -86,6 +86,7 @@ class NodeClient {
                         if (r) {
                             self.socket = socket
                             self._setup()
+                            self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()
@@ -109,8 +110,11 @@ class NodeClient {
 
         })
     }
-    async pullNewTxs(para) { //para = { from:12121233,to:-1}
-        const { indexer } = this.indexers
+    async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
+        const { db, indexer } = this.indexers
+        if (para == null) {
+            para = { from: db.getLatestTxTime() }
+        }
         this.socket.emit("queryTx", para, async (res) => {
             console.log("get reply from queryTx:")
             for (const tx of res) {
