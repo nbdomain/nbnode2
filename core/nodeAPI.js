@@ -34,6 +34,9 @@ class NodeServer {
             const { from, to } = para
             ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
         })
+        socket.onAny((event, ...args) => {
+            console.log(`server got ${event}`);
+        });
     }
     notify(para) {
         if (!this.io) return false
@@ -95,6 +98,12 @@ class NodeClient {
                     })
                 })
             });
+            socket.on('disconnect', function () {
+                console.log('Disconnected to:', socketUrl)
+            })
+            socket.onAny((event, ...args) => {
+                console.log(`got ${event}`);
+            });
         })
     }
     async _setup() {
@@ -142,7 +151,7 @@ class rpcHandler {
                 else {
                     console.error("wrong rawtx format. ret:", ret)
                 }
-                await indexer.addTxFull({ txid: para.txid, rawtx: data.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })
+                await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })
             })
 
         }
