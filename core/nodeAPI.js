@@ -4,6 +4,7 @@ const coinfly = require('coinfly')
 const CONFIG = require('./config').CONFIG
 let bsvlib = null
 coinfly.create('bsv').then(res => bsvlib = res)
+const SocketProtocolVersion = 1
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
@@ -12,8 +13,12 @@ class NodeServer {
         io.attach(CONFIG.server.socketPort || 31415)
         io.on("connection", (socket) => {
             console.log(socket.handshake.auth); //
-            socket.on("hello", async (data, ret) => {
-                console.log("got hello data:", data)
+            socket.on("hello", async (obj, ret) => {
+                if (obj.v != SocketProtocolVersion) {
+                    ret(false)
+                    return
+                }
+                console.log("got hello data:", obj.data)
                 const r = await bsvlib.sign(CONFIG.key, data)
                 ret(r)
             })
@@ -54,7 +59,7 @@ const { Manager } = require('socket.io-client');
 class NodeClient {
     constructor(indexers, domain) {
         this.indexers = indexers
-        this.domain = domain
+        this.from = domain
     }
     async connect(node) {
         let socketUrl = null, url = node.id
@@ -87,7 +92,7 @@ class NodeClient {
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
-                socket.emit("hello", datav, (res) => {
+                socket.emit("hello", { data: datav, v: SocketProtocolVersion }, (res) => {
                     console.log("reply from hello:", res)
                     bsvlib.verify(node.pkey, datav, res).then(r => {
                         if (r) {
