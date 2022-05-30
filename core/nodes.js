@@ -3,7 +3,7 @@ const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { timeStamp } = require('console');
-const { NodeServer, NodeClient } = require('./nodeAPI')
+const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI')
 //const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
@@ -138,7 +138,14 @@ class Nodes {
     async notifyPeers({ cmd, data }) {
         this.nodeServer.notify({ cmd, data })
     }
-
+    async sendNewTx(obj) {
+        if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
+            //return rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
+            return await this.nodeClients[0].sendNewTx(obj)
+        }
+        console.error("No Other nodes connected, cannot send tx")
+        return { code: 1, msg: "No Other nodes connected, cannot send tx" }
+    }
     async getTx(txid, from, chain) {
         try {
             const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}`)
@@ -177,7 +184,7 @@ class Nodes {
         if (hash == 'undefined') {
             console.log("found")
         }
-        for (const node of this.getNodes()) {
+        for (const node of this.getNodes(false)) {
             const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
             try {
                 const res = await axios.get(url)

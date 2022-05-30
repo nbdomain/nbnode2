@@ -10,7 +10,7 @@ const Database = require('./database')
 const { Nodes } = require('./nodes')
 const CONSTS = require('./const')
 const Parser = require('./parser')
-
+const { Util } = require('./util')
 const Planaria = require('./planaria')
 //const UrChain = require('./urchain')
 //const RunConnectFetcher = require('./run-connect')
@@ -65,6 +65,7 @@ class Indexers {
     this.indexer.indexers = this
     this.Nodes = Nodes
     this.Parser = Parser
+    this.Util = Util
     this.resolver = this.indexer.resolver
   }
   static async start() {

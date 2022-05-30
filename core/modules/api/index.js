@@ -142,7 +142,7 @@ app.get('/user/:account', async function (req, res) {
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
-    let chain = 'bsv'
+    /*let chain = 'bsv'
     if (obj.chain == 'ar') chain = 'ar'
     console.log("got obj:", obj)
     if (!obj.oData) {
@@ -179,8 +179,9 @@ app.post('/sendTx', async function (req, res) {
             Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
     } else {
         console.log("send tx failed")
-    }
-    res.json(ret1);
+    } */
+    const ret = await Nodes.sendNewTx(obj)
+    res.json(ret);
 });
 async function handleNewTx(para, from, force = false) {
     let db = indexers.db
@@ -359,7 +360,7 @@ app.get('/test', async (req, res) => {
     //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
     //indexers.db.resetDB()
     //Nodes.startTxSync(indexers)
-    Nodes.pullNewTxs()
+    //Nodes.pullNewTxs()
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

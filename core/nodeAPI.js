@@ -112,7 +112,7 @@ class NodeClient {
             if (arg.cmd === "newtx") {
                 const d = arg.data;
                 const para = JSON.parse(d)
-                rpcHandler.handleNewTx({ indexers: this.indexers, para, socket: self.socket })
+                rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
@@ -133,13 +133,21 @@ class NodeClient {
             }
         })
     }
+    async sendNewTx(obj) {
+        return new Promise(resolve => {
+            this.socket.emit("sendNewTx", obj, (res) => {
+                resolve(res)
+            })
+        })
+
+    }
     close() {
         this.socket.close()
     }
 }
 class rpcHandler {
-    static async handleNewTx({ indexers, para, socket, force = false }) {
-        let { db, Parser, indexer } = indexers
+    static async handleNewTxNotify({ indexers, para, socket, force = false }) {
+        let { db, Parser, indexer, Nodes } = indexers
         if (!db.isTransactionParsed(para.txid, false) || force) {
             socket.emit("getTx", para.txid, async (data) => {
                 console.log("handleNewTx:", para.txid)
@@ -151,10 +159,44 @@ class rpcHandler {
                 else {
                     console.error("wrong rawtx format. ret:", ret)
                 }
-                await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })
+                if (await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
+                }
             })
-
         }
+    }
+    static async handleNewTxFromApp({ indexers, obj }) {
+        const { indexer, Parser, Util, Nodes } = indexers
+        let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
+        if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
+            console.error("parseRaw error err:", ret)
+            return { code: -1, message: ret.msg }
+        }
+        if (obj.more_rawtx) {
+            for (const raw of obj.more_rawtx) { //if there are more 
+                const rr = await Util.sendRawtx(raw, obj.chain);
+                if (rr.code == 0) {
+                    console.log("send more tx successfully. txid:", rr.txid);
+                }
+                else {
+                    console.error("send more tx failed:", rr)
+                    return rr
+                }
+            }
+        }
+        const ret1 = await Util.sendRawtx(obj.rawtx, obj.chain);
+        if (ret1.code == 0) {
+            console.log("send tx successfully. txid:", ret1.txid)
+            let oDataRecord = null
+            if (ret.rtx && ret.rtx.oHash) {
+                oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
+            }
+            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain: obj.chain }))
+                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: obj.chain }) })
+        } else {
+            console.log("send tx failed")
+        }
+        return ret1
     }
 }
 module.exports = { NodeServer, NodeClient, rpcHandler }
