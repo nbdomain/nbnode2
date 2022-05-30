@@ -18,7 +18,7 @@ class NodeServer {
                     ret(false)
                     return
                 }
-                console.log("got hello data:", obj.data)
+                console.log("got hello data:", obj)
                 const r = await bsvlib.sign(CONFIG.key, data)
                 ret(r)
             })
