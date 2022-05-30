@@ -19,7 +19,7 @@ class NodeServer {
                     return
                 }
                 console.log("got hello data:", obj)
-                const r = await bsvlib.sign(CONFIG.key, data)
+                const r = await bsvlib.sign(CONFIG.key, obj.data)
                 ret(r)
             })
             self._setup(socket, indexers)
