@@ -4,7 +4,14 @@ const coinfly = require('coinfly')
 const CONFIG = require('./config').CONFIG
 let bsvlib = null
 coinfly.create('bsv').then(res => bsvlib = res)
-const SocketProtocolVersion = 1
+const cmd = {
+    hello: {
+        v: 1, rv: 1
+    },
+    getTx: {
+        v: 1, rv: 1
+    }
+}
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
@@ -14,13 +21,13 @@ class NodeServer {
         io.on("connection", (socket) => {
             console.log(socket.handshake.auth); //
             socket.on("hello", async (obj, ret) => {
-                if (obj.v != SocketProtocolVersion) {
-                    ret(false)
+                if (obj.v != cmd.hello.v) {
+                    ret({ v: cmd.hello.rv, sig: null })
                     return
                 }
                 console.log("got hello data:", obj)
-                const r = await bsvlib.sign(CONFIG.key, obj.data)
-                ret(r)
+                const sig = await bsvlib.sign(CONFIG.key, obj.data)
+                ret({ v: cmd.hello.rv, sig })
             })
             self._setup(socket, indexers)
         });
@@ -48,6 +55,7 @@ class NodeServer {
     }
     notify(para) {
         if (!this.io) return false
+        para.v = 1
         this.io.emit("notify", para)
         return true
     }
@@ -92,9 +100,9 @@ class NodeClient {
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
-                socket.emit("hello", { data: datav, v: SocketProtocolVersion }, (res) => {
+                socket.emit("hello", { data: datav, v: cmd.hello.v }, (res) => {
                     console.log("reply from hello:", res)
-                    bsvlib.verify(node.pkey, datav, res).then(r => {
+                    bsvlib.verify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
                             self.socket = socket
                             self._setup()
@@ -134,6 +142,7 @@ class NodeClient {
         if (para == null) {
             para = { from: db.getLatestTxTime() }
         }
+        para.v = 1
         this.socket.emit("queryTx", para, async (res) => {
             console.log("get reply from queryTx:")
             for (const tx of res) {
@@ -145,6 +154,7 @@ class NodeClient {
     }
     async sendNewTx(obj) {
         return new Promise(resolve => {
+            obj.v = 1
             this.socket.emit("sendNewTx", obj, (res) => {
                 resolve(res)
             })
@@ -166,6 +176,7 @@ class rpcHandler {
         this.handlingMap[para.txid] = true
 
         if (!db.isTransactionParsed(para.txid, false) || force) {
+            para.v = 1
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
