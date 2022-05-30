@@ -27,10 +27,10 @@ class NodeServer {
         this.io = io
     }
     async _setup(socket, indexers) {
-        socket.on("getTx", async (txid, ret) => {
-            console.log("getTx:", txid)
+        socket.on("getTx", async (para, ret) => {
+            console.log("getTx:", para)
             const { db } = indexers
-            const data = db.getFullTx({ txid })
+            const data = db.getFullTx({ txid: para.txid })
             ret(data)
         })
         socket.on("queryTx", async (para, ret) => {
@@ -118,6 +118,7 @@ class NodeClient {
     async _setup() {
         const self = this
         this.socket.on('notify', (arg) => {
+            console.log('got notify:', arg)
             if (arg.cmd === "newtx") {
                 const d = arg.data;
                 const para = JSON.parse(d)
@@ -165,7 +166,7 @@ class rpcHandler {
         this.handlingMap[para.txid] = true
 
         if (!db.isTransactionParsed(para.txid, false) || force) {
-            socket.emit("getTx", para.txid, async (data) => {
+            socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
                 const item = data.oDataRecord
