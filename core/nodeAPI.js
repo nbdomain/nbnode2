@@ -34,7 +34,7 @@ class NodeServer {
             const { from, to } = para
             ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
         })
-        server.on("sendNewTx", async (obj, ret) => {
+        socket.on("sendNewTx", async (obj, ret) => {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
         })
         socket.onAny((event, ...args) => {
