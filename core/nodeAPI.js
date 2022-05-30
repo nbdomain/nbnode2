@@ -102,6 +102,10 @@ class NodeClient {
                 const datav = Date.now().toString()
                 socket.emit("hello", { data: datav, v: cmd.hello.v }, (res) => {
                     console.log("reply from hello:", res)
+                    if (!res.sig) {
+                        resolve(false)
+                        return
+                    }
                     bsvlib.verify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
                             self.socket = socket
