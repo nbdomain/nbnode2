@@ -108,7 +108,7 @@ class Nodes {
         if (this.nodeClients[node.id]) {
             //disconnect lastone
         }
-        const client = new NodeClient(this.indexers);
+        const client = new NodeClient(this.indexers, config.server.domain);
         if (await client.connect(node)) {
             console.log("connected to:", node.id)
             this.nodeClients[node.id] = client
@@ -141,7 +141,7 @@ class Nodes {
     async sendNewTx(obj) {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
             //return rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
-            return await this.nodeClients[Object.keys(this.nodeClients)[0]].sendNewTx(obj)
+            return await this.nodeClients["https://tnode.nbdomain.com"].sendNewTx(obj)
         }
         console.error("No Other nodes connected, cannot send tx")
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }

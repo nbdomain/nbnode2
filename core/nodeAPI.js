@@ -52,8 +52,9 @@ class NodeServer {
 }
 const { Manager } = require('socket.io-client');
 class NodeClient {
-    constructor(indexers) {
+    constructor(indexers, domain) {
         this.indexers = indexers
+        this.domain = domain
     }
     async connect(node) {
         let socketUrl = null, url = node.id
@@ -149,12 +150,19 @@ class NodeClient {
     }
 }
 class rpcHandler {
+    static handlingMap = {}
     static async handleNewTxNotify({ indexers, para, socket, force = false }) {
         let { db, Parser, indexer, Nodes } = indexers
+        if (this.handlingMap[para.txid]) {
+            console.log("already handled")
+            return
+        }
+        this.handlingMap[para.txid] = true
+
         if (!db.isTransactionParsed(para.txid, false) || force) {
             socket.emit("getTx", para.txid, async (data) => {
                 console.log("handleNewTx:", para.txid)
-                if (!data) return
+                if (!data) { delete this.handlingMap[para.txid]; return }
                 const item = data.oDataRecord
                 const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
                 if (ret.code == 0 && ret.rtx?.oHash === item.hash)
@@ -167,6 +175,7 @@ class rpcHandler {
                 }
             })
         }
+        delete this.handlingMap[para.txid]
     }
     static async handleNewTxFromApp({ indexers, obj }) {
         const { indexer, Parser, Util, Nodes } = indexers
