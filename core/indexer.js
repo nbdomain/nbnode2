@@ -104,6 +104,9 @@ class Indexer {
   }
 
   async addTxFull({ txid, rawtx, time, oDataRecord, noVerify = false, force = false, chain }) {
+    if (txid === '5fe2b1798f81d232fb1390735354f259bf1a251932b913f617c7634cbe6beaaf') {
+      console.log("found")
+    }
     if (!force && this.database.isTransactionParsed(txid, false)) {
       console.log("Skipping:", txid)
       return false
