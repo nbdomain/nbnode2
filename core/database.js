@@ -554,10 +554,11 @@ class Database {
         sql += `AND ts > ${from} `
       }
     }
+    sql += " order by ts";
     if (num) {
-      sql += "limit " + num;
+      sql += " limit " + num;
     }
-    sql += "order by ts;";
+
     return {
       code: 0,
       data: this.dmdb.prepare(sql).all()

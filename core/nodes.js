@@ -66,8 +66,8 @@ class Nodes {
         })
     }
     isSuper() {
-        return true
-        //return this.isSuperNode
+        //return true
+        return this.isSuperNode
     }
     async validatNode(url, isSuper) {
         try {
@@ -117,12 +117,31 @@ class Nodes {
         console.error("failed to connect:", node.id)
         return false
     }
+    async fastestNode(nodes) {
+        return new Promise(resolve => {
+            for (const node of nodes) {
+                axios.get(node.id + "/api/nodeInfo").then(res => {
+                    if (res.data && res.data.pkey) {
+                        resolve(node)
+                        return
+                    }
+                })
+            }
+        })
+
+
+    }
     async connectSuperNode() {
-        this.isSuperNode = true
-        for (const node of this.snodes) {
-            if (await this.connectOneNode(node)) {
-                if (!this.isSuperNode)
-                    return true
+        //this.isSuperNode = true
+        if (!this.isSuperNode) {
+            const node = await this.fastestNode(this.snodes)
+            await this.connectOneNode(node)
+        } else {
+            for (const node of this.snodes) {
+                if (await this.connectOneNode(node)) {
+                    if (!this.isSuperNode)
+                        return true
+                }
             }
         }
         if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
@@ -197,70 +216,11 @@ class Nodes {
         }
         return {}
     }
-    async _syncFromNode(indexer, fullSync) {
-        let latestTime = fullSync ? indexer.database.getLastFullSyncTime() : indexer.database.getLatestTxTime()
-        let affected = 0
-        if (fullSync) {
-            console.log(": perform full sync check...")
-        }
-        const dataCount = indexer.database.getDataCount()
-        for (const node of this.getNodes(false)) {
-            let apiURL = node.id
-            if (fullSync) apiURL = this.get(false) //select based on weight
-            console.log("Selected node:", apiURL)
-            const url = apiURL + "/api/queryTX?from=" + latestTime
-            let remoteData = 0
-            if (fullSync) {
-                const url1 = apiURL + "/api/dataCount"
-                try {
-                    const res = await axios.get(url1)
-                    if (res.data) {
-                        if (dataCount.txs >= res.data.txs || res.data.v != 2) break;
-                        remoteData = res.data.txs
-                        console.log(`Need sync. self tx count:${dataCount.txs},${apiURL} count:${res.data.txs}`)
-                    }
-                } catch (e) {
-                    console.error(url1 + ":", e.message)
-                    this.cool(apiURL)
-                    continue
-                }
-            }
-            try {
-                const res = await axios.get(url)
-                let all = res.data.length
-                for (const tx of res.data) {
-                    if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain: tx.chain })) {
-                        affected++;
-                    }
-                }
-                if (fullSync && affected > 0) return affected
-            } catch (e) {
-                //console.log(e)
-                console.error("syncFromNode " + apiURL + ": " + e.message)
-                this.cool(apiURL)
-            }
-        }
-        return affected
-    }
     canResolve() {
         return this._canResolve
     }
-    async FullSyncFromNodes(indexers) {
-        this._canResolve = false
-        let affected = await this._syncFromNode(indexers.indexer, true, 'bsv')
-        //let affected1 = await this._syncFromNode(indexers.ar, true, 'ar')
-        const time = Math.floor(Date.now() / 1000).toString()
-        if (affected > 0) {
-            indexers.db.saveLastFullSyncTime(time, 'bsv')
-            indexers.db.resetDB("domain")
-        }
-        this._canResolve = true
-    }
     async startTxSync(indexers) {
         this.indexers = indexers
-        //await this._syncFromNode(indexers.indexer, false)
-        //await this.FullSyncFromNodes(indexers)
-        //setTimeout(this.startTxSync.bind(this, indexers), 1000 * 60 * 10) //check data every 10 minutes
     }
     async pullNewTxs(fullSync = false) {
         const { db } = this.indexers

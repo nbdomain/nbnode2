@@ -211,15 +211,13 @@ class LocalServer {
         res.status(500).send('Something broke!')
       })
     })
-    if (Nodes.isSuper()) {
+    if (true) {
       console.log("Start PeerServer")
       //peer server
       //const peerServer = ExpressPeerServer(this.listener, {path: '/super'});
       //app.use('/peerjs', peerServer);
       // Nodes.startNodeServer(http)
       Nodes.startNodeServer(this.listener)
-      //const ios = new Server()
-      //ios.attach(this.listener)
     }
   }
 
