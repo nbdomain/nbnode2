@@ -214,8 +214,8 @@ class LocalServer {
     if (true) {
       console.log("Start PeerServer")
       //peer server
-      //const peerServer = ExpressPeerServer(this.listener, {path: '/super'});
-      //app.use('/peerjs', peerServer);
+      const peerServer = ExpressPeerServer(this.listener, { debug: true });
+      app.use('/peerjs', peerServer);
       // Nodes.startNodeServer(http)
       Nodes.startNodeServer(this.listener)
     }

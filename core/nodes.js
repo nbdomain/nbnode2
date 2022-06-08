@@ -155,7 +155,8 @@ class Nodes {
     }
 
     async notifyPeers({ cmd, data }) {
-        this.nodeServer.notify({ cmd, data })
+        if (this.nodeServer)
+            this.nodeServer.notify({ cmd, data })
     }
     async sendNewTx(obj) {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
