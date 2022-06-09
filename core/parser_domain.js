@@ -62,7 +62,7 @@ class CMD_USER {
                 if (!extra.name || !extra.publicKey) {
                     output.err = "name or publicKey missing"
                 }
-                extra.address = await Util.addressFromPublickey(extra.publicKey, rtx.chain)
+                extra.address = await Util.addressFromPublickey(extra.publicKey, extra.chain || rtx.chain)
                 output.extra = extra
                 return output
             }
