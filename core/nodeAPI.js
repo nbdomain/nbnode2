@@ -27,7 +27,7 @@ class NodeServer {
                 }
                 console.log("got hello data:", obj)
                 if (obj.server) {
-                    indexers.Nodes.addNode({ url: obj.server })
+                    indexers.Nodes.addNode({ url: obj.server, isSuper: false })
                 }
                 const sig = await bsvlib.sign(CONFIG.key, obj.data)
                 ret({ v: cmd.hello.rv, sig })
@@ -144,7 +144,7 @@ class NodeClient {
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
-                self.indexers.Nodes.addNode({ url: arg.data.url })
+                self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
             }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
