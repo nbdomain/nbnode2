@@ -3,7 +3,8 @@ const axios = require('axios')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { timeStamp } = require('console');
-const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI')
+const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI');
+const { threadId } = require('worker_threads');
 //const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
@@ -76,7 +77,7 @@ class Nodes {
                 return res.data
             }
         } catch (e) {
-            console.error(e.message, url)
+            console.error(url + ":" + e.message)
             return null
         }
     }
@@ -84,7 +85,7 @@ class Nodes {
         if (this.nodes.find(item => item.id == url) || this.snodes.find(item => item.id == url)) return true
         return false
     }
-    async addNode(url, isSuper = true) {
+    async addNode({ url, isSuper = true, isPublic = true }) {
         if (this.hasNode(url)) {
             console.log("node already added:", url)
             return false
@@ -95,6 +96,9 @@ class Nodes {
         const nodes = isSuper ? this.snodes : this.nodes
         if (isSuper) this.snodes.push({ id: url, pkey: res.pkey, weight: 50 })
         this.nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
+        if (isPublic) {
+            this.notifyPeers({ cmd: "newNode", data: { url } })
+        }
     }
     async getSuperNodes(onlyLocal = false) {
         const port = config.server.port
@@ -103,11 +107,11 @@ class Nodes {
         //get super nodes from DNS
         const p = await this._fromDNS()
         for (const item of p) {
-            await this.addNode(item, true)
+            await this.addNode({ url: item, isSuper: true })
             if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
         }
         //local nodes
-        localPeers.forEach(async item => { await this.addNode(item, false) })
+        localPeers.forEach(async item => { await this.addNode({ url: item, isSuper: false }) })
 
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
