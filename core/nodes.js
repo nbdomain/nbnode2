@@ -93,7 +93,8 @@ class Nodes {
         const res = await this.validatNode(url, isSuper)
         if (!res) return false
         const nodes = isSuper ? this.snodes : this.nodes
-        nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
+        if (isSuper) this.snodes.push({ id: url, pkey: res.pkey, weight: 50 })
+        this.nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
     }
     async getSuperNodes(onlyLocal = false) {
         const port = config.server.port
