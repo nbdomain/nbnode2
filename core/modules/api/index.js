@@ -216,7 +216,7 @@ app.post('/relay/notify', async (req, res) => {
     if (result.ack_url) res.end("200");
     else res.json({ code: 0, message: "ok" });
 })
-app.get('/nodes', (_, res) => {
+app.get('/nodes', async (_, res) => {
     const lib = await coinfly.create('bsv')
     const pkey = await lib.getPublicKey(CONFIG.key)
     const s = CONFIG.server
