@@ -217,9 +217,11 @@ app.post('/relay/notify', async (req, res) => {
     else res.json({ code: 0, message: "ok" });
 })
 app.get('/nodes', (_, res) => {
+    const lib = await coinfly.create('bsv')
+    const pkey = await lib.getPublicKey(CONFIG.key)
     const s = CONFIG.server
     const serverUrl = (s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
-    res.json(Nodes.getNodes(false).concat([serverUrl]))
+    res.json(Nodes.getNodes(false).concat([{ id: serverUrl, pkey, weight: 50 }]))
 })
 app.get('/sub/:domain/', async (req, res) => {
     const domain = req.params['domain']
