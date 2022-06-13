@@ -106,7 +106,7 @@ class NodeClient {
                 const s = CONFIG.server
                 const serverUrl = (s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
                 let helloPara = { data: datav, v: cmd.hello.v }
-                if (s.publc) helloPara.server = serverUrl
+                if (s.public) helloPara.server = serverUrl
                 socket.emit("hello", helloPara, (res) => {
                     console.log("reply from hello:", res)
                     if (!res.sig) {
