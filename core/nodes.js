@@ -79,7 +79,15 @@ class Nodes {
             return null
         }
     }
+    hasNode(url) {
+        if (this.nodes.find(item => item.id == url) || this.snodes.find(item => item.id == url)) return true
+        return false
+    }
     async addNode(url, isSuper = true) {
+        if (this.hasNode(url)) {
+            console.log("node already added:", url)
+            return
+        }
         const res = await this.validatNode(url, isSuper)
         if (!res) return
         var add = function (nodes) {
@@ -185,21 +193,7 @@ class Nodes {
         }
         return null
     }
-    async getArData(txid, chain) {
-        for (const node of this.getNodes()) {
-            const url = node.id + "/api/p2p/gettx?txid=" + txid + "&chain=" + chain
-            try {
-                const res = await axios.get(url)
-                if (res.data && res.data.code == 0 && chain == 'ar') {
-                    const d = JSON.parse(res.data.rawtx)
-                    if (d.data) return d.data
-                }
-            } catch (e) {
-                console.error("getData:error getting from url:", url, e.code, e.message)
-            }
-        }
-        return null
-    }
+
     async getData(hash, option = { string: true }) {
         if (hash == 'undefined') {
             console.log("found")

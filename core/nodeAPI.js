@@ -26,6 +26,9 @@ class NodeServer {
                     return
                 }
                 console.log("got hello data:", obj)
+                if (obj.server) {
+                    indexers.Nodes.addNode(obj.server)
+                }
                 const sig = await bsvlib.sign(CONFIG.key, obj.data)
                 ret({ v: cmd.hello.rv, sig })
             })
@@ -100,7 +103,11 @@ class NodeClient {
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
-                socket.emit("hello", { data: datav, v: cmd.hello.v }, (res) => {
+                const s = CONFIG.server
+                const serverUrl = (s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
+                let helloPara = { data: datav, v: cmd.hello.v }
+                if (s.publc) helloPara.server = serverUrl
+                socket.emit("hello", helloPara, (res) => {
                     console.log("reply from hello:", res)
                     if (!res.sig) {
                         resolve(false)

@@ -142,44 +142,6 @@ app.get('/user/:account', async function (req, res) {
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
-    /*let chain = 'bsv'
-    if (obj.chain == 'ar') chain = 'ar'
-    console.log("got obj:", obj)
-    if (!obj.oData) {
-        console.error("old sendtx format")
-    }
-    let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain });
-    if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
-        console.error("parseRaw error err:", ret)
-        res.json({ code: -1, message: ret.msg })
-        return
-    }
-    if (obj.more_rawtx) {
-        for (const raw of obj.more_rawtx) { //if there are more 
-            const rr = await Util.sendRawtx(raw, chain);
-            if (rr.code == 0) {
-                console.log("send more tx successfully. txid:", rr.txid);
-            }
-            else {
-                console.error("send more tx failed:", rr)
-                res.json(rr)
-                return
-            }
-        }
-    }
-    const ret1 = await Util.sendRawtx(obj.rawtx, chain);
-    if (ret1.code == 0) {
-        console.log("send tx successfully. txid:", ret1.txid)
-        let oDataRecord = null
-        if (ret.rtx && ret.rtx.oHash) {
-            oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
-        }
-        const indexer = indexers.indexer
-        if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain }))
-            Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: chain }) })
-    } else {
-        console.log("send tx failed")
-    } */
     const ret = await Nodes.sendNewTx(obj)
     res.json(ret);
 });
@@ -255,7 +217,7 @@ app.post('/relay/notify', async (req, res) => {
     else res.json({ code: 0, message: "ok" });
 })
 app.get('/nodes', (_, res) => {
-    res.json(Nodes.getNodes())
+    res.json(Nodes.getNodes().concat(Nodes.getNodes(false)))
 })
 app.get('/sub/:domain/', async (req, res) => {
     const domain = req.params['domain']

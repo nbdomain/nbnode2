@@ -196,7 +196,7 @@ class Database {
     //const ret = this.txdb.prepare(sql).run()
     //return ret
     try {
-      this.combineTXDB();
+      //this.combineTXDB();
       /*let sql = `CREATE TABLE IF NOT EXISTS config([key] TEXT PRIMARY KEY NOT NULL UNIQUE, value TEXT )`
       this.txdb.prepare(sql).run();
       sql = 'INSERT OR IGNORE INTO config (key, value) VALUES( ?, ?) '
