@@ -87,15 +87,13 @@ class Nodes {
     async addNode(url, isSuper = true) {
         if (this.hasNode(url)) {
             console.log("node already added:", url)
-            return
+            return false
         }
+        if (url.indexOf(config.server.domain) != -1) return false
         const res = await this.validatNode(url, isSuper)
-        if (!res) return
-        var add = function (nodes) {
-            if (nodes.find(item => item.id == url) || url.indexOf(config.server.domain) != -1) return false
-            nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
-        }
-        isSuper ? (add(this.snodes), add(this.nodes)) : add(this.nodes)
+        if (!res) return false
+        const nodes = isSuper ? this.snodes : this.nodes
+        nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
     }
     async getSuperNodes(onlyLocal = false) {
         const port = config.server.port
