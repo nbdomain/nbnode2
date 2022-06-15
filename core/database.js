@@ -657,13 +657,16 @@ class Database {
     if (option.address) {
       sql = 'SELECT domain FROM nidobj WHERE owner = ? '
       let ret = this.dmdb.prepare(sql).all(option.address);
+      if (!ret) ret = []
       sql = 'SELECT account FROM users WHERE address = ? '
       return ret.concat(this.dmdb.prepare(sql).all(option.address));
     } else if (option.time) {
       const from = option.time.from ? option.time.from : 0
       const to = option.time.to ? option.time.to : 9999999999
       sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
-      return this.dmdb.prepare(sql).all(from, to);
+      const ret = this.dmdb.prepare(sql).all(from, to);
+      if (!ret) ret = []
+      return ret
     }
     return []
   }
