@@ -64,6 +64,7 @@ app.get('/', async function (req, res, next) {
     }
     let domain = req.query['nid'];
     let f = req.query['full'] === 'true';
+    const price = req.query['price'] !== 'false';
 
     if (!domain) {
         res.json({ code: ERR.NOTFOUND, message: `nid missing!` });
@@ -74,14 +75,14 @@ app.get('/', async function (req, res, next) {
         if (!resolver) {
             throw "unsupported domain:" + domain
         }
-        const ret = await resolver.readDomain(domain, f);
+        const ret = await resolver.readDomain({ fullDomain: domain, forceFull: f, price });
         res.json(ret);
     } catch (err) {
         console.error(err);
         res.json({ code: 99, message: err.message });
     }
 });
-async function getAllItems(para, forceFull = false, from = null) {
+async function getAllItems(para, forceFull = false, from = null, price = true) {
     //check ,
     let items = []
     const domains = para.split(',')
@@ -115,7 +116,7 @@ async function getAllItems(para, forceFull = false, from = null) {
         const dd = item.split('/')
         const resolver = indexers.resolver
         if (!resolver) continue;
-        const result = await resolver.readDomain(dd[0], forceFull, dd[1])
+        const result = await resolver.readDomain({ fullDomain: dd[0], forceFull: forceFull, history: dd[1], price })
         if (from && result.obj.ts <= from) continue
         ret.push(result)
     }
@@ -124,7 +125,8 @@ async function getAllItems(para, forceFull = false, from = null) {
 app.get('/q/*', async function (req, res) {
     const para = req.params[0]
     const from = req.query['from']
-    const ret = await getAllItems(para, false, +from)
+    const price = req.query['price'] !== "false"
+    const ret = await getAllItems(para, false, +from, price)
     res.json(ret)
 })
 app.get('/qf/*', async function (req, res) {

@@ -95,7 +95,7 @@ class Resolver {
         }
         return null;
     }
-    async readDomain(fullDomain, forceFull, history = null) {
+    async readDomain({ fullDomain, forceFull, history = null, price = true }) {
         fullDomain = fullDomain.toLowerCase()
         const dd = fullDomain.split('.')
         if (dd.length < 2) return null;
@@ -123,7 +123,7 @@ class Resolver {
                 }
                 return { code: 0, obj: obj, domain: fullDomain }
             }
-            let ret = await DomainTool.fetchDomainPrice(fullDomain, this.db);
+            let ret = price ? await DomainTool.fetchDomainPrice(fullDomain, this.db) : { code: 110 };
             ret.domain = fullDomain;
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;
