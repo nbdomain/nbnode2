@@ -50,7 +50,7 @@ class ArNodes {
     }
     get() {
         this.iNode++;
-        if (this.iNode >= this.node.length) this.iNode = 0
+        if (this.iNode >= this.nodes.length) this.iNode = 0
         const node = this.nodes[this.iNode];
         return node;
     }
