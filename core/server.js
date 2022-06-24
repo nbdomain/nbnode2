@@ -122,10 +122,10 @@ class LocalServer {
     }, 60 * 1000);
 
     this.startProxyServer(app);
-    if (CONFIG.server.domain)
-      this.startWebServer();
+
+    this.startSSLServer();
   }
-  async startWebServer() {
+  async startSSLServer() {
     //Start HTTPS server
     if (CONFIG.server.domain && CONFIG.server.https) {
       var appSSL = express();
