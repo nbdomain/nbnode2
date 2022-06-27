@@ -132,12 +132,14 @@ class Nodes {
     async fastestNode(nodes) {
         return new Promise(resolve => {
             for (const node of nodes) {
-                axios.get(node.id + "/api/nodeInfo").then(res => {
-                    if (res.data && res.data.pkey) {
-                        resolve(node)
-                        return
-                    }
-                })
+                try {
+                    axios.get(node.id + "/api/nodeInfo").then(res => {
+                        if (res.data && res.data.pkey) {
+                            resolve(node)
+                            return
+                        }
+                    })
+                } catch (e) { console.error("fastestNode:", e.message) }
             }
         })
 
@@ -184,7 +186,7 @@ class Nodes {
             if (res.data) {
                 if (res.data.code == 0) return res.data
             }
-        } catch (e) { }
+        } catch (e) { e.error("getTx:", e.message) }
         for (const node of this.getNodes()) {
             if (node.id == from) continue
             const url = node.id + "/api/p2p/gettx?txid=" + txid
@@ -193,7 +195,7 @@ class Nodes {
                 if (res.data) {
                     if (res.data.code == 0) return res.data
                 }
-            } catch (e) { }
+            } catch (e) { e.error("getTx:", e.message) }
         }
         return null
     }
