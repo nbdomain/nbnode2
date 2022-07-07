@@ -1,5 +1,6 @@
 const CONSTS = require('./const')
 const { NBLib, Util } = require('./util')
+const { Nodes } = require('./nodes')
 var axios = require("axios");
 
 class DomainTool {
@@ -16,6 +17,11 @@ class DomainTool {
                 return { code: 0, price: obj.keys[key].value.price }
             }
             domain = encodeURIComponent(domain)
+            const otherNode = Nodes.get()
+            if (otherNode) {
+                let res = await axios.get(otherNode + "/api/q/" + key + ".nbinfo.b")
+                if (res.data) return res.data
+            }
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
             console.log(`Sending request to URL ${url}`);
             let res = await axios.get(url, { timeout: 10000 });

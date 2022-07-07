@@ -20,9 +20,9 @@ class Nodes {
         })
     }
 
-    get(isSuper = true) {
+    get({ isSuper = true, retUrl = true }) {
         const node = isSuper ? rwc(this.snodes) : rwc(this.nodes)
-        return node
+        return retUrl ? node : this.nodes.find(item => item.id === node)
     }
     cool(url) {
         const node = this.nodes.find(node => node.id == url)
@@ -41,9 +41,10 @@ class Nodes {
         this.nodeClient = new NodeClient()
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
-        this.startNodeServer()
         await this.getSuperNodes(true)
+        this.startNodeServer()
         await this.connectSuperNode()
+
         return true
     }
     startNodeServer() {
@@ -96,7 +97,7 @@ class Nodes {
         if (!res) return false
         const nodes = isSuper ? this.snodes : this.nodes
         if (isSuper) this.snodes.push({ id: url, pkey: res.pkey, weight: 50 })
-        this.nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 20 })
+        this.nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 50 })
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
         }
@@ -149,8 +150,12 @@ class Nodes {
     async connectSuperNode() {
         //this.isSuperNode = true
         if (!this.isSuperNode) {
-            const node = await this.fastestNode(this.snodes)
-            await this.connectOneNode(node)
+            let node = await this.fastestNode(this.snodes)
+            if (await this.connectOneNode(node) == false) {
+                this.cool(node.id)
+                node = this.get({ isSuper: true, retUrl: false })
+                node && await this.connectOneNode(node)
+            }
         } else {
             for (const node of this.snodes) {
                 if (await this.connectOneNode(node)) {
