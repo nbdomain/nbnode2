@@ -149,19 +149,16 @@ class Nodes {
     }
     async connectSuperNode() {
         //this.isSuperNode = true
-        if (!this.isSuperNode) {
+        if (!this.isSuperNode) { //connect to the fastest snode
             let node = await this.fastestNode(this.snodes)
-            if (await this.connectOneNode(node) == false) {
-                this.cool(node.id)
-                node = this.get({ isSuper: true, retUrl: false })
-                node && await this.connectOneNode(node)
+            if (await this.connectOneNode(node)) {
+                return true
             }
-        } else {
-            for (const node of this.snodes) {
-                if (await this.connectOneNode(node)) {
-                    if (!this.isSuperNode)
-                        return true
-                }
+        }
+        for (const node of this.snodes) {
+            if (await this.connectOneNode(node)) {
+                if (!this.isSuperNode)
+                    return true
             }
         }
         if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
