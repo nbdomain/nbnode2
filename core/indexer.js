@@ -122,7 +122,7 @@ class Indexer {
       console.log("Added txid:", txid)
     }
     else {
-      console.error("Invalid txid:", txid)
+      console.error("Invalid tx:", ret, txid)
     }
     return ret.code == 0;
   }

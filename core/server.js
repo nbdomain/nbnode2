@@ -217,7 +217,7 @@ class LocalServer {
       const peerServer = ExpressPeerServer(this.listener, { debug: true });
       app.use('/peerjs', peerServer);
       // Nodes.startNodeServer(http)
-      Nodes.startNodeServer(this.listener)
+
     }
   }
 

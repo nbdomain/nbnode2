@@ -41,11 +41,12 @@ class Nodes {
         this.nodeClient = new NodeClient()
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
+        this.startNodeServer()
         await this.getSuperNodes(true)
         await this.connectSuperNode()
         return true
     }
-    startNodeServer(httpServer) {
+    startNodeServer() {
         if (!this.isSuper()) {
             console.error("Not super node")
             return false
