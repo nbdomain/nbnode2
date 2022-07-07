@@ -20,7 +20,7 @@ class DomainTool {
             const otherNode = Nodes.get({})
             if (otherNode) {
                 let res = await axios.get(otherNode + "/api/?nid=" + key + ".nbinfo.b")
-                if (res.data && res.data.code == 0) return res.data
+                if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
             }
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
             console.log(`Sending request to URL ${url}`);
