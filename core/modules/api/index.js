@@ -291,7 +291,8 @@ app.get('/nodeInfo', async (req, res) => {
     info.version = "1.5.1." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
     info.tld = CONSTS.tld_config
     const lib = await coinfly.create('bsv')
-    info.pkey = await lib.getPublicKey(CONFIG.key)
+    if (CONFIG.key)
+        info.pkey = await lib.getPublicKey(CONFIG.key)
     //info.dataCount = indexers.db.getDataCount()
     res.json(info);
 })
