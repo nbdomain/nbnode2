@@ -174,7 +174,7 @@ class Nodes {
 
     async notifyPeers({ cmd, data }) {
         if (this.nodeServer) {
-            console.log("send notify:", cmd, data)
+            console.log("send notify:", cmd)
             this.nodeServer.notify({ cmd, data })
         }
     }
