@@ -75,7 +75,7 @@ class Indexers {
     await Nodes.startTxSync(this)
     await this.indexer.start()
 
-    this.blockMgr.run()
+    //    this.blockMgr.run()
   }
   static async stop() {
     await this.indexer.stop();
