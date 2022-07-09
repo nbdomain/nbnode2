@@ -35,7 +35,6 @@ class BlockMgr {
         return lastHash
     }
     async onReceiveBlock(block) {
-        console.log("got new block:", block.height)
         delete block.hash
         block.hash = await Util.dataHash(JSON.stringify(block))
         if (!this.blockPool[block.hash]) {
@@ -44,13 +43,13 @@ class BlockMgr {
         } else {
             this.blockPool[block.hash].count++
             if (this.blockPool[block.hash].count > 1) {
-                this.db.saveBlock(this.blockPool[block.hash])
-                this.blockPool = {} //clear blockPool
+                //this.db.saveBlock(this.blockPool[block.hash])
+                //this.blockPool = {} //clear blockPool
             }
         }
+        console.log("got new block:", block.height, block.merkel, this.blockPool[block.hash].count)
     }
     async run() {
-        return;
         const { Nodes } = this.indexers
         if (Object.keys(this.blockPool).length == 0) { //wait the block to confirm
             const bl = this.db.getLastBlock()
