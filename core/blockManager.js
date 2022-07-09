@@ -1,11 +1,10 @@
-const { readUser } = require('nblib2')
 const { DEF } = require('./def');
-const { db } = require('./parser');
 const { Util } = require('./util')
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 class BlockMgr {
     constructor(indexers) {
         this.indexers = indexers
+        this.nodePool = {}
         this.blockPool = {}
         this.height = -1
         this.db = indexers.db
@@ -34,17 +33,23 @@ class BlockMgr {
         }
         return lastHash
     }
-    async onReceiveBlock(block) {
-        delete block.hash
-        block.hash = await Util.dataHash(JSON.stringify(block))
-        if (!this.blockPool[block.hash]) {
-            this.blockPool[block.hash] = block
-            this.blockPool[block.hash].count = 1
-        } else {
-            this.blockPool[block.hash].count++
-            if (this.blockPool[block.hash].count > 1) {
-                //this.db.saveBlock(this.blockPool[block.hash])
-                //this.blockPool = {} //clear blockPool
+    async onReceiveBlock(unconfirmedBlock) {
+        const { block, nodeKey } = unconfirmedBlock
+        if (block.height === this.height) {
+            delete block.hash
+            if (this.nodePool[nodeKey]) return;
+            this.nodePool[nodeKey] = true
+            const hash = await Util.dataHash(JSON.stringify(block))
+            block.hash = hash
+            if (!this.blockPool[hash]) {
+                this.blockPool[hash] = block
+                this.blockPool[hash].count = 1
+            } else {
+                this.blockPool[block.hash].count++
+                if (this.blockPool[block.hash].count > 1) {
+                    //this.db.saveBlock(this.blockPool[block.hash])
+                    //this.blockPool = {} //clear blockPool
+                }
             }
         }
         console.log("got new block:", block.height, block.merkel, this.blockPool[block.hash].count)
@@ -55,11 +60,15 @@ class BlockMgr {
             const bl = this.db.getLastBlock()
             this.height = bl ? bl.height : 0
             const block = await this.createBlock(this.height)
-            block && (this.curBlock = block)
-            block && await this.onReceiveBlock(block)
-            block && Nodes.notifyPeers({ cmd: "newBlock", data: block })
+            if (block) {
+                const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
+                this.unconfirmedBlock = unconfirmedBlock
+                await this.onReceiveBlock(unconfirmedBlock)
+                Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
+            }
+
         } else {
-            this.curBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.curBlock })
+            this.unconfirmedBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.unconfirmedBlock })
         }
         await wait(DEF.BLOCK_TIME)
         this.run()

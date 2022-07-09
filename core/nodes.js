@@ -1,10 +1,10 @@
 const config = require('./config').CONFIG
 const axios = require('axios')
+const coinfly = require('coinfly')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const { timeStamp } = require('console');
 const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI');
-const { threadId } = require('worker_threads');
+
 //const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
@@ -37,6 +37,9 @@ class Nodes {
         }
     }
     async init(indexers) {
+        const lib = await coinfly.create('bsv')
+        const pkey = await lib.getPublicKey(config.key)
+        this.thisNode = { key: pkey }
         this.indexers = indexers
         this.nodeClient = new NodeClient()
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
