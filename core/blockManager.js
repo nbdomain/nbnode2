@@ -58,7 +58,7 @@ class BlockMgr {
         if (!this.blockPool[block.hash]) {
             console.log("found")
         }
-        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count)
+        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async run() {
         const { Nodes } = this.indexers
