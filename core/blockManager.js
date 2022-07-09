@@ -23,6 +23,7 @@ class BlockMgr {
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, txs, merkel, preBlockHash: lastBlock ? lastBlock.markel : null }
+        block.hash = await Util.dataHash(JSON.stringify(block))
         return block
     }
     async computeMerkel(txs) {
@@ -35,9 +36,8 @@ class BlockMgr {
     }
     async onReceiveBlock(unconfirmedBlock) {
         const { block, nodeKey } = unconfirmedBlock
-        if (block.height === this.height) {
+        if (block.height === this.height && !this.nodePool[nodeKey]) {
             delete block.hash
-            if (this.nodePool[nodeKey]) return;
             this.nodePool[nodeKey] = true
             const hash = await Util.dataHash(JSON.stringify(block))
             block.hash = hash
@@ -45,14 +45,14 @@ class BlockMgr {
                 this.blockPool[hash] = block
                 this.blockPool[hash].count = 1
             } else {
-                this.blockPool[block.hash].count++
-                if (this.blockPool[block.hash].count > 1) {
+                this.blockPool[hash].count++
+                if (this.blockPool[hash].count > 1) {
                     //this.db.saveBlock(this.blockPool[block.hash])
                     //this.blockPool = {} //clear blockPool
                 }
             }
         }
-        console.log("got new block:", block.height, block.merkel, this.blockPool[block.hash].count)
+        block && console.log("got new block:", block.height, block.merkel, this.blockPool[block.hash].count)
     }
     async run() {
         const { Nodes } = this.indexers
