@@ -38,14 +38,13 @@ class BlockMgr {
         const { block, nodeKey } = unconfirmedBlock
         if (block.height === this.height && !this.nodePool[nodeKey]) {
             delete block.hash
-            delete block.count
             this.nodePool[nodeKey] = true
             const toHash = JSON.stringify(block)
             //console.log("toHash:", toHash, toHash.length)
             const hash = await Util.dataHash(toHash)
             block.hash = hash
             if (!this.blockPool[hash]) {
-                this.blockPool[hash] = block
+                this.blockPool[hash].block = block
                 this.blockPool[hash].count = 1
             } else {
                 this.blockPool[hash].count++
