@@ -18,6 +18,7 @@ const Planaria = require('./planaria')
 const parseArgs = require('minimist')
 const fs = require('fs')
 const AWNode = require('./arapi')
+const BlockMgr = require('./blockManager')
 //const BitcoinRpc = require('./bitcoin-rpc')
 //const BitcoinZmq = require('./bitcoin-zmq')
 
@@ -51,14 +52,14 @@ class Indexers {
   }
   static init() {
 
-    switch (CONSTS.API.bsv) {
-      case 'planaria': apiBSV = new Planaria(CONSTS.PLANARIA_TOKEN, this.db, logger); break
-      //default: throw new Error(`Unknown API: ${API}`)
-    }
-    switch (CONSTS.API.ar) {
-      case 'arnode': apiAR = new AWNode("", this.db, logger); break
-      //default: throw new Error(`Unknown API: ${API}`)
-    }
+    /* switch (CONSTS.API.bsv) {
+       case 'planaria': apiBSV = new Planaria(CONSTS.PLANARIA_TOKEN, this.db, logger); break
+       //default: throw new Error(`Unknown API: ${API}`)
+     }
+     switch (CONSTS.API.ar) {
+       case 'arnode': apiAR = new AWNode("", this.db, logger); break
+       //default: throw new Error(`Unknown API: ${API}`)
+     }*/
 
     this.indexer = new Indexer(this.db, CONSTS.FETCH_LIMIT, logger)
     //this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
@@ -72,6 +73,8 @@ class Indexers {
     //await this.db.verifyTxDB('bsv')
     await Nodes.startTxSync(this)
     await this.indexer.start()
+    this.blockMgr = new BlockMgr(this)
+    this.blockMgr.run()
   }
   static async stop() {
     await this.indexer.stop();

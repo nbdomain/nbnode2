@@ -146,6 +146,9 @@ class NodeClient {
             if (arg.cmd === "newNode") {
                 self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
             }
+            if (arg.cmd === "newBlock") {
+                self.indexers.blockMgr.onReceiveBlock(arg.data)
+            }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
 

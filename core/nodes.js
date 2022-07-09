@@ -12,7 +12,7 @@ class Nodes {
         this.nodes = []
         this.snodes = []
         this._canResolve = true
-        this.isSuperNode = config.isProducer
+        this.isSuperNode = config.server.producer
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -92,7 +92,7 @@ class Nodes {
             console.log("node already added:", url)
             return false
         }
-        if (url.indexOf(config.server.domain) != -1) return false
+        if (url.indexOf(this.endpoint) != -1) return false
         const res = await this.validatNode(url, isSuper)
         if (!res) return false
         const nodes = isSuper ? this.snodes : this.nodes
@@ -105,16 +105,17 @@ class Nodes {
     async getSuperNodes(onlyLocal = false) {
         const port = config.server.port
         this.nodes = [], this.snodes = []
-        let localPeers = config.peers
+        let localPeers = config.pnodes
         //get super nodes from DNS
-        const p = await this._fromDNS()
+        /*const p = await this._fromDNS()
         for (const item of p) {
             await this.addNode({ url: item, isSuper: true })
             if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
-        }
+        } */
         //local nodes
-        localPeers.forEach(async item => { await this.addNode({ url: item, isSuper: false }) })
-
+        for (const item of localPeers) {
+            await this.addNode({ url: item, isSuper: true })
+        }
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
     async connectOneNode(node) {
@@ -149,7 +150,7 @@ class Nodes {
     }
     async connectSuperNode() {
         //this.isSuperNode = true
-        if (!this.isSuperNode) { //connect to the fastest snode
+        if (!this.isSuper()) { //connect to the fastest snode
             let node = await this.fastestNode(this.snodes)
             if (await this.connectOneNode(node)) {
                 return true
@@ -157,7 +158,7 @@ class Nodes {
         }
         for (const node of this.snodes) {
             if (await this.connectOneNode(node)) {
-                if (!this.isSuperNode)
+                if (!this.isSuper())
                     return true
             }
         }
@@ -172,8 +173,10 @@ class Nodes {
     }
 
     async notifyPeers({ cmd, data }) {
-        if (this.nodeServer)
+        if (this.nodeServer) {
+            console.log("send notify:", cmd, data)
             this.nodeServer.notify({ cmd, data })
+        }
     }
     async sendNewTx(obj) {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {

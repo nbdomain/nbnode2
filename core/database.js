@@ -147,8 +147,8 @@ class Database {
     //this.get = this.txdb.prepare(`SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`)
     //this.setHeightAndHashStmt = this.txdb.prepare(`UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
 
-    this.getPayTxStmt = this.txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
-    this.setPayTxStmt = this.txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
+    //this.getPayTxStmt = this.txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
+    //this.setPayTxStmt = this.txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
 
     if (noTxdb) {
       this.saveLastResolvedId(0)
@@ -191,37 +191,26 @@ class Database {
     }
   }
   preDealData() {
-    //change txTime from NULL to 0
-    //const sql = `UPDATE ${this.chain}_tx SET txTime = 0 where txTime is NULL`
-    //const ret = this.txdb.prepare(sql).run()
-    //return ret
     try {
       //this.combineTXDB();
-      /*let sql = `CREATE TABLE IF NOT EXISTS config([key] TEXT PRIMARY KEY NOT NULL UNIQUE, value TEXT )`
-      this.txdb.prepare(sql).run();
-      sql = 'INSERT OR IGNORE INTO config (key, value) VALUES( ?, ?) '
-      this.txdb.prepare(sql).run("bsv_tip", null);
-      this.txdb.prepare(sql).run("ar_tip", null);
+      let sql = "DROP table IF EXISTS ar_tx"
+      this.txdb.prepare(sql).run()
+      sql = "DROP table IF EXISTS bsv_tx"
+      this.txdb.prepare(sql).run()
 
-      //migrate txdb data table
-       sql = "SELECT * from data"
-       const data = this.txdb.prepare(sql).all()
-       sql = 'INSERT into data (hash,size,time,owner,raw) VALUES (?,?,?,?,?)'
-       try {
-         for (const item of data) {
-           this.dtdb.prepare(sql).run(item.hash, item.size, item.time, item.owner, item.raw)
-         }
-         sql = "DROP table data"
-         console.log("dropping data table from txdb")
-         this.txdb.prepare(sql).run()
-    } catch (e) { }
-      sql = "ALTER TABLE data ADD attributes TEXT";
-      this.dtdb.prepare(sql).run()*/
+      sql = `
+      CREATE TABLE blocks (
+        height INTEGER PRIMARY KEY UNIQUE DEFAULT (0),
+        body   TEXT,
+        hash   TEXT UNIQUE
+    );    
+    `
+      this.txdb.prepare(sql).run();
     } catch (e) {
       console.log(e)
     }
   }
-  combineTXDB() {
+  /*combineTXDB() {
     try {
       let sql = `
     CREATE TABLE txs(id INTEGER PRIMARY KEY AUTOINCREMENT DEFAULT (1),
@@ -261,7 +250,7 @@ class Database {
     } catch (e) {
       console.log(e)
     }
-  }
+  } */
   close() {
     if (this.txdb) {
       console.log("closing txdb...")
@@ -387,7 +376,7 @@ class Database {
   }
 
   getTransactionTime(txid) {
-    const sql = `SELECT time FROM txs WHERE txid = ?`
+    const sql = `SELECT txtime FROM txs WHERE txid = ?`
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
@@ -397,7 +386,11 @@ class Database {
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
-
+  getTransactionIndex(txid) {
+    const sql = `SELECT id FROM txs WHERE txid = ?`
+    const row = this.txdb.prepare(sql).raw(true).get(txid)
+    return row && row[0]
+  }
   deleteTransaction(txid) {
     this.transaction(() => {
       const sql = `DELETE FROM txs WHERE txid = ?`
@@ -405,7 +398,10 @@ class Database {
       if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
     })
   }
-
+  getTransactions({ time, limit }) {
+    const sql = "select txid,bytes,txTime from txs where txTime >? ORDER BY txTime ASC limit ?"
+    return this.txdb.prepare(sql).all(time, limit)
+  }
   getTransaction(txid) {
     const sql = `select * from txs WHERE txid = ?`
     return this.txdb.prepare(sql).get(txid)
@@ -808,6 +804,37 @@ class Database {
       }
     }
     console.log("verify finish")*/
+  }
+  //------------------------------Blocks--------------------------------
+  getLastBlock() {
+    try {
+      const sql = "SELECT * FROM blocks ORDER BY height DESC LIMIT 1"
+      const block = this.txdb.prepare(sql).get()
+      return block ? JSON.parse(block.body) : null
+    } catch (e) {
+      console.error(e)
+    }
+    return null
+  }
+  getBlock(height) {
+    try {
+      const sql = "select * from blocks where height=?"
+      const block = this.txdb.prepare(sql).get(height)
+      return block ? JSON.parse(block.body) : null
+    } catch (e) {
+      console.error(e)
+    }
+    return null
+  }
+  saveBlock(block) {
+    try {
+      const hash = block.hash
+      delete block.hash
+      const sql = "Insert into blocks (height,body,hash) values (?,?,?)"
+      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash)
+    } catch (e) {
+      console.error(e)
+    }
   }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {

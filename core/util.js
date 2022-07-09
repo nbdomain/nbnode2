@@ -36,7 +36,7 @@ class ArNodes {
                 }
                 return peers;
             }
-        } catch (e) { e.error("_getPeers:", e.message) }
+        } catch (e) { console.error("_getPeers:", e.message) }
         return []
     }
     async init(seed) {
