@@ -68,12 +68,13 @@ class Indexers {
     this.Parser = Parser
     this.Util = Util
     this.resolver = this.indexer.resolver
+    this.blockMgr = new BlockMgr(this)
   }
   static async start() {
     //await this.db.verifyTxDB('bsv')
     await Nodes.startTxSync(this)
     await this.indexer.start()
-    this.blockMgr = new BlockMgr(this)
+
     this.blockMgr.run()
   }
   static async stop() {

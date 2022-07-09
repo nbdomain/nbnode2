@@ -52,7 +52,10 @@ class BlockMgr {
                 }
             }
         }
-        block && console.log("got new block:", block.height, block.merkel, this.blockPool[block.hash].count)
+        if (!this.blockPool[block.hash]) {
+            console.log("found")
+        }
+        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash].count)
     }
     async run() {
         const { Nodes } = this.indexers
