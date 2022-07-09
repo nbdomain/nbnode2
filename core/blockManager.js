@@ -22,7 +22,7 @@ class BlockMgr {
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
-        const block = { version: DEF.BLOCK_VER, height: height, merkel, preBlockHash: lastBlock ? lastBlock.markel : null }
+        const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preBlockHash: lastBlock ? lastBlock.markel : null }
         block.hash = await Util.dataHash(JSON.stringify(block))
         return block
     }
@@ -38,6 +38,7 @@ class BlockMgr {
         const { block, nodeKey } = unconfirmedBlock
         if (block.height === this.height && !this.nodePool[nodeKey]) {
             delete block.hash
+            delete block.count
             this.nodePool[nodeKey] = true
             const toHash = JSON.stringify(block)
             console.log("toHash:", toHash, toHash.length)
