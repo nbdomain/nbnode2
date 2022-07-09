@@ -408,7 +408,7 @@ class Database {
     })
   }
   getTransactions({ time, limit }) {
-    const sql = "select txid,bytes,txTime from txs where txTime >? ORDER BY txTime ASC limit ?"
+    const sql = `select txid,bytes,txTime from txs where txTime >? AND txTime!=${DEF.TX_INVALIDTX} ORDER BY txTime ASC limit ?`
     return this.txdb.prepare(sql).all(time, limit)
   }
   getTransaction(txid) {
