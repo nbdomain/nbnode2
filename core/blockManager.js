@@ -9,7 +9,7 @@ class BlockMgr {
         this.height = -1
         this.db = indexers.db
     }
-    async createBlock(height) {
+    async createBlock(height, ntx = 10) {
         const db = this.db
         let lastBlock = null, time = 0
         if (height > 0) {
@@ -19,7 +19,7 @@ class BlockMgr {
             const bl = lastBlock.txs[lastBlock.txs.length - 1]
             time = db.getTransactionTime(bl.txid)
         }
-        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
+        const txs = db.getTransactions({ time, limit: ntx })//limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preBlockHash: lastBlock ? lastBlock.markel : null }

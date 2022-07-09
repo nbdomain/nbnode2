@@ -330,9 +330,10 @@ app.get('/test', async (req, res) => {
     //indexers.db.resetDB()
     //Nodes.startTxSync(indexers)
     //Nodes.pullNewTxs()
-    const block = await indexers.blockMgr.createBlock(0)
-    console.log(block)
-    res.json(block)
+    const ntx = +req.query['ntx']
+    const block = await indexers.blockMgr.createBlock(0, ntx)
+    console.log(block.hash)
+    res.end(block.hash)
 })
 app.get('/reverify', async (req, res) => {
     const txid = req.query['txid']
