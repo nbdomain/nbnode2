@@ -35,7 +35,7 @@ class BlockMgr {
         return lastHash
     }
     async onReceiveBlock(block) {
-        console.log("got new block:", block)
+        console.log("got new block:", block.height)
         delete block.hash
         block.hash = await Util.dataHash(JSON.stringify(block))
         if (!this.blockPool[block.hash]) {
@@ -50,6 +50,7 @@ class BlockMgr {
         }
     }
     async run() {
+        return;
         const { Nodes } = this.indexers
         if (Object.keys(this.blockPool).length == 0) { //wait the block to confirm
             const bl = this.db.getLastBlock()
