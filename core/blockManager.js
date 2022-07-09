@@ -39,7 +39,9 @@ class BlockMgr {
         if (block.height === this.height && !this.nodePool[nodeKey]) {
             delete block.hash
             this.nodePool[nodeKey] = true
-            const hash = await Util.dataHash(JSON.stringify(block))
+            const toHash = JSON.stringify(block)
+            console.log("toHash:", toHash, toHash.length)
+            const hash = await Util.dataHash(toHash)
             block.hash = hash
             if (!this.blockPool[hash]) {
                 this.blockPool[hash] = block
@@ -55,7 +57,7 @@ class BlockMgr {
         if (!this.blockPool[block.hash]) {
             console.log("found")
         }
-        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash].count)
+        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count)
     }
     async run() {
         const { Nodes } = this.indexers
