@@ -199,10 +199,19 @@ class Database {
       this.txdb.prepare(sql).run()
 
       sql = `
-      CREATE TABLE blocks (
+      CREATE TABLE IF NOT EXISTS blocks (
         height INTEGER PRIMARY KEY UNIQUE DEFAULT (0),
         body   TEXT,
         hash   TEXT UNIQUE
+    );    
+    `
+      this.txdb.prepare(sql).run();
+
+      sql = `
+      CREATE TABLE IF NOT EXISTS nodes (
+        url        TEXT    UNIQUE PRIMARY KEY,
+        attributes TEXT,
+        score      INTEGER
     );    
     `
       this.txdb.prepare(sql).run();
