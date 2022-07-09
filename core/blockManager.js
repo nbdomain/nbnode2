@@ -44,6 +44,7 @@ class BlockMgr {
             const hash = await Util.dataHash(toHash)
             block.hash = hash
             if (!this.blockPool[hash]) {
+                this.blockPool[hash] = {}
                 this.blockPool[hash].block = block
                 this.blockPool[hash].count = 1
             } else {
