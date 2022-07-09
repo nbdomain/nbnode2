@@ -41,7 +41,7 @@ class BlockMgr {
             delete block.count
             this.nodePool[nodeKey] = true
             const toHash = JSON.stringify(block)
-            console.log("toHash:", toHash, toHash.length)
+            //console.log("toHash:", toHash, toHash.length)
             const hash = await Util.dataHash(toHash)
             block.hash = hash
             if (!this.blockPool[hash]) {
