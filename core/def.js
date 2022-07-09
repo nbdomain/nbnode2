@@ -40,7 +40,7 @@ const DEF = {
 
     BLOCK_VER: 1,
     BLOCK_TIME: 5000,
-    MAX_BLOCK_LENGTH: 2 //max transaction in a block
+    MAX_BLOCK_LENGTH: 100 //max transaction in a block
 }
 
 class NIDObject {

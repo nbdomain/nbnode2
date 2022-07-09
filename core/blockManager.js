@@ -19,7 +19,7 @@ class BlockMgr {
             const bl = lastBlock.txs[lastBlock.txs.length - 1]
             time = db.getTransactionTime(bl.txid)
         }
-        const txs = db.getTransactions({ time, limit: ntx })//limit: DEF.MAX_BLOCK_LENGTH })
+        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preBlockHash: lastBlock ? lastBlock.markel : null }
@@ -61,23 +61,24 @@ class BlockMgr {
         block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async run() {
-        const { Nodes } = this.indexers
-        if (Object.keys(this.blockPool).length == 0) { //wait the block to confirm
-            const bl = this.db.getLastBlock()
-            this.height = bl ? bl.height : 0
-            const block = await this.createBlock(this.height)
-            if (block) {
-                const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
-                this.unconfirmedBlock = unconfirmedBlock
-                await this.onReceiveBlock(unconfirmedBlock)
-                Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
-            }
+        while (true) {
+            const { Nodes } = this.indexers
+            if (Object.keys(this.blockPool).length == 0) { //wait the block to confirm
+                const bl = this.db.getLastBlock()
+                this.height = bl ? bl.height : 0
+                const block = await this.createBlock(this.height)
+                if (block) {
+                    const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
+                    this.unconfirmedBlock = unconfirmedBlock
+                    await this.onReceiveBlock(unconfirmedBlock)
+                    Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
+                }
 
-        } else {
-            this.unconfirmedBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.unconfirmedBlock })
+            } else {
+                this.unconfirmedBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.unconfirmedBlock })
+            }
+            await wait(DEF.BLOCK_TIME)
         }
-        await wait(DEF.BLOCK_TIME)
-        this.run()
     }
 }
 module.exports = BlockMgr
