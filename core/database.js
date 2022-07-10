@@ -211,7 +211,7 @@ class Database {
       //this.txdb.prepare(sql).run()
 
       sql = `
-      CREATE TABLE nodes (
+      CREATE TABLE IF NOT EXISTS nodes (
         url     TEXT    UNIQUE PRIMARY KEY,
         info    TEXT,
         score   INTEGER,
