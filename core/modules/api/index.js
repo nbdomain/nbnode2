@@ -288,7 +288,7 @@ app.get('/queryTags', function (req, res) {
 });
 app.get('/nodeInfo', async (req, res) => {
     let info = { ...CONFIG.server, ...CONSTS.node_info };
-    info.version = "1.5.1." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
+    info.version = "1.6." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
     info.tld = CONSTS.tld_config
     const lib = await coinfly.create('bsv')
     if (CONFIG.key)

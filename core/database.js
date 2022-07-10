@@ -874,7 +874,7 @@ class Database {
   //------------------------------Nodes---------------------------------
   addNode({ url, info }) {
     try {
-      const sql = "Insert or replace into nodes (url, info, producer) values (?,?,?)"
+      const sql = "Insert or replace into nodes (url, info) values (?,?)"
       const producer = info.producer ? 1 : 0
       this.txdb.prepare(sql).run(url, JSON.stringify(info), producer)
       return true
@@ -882,9 +882,13 @@ class Database {
       return false
     }
   }
-  loadNodes(onlyProducer = false) {
-    const sql = onlyProducer ? "select * from nodes where producer = 1 ORDER BY score,success DESC" : "select * from nodes ORDER BY score,success DESC"
-    return this.txdb.prepare(sql).all()
+  loadNodes() {
+    try {
+      const sql = "select * from nodes ORDER BY score,correct DESC"
+      return this.txdb.prepare(sql).all()
+    } catch (e) {
+      return null
+    }
   }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {
