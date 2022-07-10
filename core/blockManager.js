@@ -16,8 +16,8 @@ class BlockMgr {
             lastBlock = db.getBlock(height - 1)
         }
         if (lastBlock) {
-            const bl = lastBlock.txs[lastBlock.txs.length - 1]
-            time = db.getTransactionTime(bl.txid)
+            const lastTx = lastBlock.txs[lastBlock.txs.length - 1]
+            time = lastTx.txTime
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) return null
@@ -31,6 +31,7 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
+            delete tx.bytes
         }
         return lastHash
     }

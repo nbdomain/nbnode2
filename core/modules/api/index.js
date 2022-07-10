@@ -293,7 +293,8 @@ app.get('/nodeInfo', async (req, res) => {
     const lib = await coinfly.create('bsv')
     if (CONFIG.key)
         info.pkey = await lib.getPublicKey(CONFIG.key)
-    //info.dataCount = indexers.db.getDataCount()
+    info.statusHash = indexers.db.readConfig('txdb', 'statusHash')
+    info.height = indexers.db.readConfig('txdb', 'height')
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
@@ -332,7 +333,7 @@ app.get('/test', async (req, res) => {
     //Nodes.pullNewTxs()
     const ntx = +req.query['ntx']
     const block = await indexers.blockMgr.createBlock(0, ntx)
-    console.log(block.hash)
+    indexers.db.saveBlock(block)
     res.end(block.hash)
 })
 app.get('/reverify', async (req, res) => {

@@ -3,7 +3,6 @@
  */
 
 
-const bsv = require('bsv');
 const CONSTS = require('./const');
 const cp = require('child_process');
 const nbpay = require('nbpay')
@@ -82,6 +81,12 @@ class Util {
             tld_config: CONSTS.tld_config,
             enable_write: false  //enable functions that can update and write value to NBdomain
         });
+    }
+    static async bitcoinSign(privateKey, data) {
+        return await bsvLib.sign(privateKey, data)
+    }
+    static async bitcoinVerify(publicKey, data, sig) {
+        return await bsvLib.verify(publicKey, data, sig)
     }
     static toBuffer(data) {
         let buf = null
@@ -237,23 +242,7 @@ class Util {
         }
         return [null, null];
     }
-    /**
-     * Get PrivateKey from string.
-     * @param {!string} privateKey User private key in string.
-     * @returns {PrivateKey} User's private key object.
-     */
-    static getPrivateKey(privateKey) {
-        return bsv.PrivateKey(privateKey);
-    }
 
-    /**
-     * Generate user public key from his private key object.
-     * @param {!PrivateKey} privateKey The private key of a user.
-     * @return {!PublicKey} Public key of the user.
-     */
-    static getPublicKey(privateKey) {
-        return bsv.PublicKey(privateKey);
-    }
     static getRegisterProtocolFromPayment(payment) {
         for (let tld in SUB_PROTOCOL_MAP) {
             let tldcfg = SUB_PROTOCOL_MAP[tld];
@@ -276,49 +265,11 @@ class Util {
         }
         return null;
     }
-    /**
-     * Get Address from public key.
-     * @param {string} publicKey public key of a user.
-     * @returns {string} Address of given user.
-     */
-    static getAddressFromPublicKey(publicKey) {
-        if (publicKey == null || publicKey == "") {
-            return null;
-        }
-        return bsv.Address.fromPublicKey(bsv.PublicKey.fromString(publicKey)).toString();
-    }
     static getProcotolFromTLD(tld) {
         if (SUB_PROTOCOL_MAP[tld]) {
             return SUB_PROTOCOL_MAP[tld].address.protocol;
         }
         return null;
-    }
-    static getInputAddressFromTx(txHash) {
-        try {
-            let tx = new bsv.Transaction(txHash);
-            return tx.inputs[0].script.toAddress().toString();
-        } catch (err) {
-            return null;
-        }
-    }
-
-    static getPublicKeyFromRegTx(txHash) {
-        try {
-            let tx = new bsv.Transaction(txHash);
-            return tx.inputs[0].script.chunks[1].buf.toString('hex');
-        } catch (err) {
-            return null;
-        }
-    }
-
-    static validPublicKey(pubKey) {
-        try {
-            let key = bsv.PublicKey.fromString(pubKey);
-            return true;
-        } catch (err) {
-            // pass
-        }
-        return false;
     }
 };
 

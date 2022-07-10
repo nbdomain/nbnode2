@@ -3,16 +3,16 @@ const axios = require('axios')
 const coinfly = require('coinfly')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI');
+const { NodeServer, NodeClient } = require('./nodeAPI');
+const { DEF } = require('./def');
 
 //const Peer = require('peerjs-on-node')
 let g_node = null
 class Nodes {
     constructor() {
-        this.nodes = []
-        this.snodes = []
+        this.pnodes = []
         this._canResolve = true
-        this.isSuperNode = config.server.producer
+        //this.isProducer = config.server.producer
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -20,18 +20,18 @@ class Nodes {
         })
     }
 
-    get({ isSuper = true, retUrl = true }) {
-        const node = isSuper ? rwc(this.snodes) : rwc(this.nodes)
-        return retUrl ? node : this.nodes.find(item => item.id === node)
+    get({ retUrl = true }) {
+        const node = rwc(this.pnodes)
+        return retUrl ? node : this.pnodes.find(item => item.id === node)
     }
     cool(url) {
-        const node = this.nodes.find(node => node.id == url)
+        const node = this.pnodes.find(node => node.id == url)
         if (node) {
             node.weight--
         }
     }
     warm(url) {
-        const node = this.nodes.find(node => node.id == url)
+        const node = this.pnodes.find(node => node.id == url)
         if (node) {
             node.weight++
         }
@@ -44,17 +44,14 @@ class Nodes {
         this.nodeClient = new NodeClient()
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
         if (!config.server.https) this.endpoint += ":" + config.server.port
-        await this.getSuperNodes(true)
+
         this.startNodeServer()
-        await this.connectSuperNode()
+        await this.loadNodes(true)
+        //await this.connectNodes()
 
         return true
     }
     startNodeServer() {
-        if (!this.isSuper()) {
-            console.error("Not super node")
-            return false
-        }
         if (!this.nodeServer) this.nodeServer = new NodeServer()
         this.nodeServer.start(this.indexers)
     }
@@ -71,14 +68,10 @@ class Nodes {
             })
         })
     }
-    isSuper() {
-        //return true
-        return this.isSuperNode
-    }
-    async validatNode(url, isSuper) {
+    async validatNode(url) {
         try {
             const res = await axios.get(url + "/api/nodeinfo")
-            if (res.data && (!isSuper || res.data.pkey)) {
+            if (res.data && res.data.pkey) {
                 return res.data
             }
         } catch (e) {
@@ -87,37 +80,44 @@ class Nodes {
         }
     }
     hasNode(url) {
-        if (this.nodes.find(item => item.id == url) || this.snodes.find(item => item.id == url)) return true
+        if (this.pnodes.find(item => item.id == url) || this.pnodes.find(item => item.id == url)) return true
         return false
     }
-    async addNode({ url, isSuper = true, isPublic = true }) {
+    async addNode({ url, isPublic = true }) {
         if (this.hasNode(url)) {
-            console.log("node already added:", url)
             return false
         }
         if (url.indexOf(this.endpoint) != -1) return false
-        const res = await this.validatNode(url, isSuper)
-        if (!res) return false
-        const nodes = isSuper ? this.snodes : this.nodes
-        if (isSuper) this.snodes.push({ id: url, pkey: res.pkey, weight: 50 })
-        this.nodes.push({ id: url, pkey: res.pkey, weight: isSuper ? 50 : 50 })
+        const info = await this.validatNode(url)
+        if (!info) return false
+        const node = { id: url, pkey: info.pkey, weight: 50 }
+        this.pnodes.push(node)
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
+            this.indexers.db.addNode({ url, info })
+            console.log("node added:", url)
+            if (this.pnodes.length < DEF.CONSENSUE_COUNT) {
+                this.connectOneNode(node)
+            }
         }
+        return true
     }
-    async getSuperNodes(onlyLocal = false) {
-        const port = config.server.port
-        this.nodes = [], this.snodes = []
-        let localPeers = config.pnodes
-        //get super nodes from DNS
-        /*const p = await this._fromDNS()
-        for (const item of p) {
-            await this.addNode({ url: item, isSuper: true })
-            if (item.indexOf(config.server.domain) != -1) this.isSuperNode = true
-        } */
-        //local nodes
-        for (const item of localPeers) {
-            await this.addNode({ url: item, isSuper: true })
+    async loadNodes() {
+        const self = this;
+        const _addFromArray = async function (nodes) {
+            for (const node of nodes) {
+                await self.addNode({ url: node.url ? node.url : node })
+                if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
+            }
+        }
+        const nodes = this.indexers.db.loadNodes(true) //load from db
+        await _addFromArray(nodes)
+        if (this.pnodes.length < DEF.CONSENSUE_COUNT) { //load from local config
+            await _addFromArray(config.pnodes)
+        }
+        if (this.pnodes.length < DEF.CONSENSUE_COUNT) { //load from DNS
+            const p = await this._fromDNS()
+            await _addFromArray(p)
         }
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
@@ -135,44 +135,33 @@ class Nodes {
         console.error("failed to connect:", node.id)
         return false
     }
-    async fastestNode(nodes) {
-        return new Promise(resolve => {
-            for (const node of nodes) {
-                try {
-                    axios.get(node.id + "/api/nodeInfo").then(res => {
-                        if (res.data && res.data.pkey) {
-                            resolve(node)
-                            return
-                        }
-                    })
-                } catch (e) { console.error("fastestNode:", e.message) }
-            }
-        })
-
-
-    }
-    async connectSuperNode() {
-        //this.isSuperNode = true
-        if (!this.isSuper()) { //connect to the fastest snode
-            let node = await this.fastestNode(this.snodes)
-            if (await this.connectOneNode(node)) {
-                return true
-            }
+    /*    async fastestNode(nodes) {
+            return new Promise(resolve => {
+                for (const node of nodes) {
+                    try {
+                        axios.get(node.id + "/api/nodeInfo").then(res => {
+                            if (res.data && res.data.pkey) {
+                                resolve(node)
+                                return
+                            }
+                        })
+                    } catch (e) { console.error("fastestNode:", e.message) }
+                }
+            })
         }
-        for (const node of this.snodes) {
-            if (await this.connectOneNode(node)) {
-                if (!this.isSuper())
-                    return true
+        async connectNodes() {
+            for (const node of this.pnodes) {
+                if (await this.connectOneNode(node)) {
+                }
             }
-        }
-        if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
-            console.error("cannot connect to any super node")
-            return false
-        }
-        return true
-    }
-    getNodes(isSuper = true) {
-        return isSuper ? this.snodes : this.nodes
+            if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
+                console.error("cannot connect to any node")
+                return false
+            }
+            return true
+        } */
+    getNodes() {
+        return this.pnodes
     }
 
     async notifyPeers({ cmd, data }) {

@@ -800,6 +800,23 @@ class Database {
     //ret.raw = this.readDataFromDisk(hash, option)
     return ret
   }
+  readConfig(dbName, key) {
+    try {
+      let sql = 'select value from config where key = ?'
+      let db = null
+      if (dbName == 'txdb') db = this.txdb
+      if (dbName === 'dmdb') db = this.dmdb
+      if (dbName === 'dtdb') db = this.dtdb
+      if (db === null) {
+        throw "db.readConfig: Invalid dbName"
+        return
+      }
+      const ret = db.prepare(sql).get(key)
+      return ret ? ret.value : ret
+    } catch (e) {
+      return null
+    }
+  }
   async verifyTxDB(chain) {
     /*console.log("verifying...", chain)
     let sql = `select txid,bytes from txs where bytes IS NULL`
@@ -835,15 +852,37 @@ class Database {
     }
     return null
   }
-  saveBlock(block) {
+  async saveBlock(block) {
     try {
       const hash = block.hash
       delete block.hash
       const sql = "Insert into blocks (height,body,hash) values (?,?,?)"
       this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash)
+
+      const statusHash = this.txdb.prepare("select value from config where key='statusHash' ").get()
+      const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
+      this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
+
+      this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
     } catch (e) {
       console.error(e)
     }
+  }
+
+  //------------------------------Nodes---------------------------------
+  addNode({ url, info }) {
+    try {
+      const sql = "Insert or replace into nodes (url, info, producer) values (?,?,?)"
+      const producer = info.producer ? 1 : 0
+      this.txdb.prepare(sql).run(url, JSON.stringify(info), producer)
+      return true
+    } catch (e) {
+      return false
+    }
+  }
+  loadNodes(onlyProducer = false) {
+    const sql = onlyProducer ? "select * from nodes where producer = 1 ORDER BY score,success DESC" : "select * from nodes ORDER BY score,success DESC"
+    return this.txdb.prepare(sql).all()
   }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {

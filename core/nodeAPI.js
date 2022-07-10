@@ -2,8 +2,7 @@ const { Server } = require('socket.io')
 const axios = require('axios')
 const coinfly = require('coinfly')
 const CONFIG = require('./config').CONFIG
-let bsvlib = null
-coinfly.create('bsv').then(res => bsvlib = res)
+
 const cmd = {
     hello: {
         v: 1, rv: 1
@@ -27,9 +26,9 @@ class NodeServer {
                 }
                 console.log("got hello data:", obj)
                 if (obj.server) {
-                    indexers.Nodes.addNode({ url: obj.server, isSuper: false })
+                    indexers.Nodes.addNode({ url: obj.server })
                 }
-                const sig = await bsvlib.sign(CONFIG.key, obj.data)
+                const sig = await indexers.Util.bitcoinSign(CONFIG.key, obj.data)
                 ret({ v: cmd.hello.rv, sig })
             })
             self._setup(socket, indexers)
@@ -73,6 +72,7 @@ class NodeClient {
         this.from = domain
     }
     async connect(node) {
+        const Util = this.indexers.Util
         let socketUrl = null, url = node.id
         try {
             const res = await axios.get(url + "/api/nodeinfo")
@@ -113,7 +113,7 @@ class NodeClient {
                         resolve(false)
                         return
                     }
-                    bsvlib.verify(node.pkey, datav, res.sig).then(r => {
+                    Util.bitcoinVerify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
                             self.socket = socket
                             self._setup()

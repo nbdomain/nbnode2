@@ -21,6 +21,7 @@ const CONFIG = {
     port: 9000,  //port for http service, https will use 443 and ignore this setting
     socketServer: "", //(optional)server domain/IP for socket RPC. Useful when domain is a proxy(not real) address. domain will be used if omitted
     socketPort: 31415, //(optional)port for socket RPC. default: 31415 . Plz make sure it's reachable from outside
+    producer: false,  //Indicates the producer node
     public: false, //(optional) Does this server provide public server? default:false
   },
   dataPath: "", //Existing Disk Path for big data, default is core/db/data
