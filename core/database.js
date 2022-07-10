@@ -208,10 +208,12 @@ class Database {
       this.txdb.prepare(sql).run();
 
       sql = `
-      CREATE TABLE IF NOT EXISTS nodes (
-        url        TEXT    UNIQUE PRIMARY KEY,
-        attributes TEXT,
-        score      INTEGER
+      CREATE TABLE nodes (
+        url     TEXT    UNIQUE PRIMARY KEY,
+        info    TEXT,
+        score   INTEGER,
+        correct INTEGER,
+        wong    INTEGER
     );    
     `
       this.txdb.prepare(sql).run();
