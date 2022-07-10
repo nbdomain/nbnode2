@@ -207,6 +207,9 @@ class Database {
     `
       this.txdb.prepare(sql).run();
 
+      sql = "DROP table IF EXISTS nodes"
+      this.txdb.prepare(sql).run()
+
       sql = `
       CREATE TABLE nodes (
         url     TEXT    UNIQUE PRIMARY KEY,
