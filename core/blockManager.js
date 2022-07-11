@@ -1,5 +1,6 @@
 const { DEF } = require('./def');
 const { Util } = require('./util')
+const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 class BlockMgr {
     constructor(indexers) {
@@ -36,30 +37,28 @@ class BlockMgr {
         }
         return lastHash
     }
-    async onReceiveBlock(unconfirmedBlock) {
-        const { block, nodeKey } = unconfirmedBlock
-        if (block.height === this.height && !this.nodePool[nodeKey]) {
-            this.nodePool[nodeKey] = true
+    async onReceiveBlock(nodeKey, uBlock) {
+        const { Nodes } = this.indexers
+        const { block, sigs } = uBlock
+        if (sigs && block.height === this.height) {
             delete block.hash
             const hash = await Util.dataHash(JSON.stringify(block))
-            this.nodePool[nodeKey] = hash
-            block.hash = hash
-            if (!this.blockPool[hash]) {
-                this.blockPool[hash] = {}
-                this.blockPool[hash].block = block
-                this.blockPool[hash].count = 1
-            } else {
-                this.blockPool[hash].count++
-                console.log("got new block:", block.height, " from:", nodeKey, "count:", this.blockPool[hash].count, " hash:", hash)
-                if (this.blockPool[hash].count > DEF.CONSENSUE_COUNT - 1) { //winning block
-                    const nodes = this.indexers.Nodes
-                    for (const key in this.nodePool) {
-                        this.nodePool[key] === hash ? nodes.incCorrect(key) : nodes.incMistake(key)
+            //check sig
+            if (this.uBlock.block.hash === hash) { //attach my sig
+                const sigSender = sigs[nodeKey]
+                if (await Util.bitcoinVerify(nodeKey, hash, sigSender)) { //check sender's sig
+                    if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                        //save block
+                    } else if (!sigs[Nodes.thisNode.key]) {
+                        const sig = await Util.bitcoinSign(CONFIG.key, hash)
+                        sigs[Nodes.thisNode.key] = sig
+                        this.uBlock = uBlock
+                        Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                        if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                            //save block
+                        }
                     }
-                    this.db.saveBlock(this.blockPool[block.hash].block)
-                    this.uBlock = null
-                    this.blockPool = {} //clear blockPool
-                    this.nodePool = {}
+
                 }
             }
         }
@@ -77,14 +76,15 @@ class BlockMgr {
                 if (!this.uBlock) { //wait the block to confirm
                     const block = await this.createBlock(this.height)
                     if (block) {
-                        const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
-                        this.uBlock = unconfirmedBlock
-                        await this.onReceiveBlock(unconfirmedBlock)
-                        console.log("send newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
-                        Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
+                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                        const uBlock = { sigs: {}, block }
+                        uBlock.sigs[Nodes.thisNode.key] = sig
+                        this.uBlock = uBlock
+                        console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
+                        Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
                     }
                 } else {
-                    console.log("send newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
+                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
                     this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
                 }
             }

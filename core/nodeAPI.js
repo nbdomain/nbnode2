@@ -73,6 +73,7 @@ class NodeClient {
     }
     async connect(node) {
         const Util = this.indexers.Util
+        this.node = node
         let socketUrl = null, url = node.id
         try {
             const res = await axios.get(url + "/api/nodeinfo")
@@ -147,7 +148,7 @@ class NodeClient {
                 self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
             }
             if (arg.cmd === "newBlock") {
-                self.indexers.blockMgr.onReceiveBlock(arg.data)
+                self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
             }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
