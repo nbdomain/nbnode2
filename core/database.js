@@ -878,7 +878,7 @@ class Database {
       const sql = "Insert into blocks (height,body,hash) values (?,?,?)"
       this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash)
 
-      const statusHash = this.txdb.prepare("select value from config where key='statusHash' ").get()
+      const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
       const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
       this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
 

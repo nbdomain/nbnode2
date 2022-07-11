@@ -41,12 +41,16 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
-        const { block, sigs } = uBlock
-        if (sigs && block.height === this.height && !this.nodePool[nodeKey]) {
-            this.nodePool[nodeKey] = true
+        const { block, sigs, type } = uBlock
+        let poolNode = this.nodePool[nodeKey]
+        if (type === 'c') {
+            console.log("---------------Received confirmed block------------")
+        }
+        if (sigs && block.height === this.height && (!poolNode || poolNode.sigLen < objLen(sigs))) {
+            poolNode = { sigLen: objLen(sigs) }
             delete block.hash
             const hash = await Util.dataHash(stringify(block))
-            block.hash = this.nodePool[nodeKey] = hash
+            block.hash = poolNode.hash = hash
             //check sender's sig
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
@@ -56,7 +60,10 @@ class BlockMgr {
                 uBlock.block.sigs = sigs
                 uBlock.block.hash = await Util.dataHash(stringify(block))
                 console.log("cBlock hash:", uBlock.block.hash)
-                //this.uBlock = uBlock
+                this.indexers.db.saveBlock(uBlock.block)
+                uBlock.type = 'c'
+                Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
+                this.uBlock = null
                 return
             }
 
