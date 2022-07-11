@@ -43,8 +43,9 @@ class BlockMgr {
         if (sigs && block.height === this.height) {
             delete block.hash
             const hash = await Util.dataHash(JSON.stringify(block))
+            block.hash = hash
             //check sig
-            if (this.uBlock.block.hash === hash) { //attach my sig
+            if (this.uBlock && this.uBlock.block.hash === hash) { //attach my sig
                 const sigSender = sigs[nodeKey]
                 if (await Util.bitcoinVerify(nodeKey, hash, sigSender)) { //check sender's sig
                     if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
