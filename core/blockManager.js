@@ -2,6 +2,7 @@ const { DEF } = require('./def');
 const { Util } = require('./util')
 const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+let objLen = obj => Object.keys(obj).length
 class BlockMgr {
     constructor(indexers) {
         this.indexers = indexers
@@ -40,31 +41,28 @@ class BlockMgr {
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
-        if (sigs && block.height === this.height) {
+        if (sigs && block.height === this.height && !this.nodePool[nodeKey]) {
+            this.nodePool[nodeKey] = true
             delete block.hash
             const hash = await Util.dataHash(JSON.stringify(block))
-            block.hash = hash
-            //check sig
-            if (this.uBlock && this.uBlock.block.hash === hash) { //attach my sig
-                const sigSender = sigs[nodeKey]
-                if (await Util.bitcoinVerify(nodeKey, hash, sigSender)) { //check sender's sig
-                    if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
-                        //save block
-                    } else if (!sigs[Nodes.thisNode.key]) {
-                        const sig = await Util.bitcoinSign(CONFIG.key, hash)
-                        sigs[Nodes.thisNode.key] = sig
-                        this.uBlock = uBlock
-                        Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
-                        if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
-                            //save block
-                        }
-                    }
-
-                }
+            block.hash = this.nodePool[nodeKey] = hash
+            //check sender's sig
+            const sigSender = sigs[nodeKey]
+            if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
+            if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                //save block
+                this.uBlock = uBlock
+                return
             }
-        }
-        if (!block.height) {
-            //console.log("found")
+
+            if (this.uBlock && this.uBlock.block.hash === hash) {
+                if (!sigs[Nodes.thisNode.key]) { //add my sig
+                    const sig = await Util.bitcoinSign(CONFIG.key, hash)
+                    sigs[Nodes.thisNode.key] = sig
+                }
+                if (objLen(this.uBlock.sigs) < objLen(sigs))
+                    this.uBlock = uBlock
+            }
         }
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
@@ -85,7 +83,7 @@ class BlockMgr {
                         Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
                     }
                 } else {
-                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
+                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", Object.keys(this.uBlock.sigs).length)
                     this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
                 }
             }
