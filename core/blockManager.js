@@ -7,6 +7,7 @@ class BlockMgr {
         this.nodePool = {}
         this.blockPool = {}
         this.height = 0
+        this.uBlock = null //next unconfirmed block
         this.db = indexers.db
     }
     async createBlock(height, ntx = 10) {
@@ -38,6 +39,7 @@ class BlockMgr {
     async onReceiveBlock(unconfirmedBlock) {
         const { block, nodeKey } = unconfirmedBlock
         if (block.height === this.height && !this.nodePool[nodeKey]) {
+            this.nodePool[nodeKey] = true
             delete block.hash
             const hash = await Util.dataHash(JSON.stringify(block))
             this.nodePool[nodeKey] = hash
@@ -48,18 +50,19 @@ class BlockMgr {
                 this.blockPool[hash].count = 1
             } else {
                 this.blockPool[hash].count++
-                if (this.blockPool[hash].count > 1) { //winning block
+                if (this.blockPool[hash].count >= DEF.CONSENSUE_COUNT - 1) { //winning block
                     const nodes = this.indexers.Nodes
-                    for (key in this.nodePool) {
+                    for (const key in this.nodePool) {
                         this.nodePool[key] === hash ? nodes.incCorrect(key) : nodes.incMistake(key)
                     }
-
-                    //this.db.saveBlock(this.blockPool[block.hash])
-                    //this.blockPool = {} //clear blockPool
+                    this.db.saveBlock(this.blockPool[block.hash].block)
+                    this.uBlock = null
+                    this.blockPool = {} //clear blockPool
+                    this.nodePool = {}
                 }
             }
         }
-        if (!this.blockPool[block.hash]) {
+        if (!block.height) {
             console.log("found")
         }
         block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
@@ -67,19 +70,20 @@ class BlockMgr {
     async run() {
         while (true) {
             const { Nodes } = this.indexers
-            if (Object.keys(this.blockPool).length == 0) { //wait the block to confirm
-                const bl = this.db.getLastBlock()
-                this.height = bl ? bl.height : 0
-                const block = await this.createBlock(this.height)
-                if (block) {
-                    const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
-                    this.unconfirmedBlock = unconfirmedBlock
-                    await this.onReceiveBlock(unconfirmedBlock)
-                    Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
+            const bl = this.db.getLastBlock()
+            this.height = bl ? bl.height + 1 : 0
+            if (this.height < 5) { //
+                if (!this.uBlock) { //wait the block to confirm
+                    const block = await this.createBlock(this.height)
+                    if (block) {
+                        const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
+                        this.uBlock = unconfirmedBlock
+                        await this.onReceiveBlock(unconfirmedBlock)
+                        Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
+                    }
+                } else {
+                    this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
                 }
-
-            } else {
-                this.unconfirmedBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.unconfirmedBlock })
             }
             await wait(DEF.BLOCK_TIME)
         }

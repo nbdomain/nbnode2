@@ -180,7 +180,10 @@ class Nodes {
     async sendNewTx(obj) {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
             //return rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
-            return await this.nodeClients[Object.keys(this.nodeClients)[0]].sendNewTx(obj)
+            const ret = await this.nodeClients[Object.keys(this.nodeClients)[0]].sendNewTx(obj)
+            if (ret && Object.keys(this.nodeClients).length > 1) { //one node return success, send through another node, make sure it's sent
+                this.nodeClients[Object.keys(this.nodeClients)[1]].sendNewTx(obj)
+            }
         }
         console.error("No Other nodes connected, cannot send tx")
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }

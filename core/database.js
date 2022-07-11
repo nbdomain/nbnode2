@@ -13,6 +13,7 @@ const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
 const { default: axios } = require('axios')
+const hash = require('bsv/lib/crypto/hash')
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -855,7 +856,7 @@ class Database {
     try {
       const sql = "select * from blocks where height=?"
       const block = this.txdb.prepare(sql).get(height)
-      return block ? JSON.parse(block.body) : null
+      return block ? { hash: block.hash, ...JSON.parse(block.body) } : null
     } catch (e) {
       console.error(e)
     }
@@ -890,9 +891,9 @@ class Database {
   }
   updateNodeScore(pkey, correct = true) {
     try {
-      let sql = correct ? "UPATE nodes SET correct = correct + 1 where pkey = ?" : "UPATE nodes SET mistake = mistake + 1 where pkey = ?"
+      let sql = correct ? "UPDATE nodes SET correct = correct + 1 where pkey = ?" : "UPDATE nodes SET mistake = mistake + 1 where pkey = ?"
       this.txdb.prepare(sql).run(pkey)
-      sql = "UPATE nodes SET score = correct*100/(correct+mistake) where pkey = ?"
+      sql = "UPDATE nodes SET score = correct*100/(correct+mistake) where pkey = ?"
       this.txdb.prepare(sql).run(pkey)
     } catch (e) {
       return false
