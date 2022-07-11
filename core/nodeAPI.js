@@ -130,14 +130,14 @@ class NodeClient {
                 console.log('Disconnected to:', socketUrl)
             })
             socket.onAny((event, ...args) => {
-                console.log(`got ${event}`);
+                //console.log(`got ${event}`);
             });
         })
     }
     async _setup() {
         const self = this
         this.socket.on('notify', (arg) => {
-            console.log('got notify:', arg)
+            //console.log('got notify:', arg)
             if (arg.cmd === "newtx") {
                 const d = arg.data;
                 const para = JSON.parse(d)

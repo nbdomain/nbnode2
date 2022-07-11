@@ -50,6 +50,7 @@ class BlockMgr {
                 this.blockPool[hash].count = 1
             } else {
                 this.blockPool[hash].count++
+                console.log("got new block:", block.height, " from:", nodeKey, "count:", this.blockPool[hash].count, " hash:", hash)
                 if (this.blockPool[hash].count > DEF.CONSENSUE_COUNT - 1) { //winning block
                     const nodes = this.indexers.Nodes
                     for (const key in this.nodePool) {
@@ -63,9 +64,9 @@ class BlockMgr {
             }
         }
         if (!block.height) {
-            console.log("found")
+            //console.log("found")
         }
-        block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
+        // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async run() {
         while (true) {
@@ -79,9 +80,11 @@ class BlockMgr {
                         const unconfirmedBlock = { nodeKey: Nodes.thisNode.key, block }
                         this.uBlock = unconfirmedBlock
                         await this.onReceiveBlock(unconfirmedBlock)
+                        console.log("send newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
                         Nodes.notifyPeers({ cmd: "newBlock", data: unconfirmedBlock })
                     }
                 } else {
+                    console.log("send newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
                     this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
                 }
             }
