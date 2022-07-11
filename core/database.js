@@ -226,6 +226,15 @@ class Database {
       console.log(e)
     }
   }
+  dropTable(name) {
+    try {
+      let sql = "DROP table IF EXISTS " + name
+      this.txdb.prepare(sql).run()
+    } catch (e) {
+      return false
+    }
+
+  }
   /*combineTXDB() {
     try {
       let sql = `

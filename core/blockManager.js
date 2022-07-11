@@ -50,7 +50,7 @@ class BlockMgr {
                 this.blockPool[hash].count = 1
             } else {
                 this.blockPool[hash].count++
-                if (this.blockPool[hash].count >= DEF.CONSENSUE_COUNT - 1) { //winning block
+                if (this.blockPool[hash].count > DEF.CONSENSUE_COUNT - 1) { //winning block
                     const nodes = this.indexers.Nodes
                     for (const key in this.nodePool) {
                         this.nodePool[key] === hash ? nodes.incCorrect(key) : nodes.incMistake(key)

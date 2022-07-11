@@ -331,9 +331,9 @@ app.get('/test', async (req, res) => {
     //indexers.db.resetDB()
     //Nodes.startTxSync(indexers)
     //Nodes.pullNewTxs()
-    const ntx = +req.query['ntx']
-    const block = await indexers.blockMgr.createBlock(0, ntx)
-    indexers.db.saveBlock(block)
+    //const ntx = +req.query['ntx']
+    //const block = await indexers.blockMgr.createBlock(0, ntx)
+    indexers.db.dropTable(req.query['name'])
     res.end(block.hash)
 })
 app.get('/reverify', async (req, res) => {
