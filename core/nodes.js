@@ -5,6 +5,7 @@ const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
+const { timingSafeEqual } = require('crypto');
 
 //const Peer = require('peerjs-on-node')
 let g_node = null
@@ -12,6 +13,7 @@ class Nodes {
     constructor() {
         this.pnodes = []
         this._canResolve = true
+        this.nodeClients = {}
         //this.isProducer = config.server.producer
     }
     async sleep(seconds) {
@@ -79,6 +81,12 @@ class Nodes {
             return null
         }
     }
+    incCorrect(key) {
+        this.indexers.db.updateNodeScore(key, true)
+    }
+    incMistake(key) {
+        this.indexers.db.updateNodeScore(key, false)
+    }
     hasNode(url) {
         if (this.pnodes.find(item => item.id == url) || this.pnodes.find(item => item.id == url)) return true
         return false
@@ -96,8 +104,8 @@ class Nodes {
             this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
             console.log("node added:", url)
-            if (this.pnodes.length < DEF.CONSENSUE_COUNT) {
-                this.connectOneNode(node)
+            if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) {
+                await this.connectOneNode(node)
             }
         }
         return true
@@ -112,17 +120,16 @@ class Nodes {
         }
         const nodes = this.indexers.db.loadNodes(true) //load from db
         await _addFromArray(nodes)
-        if (this.pnodes.length < DEF.CONSENSUE_COUNT) { //load from local config
+        if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) { //load from local config
             await _addFromArray(config.pnodes)
         }
-        if (this.pnodes.length < DEF.CONSENSUE_COUNT) { //load from DNS
+        if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) { //load from DNS
             const p = await this._fromDNS()
             await _addFromArray(p)
         }
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
     async connectOneNode(node) {
-        if (!this.nodeClients) this.nodeClients = {}
         if (this.nodeClients[node.id]) {
             //disconnect lastone
         }

@@ -6,23 +6,23 @@ class BlockMgr {
         this.indexers = indexers
         this.nodePool = {}
         this.blockPool = {}
-        this.height = -1
+        this.height = 0
         this.db = indexers.db
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
-        let lastBlock = null, time = 0
+        let preBlock = null, time = 0
         if (height > 0) {
-            lastBlock = db.getBlock(height - 1)
+            preBlock = db.getBlock(height - 1)
         }
-        if (lastBlock) {
-            const lastTx = lastBlock.txs[lastBlock.txs.length - 1]
+        if (preBlock) {
+            const lastTx = preBlock.txs[preBlock.txs.length - 1]
             time = lastTx.txTime
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
-        const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preBlockHash: lastBlock ? lastBlock.markel : null }
+        const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
         block.hash = await Util.dataHash(JSON.stringify(block))
         return block
     }
@@ -39,10 +39,8 @@ class BlockMgr {
         const { block, nodeKey } = unconfirmedBlock
         if (block.height === this.height && !this.nodePool[nodeKey]) {
             delete block.hash
-            this.nodePool[nodeKey] = true
-            const toHash = JSON.stringify(block)
-            //console.log("toHash:", toHash, toHash.length)
-            const hash = await Util.dataHash(toHash)
+            const hash = await Util.dataHash(JSON.stringify(block))
+            this.nodePool[nodeKey] = hash
             block.hash = hash
             if (!this.blockPool[hash]) {
                 this.blockPool[hash] = {}
@@ -50,7 +48,12 @@ class BlockMgr {
                 this.blockPool[hash].count = 1
             } else {
                 this.blockPool[hash].count++
-                if (this.blockPool[hash].count > 1) {
+                if (this.blockPool[hash].count > 1) { //winning block
+                    const nodes = this.indexers.Nodes
+                    for (key in this.nodePool) {
+                        this.nodePool[key] === hash ? nodes.incCorrect(key) : nodes.incMistake(key)
+                    }
+
                     //this.db.saveBlock(this.blockPool[block.hash])
                     //this.blockPool = {} //clear blockPool
                 }

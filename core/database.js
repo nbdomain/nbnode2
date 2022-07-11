@@ -207,16 +207,17 @@ class Database {
     `
       this.txdb.prepare(sql).run();
 
-      //sql = "DROP table IF EXISTS nodes"
-      //this.txdb.prepare(sql).run()
+      sql = "DROP table IF EXISTS nodes"
+      this.txdb.prepare(sql).run()
 
       sql = `
       CREATE TABLE IF NOT EXISTS nodes (
         url     TEXT    UNIQUE PRIMARY KEY,
         info    TEXT,
-        score   INTEGER,
-        correct INTEGER,
-        wong    INTEGER
+        score   INTEGER DEFAULT (100),
+        correct INTEGER DEFAULT (1),
+        mistake    INTEGER DEFAULT (0),
+        pkey    TEXT    UNIQUE
     );    
     `
       this.txdb.prepare(sql).run();
@@ -840,8 +841,11 @@ class Database {
   getLastBlock() {
     try {
       const sql = "SELECT * FROM blocks ORDER BY height DESC LIMIT 1"
-      const block = this.txdb.prepare(sql).get()
-      return block ? JSON.parse(block.body) : null
+      let block = this.txdb.prepare(sql).get()
+      if (block) {
+        block = { ...JSON.parse(block.body), hash: block.hash }
+      }
+      return block
     } catch (e) {
       console.error(e)
     }
@@ -877,13 +881,23 @@ class Database {
   //------------------------------Nodes---------------------------------
   addNode({ url, info }) {
     try {
-      const sql = "Insert or replace into nodes (url, info) values (?,?)"
-      const producer = info.producer ? 1 : 0
-      this.txdb.prepare(sql).run(url, JSON.stringify(info), producer)
+      const sql = "Insert or replace into nodes (url, info,pkey) values (?,?,?)"
+      this.txdb.prepare(sql).run(url, JSON.stringify(info), info.pkey)
       return true
     } catch (e) {
       return false
     }
+  }
+  updateNodeScore(pkey, correct = true) {
+    try {
+      let sql = correct ? "UPATE nodes SET correct = correct + 1 where pkey = ?" : "UPATE nodes SET mistake = mistake + 1 where pkey = ?"
+      this.txdb.prepare(sql).run(pkey)
+      sql = "UPATE nodes SET score = correct*100/(correct+mistake) where pkey = ?"
+      this.txdb.prepare(sql).run(pkey)
+    } catch (e) {
+      return false
+    }
+    return true
   }
   loadNodes() {
     try {
