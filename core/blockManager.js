@@ -1,5 +1,6 @@
 const { DEF } = require('./def');
 const { Util } = require('./util')
+var stringify = require('json-stable-stringify');
 const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => Object.keys(obj).length
@@ -26,7 +27,7 @@ class BlockMgr {
         if (!txs || txs.length == 0) return null
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
-        block.hash = await Util.dataHash(JSON.stringify(block))
+        block.hash = await Util.dataHash(stringify(block))
         return block
     }
     async computeMerkel(txs) {
@@ -44,14 +45,18 @@ class BlockMgr {
         if (sigs && block.height === this.height && !this.nodePool[nodeKey]) {
             this.nodePool[nodeKey] = true
             delete block.hash
-            const hash = await Util.dataHash(JSON.stringify(block))
+            const hash = await Util.dataHash(stringify(block))
             block.hash = this.nodePool[nodeKey] = hash
             //check sender's sig
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
             if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
                 //save block
-                this.uBlock = uBlock
+                delete uBlock.block.hash
+                uBlock.block.sigs = sigs
+                uBlock.block.hash = await Util.dataHash(stringify(block))
+                console.log("cBlock hash:", uBlock.block.hash)
+                //this.uBlock = uBlock
                 return
             }
 
@@ -83,7 +88,7 @@ class BlockMgr {
                         Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
                     }
                 } else {
-                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", Object.keys(this.uBlock.sigs).length)
+                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
                     this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
                 }
             }
