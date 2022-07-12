@@ -143,7 +143,7 @@ class BlockMgr {
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)) {
                         this.uBlock = null
-                        continue
+                        break;
                     }
                 }
             }
