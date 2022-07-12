@@ -51,9 +51,6 @@ class BlockMgr {
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
         let poolNode = this.nodePool[nodeKey]
-        if (block.height === this.height) {
-            console.log("found")
-        }
         if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
             poolNode = this.nodePool[nodeKey]
             poolNode.sigs = sigs
