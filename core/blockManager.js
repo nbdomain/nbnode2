@@ -74,7 +74,7 @@ class BlockMgr {
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async downloadBlocks(from, to, url) {
-
+        let ret = false
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
@@ -93,10 +93,9 @@ class BlockMgr {
                         }
                     }
                     this.db.saveBlock(block)
-
-                    return true
+                    ret = true
                 }
-
+                return ret
             }
         } catch (e) {
             return false
