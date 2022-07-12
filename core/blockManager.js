@@ -50,9 +50,9 @@ class BlockMgr {
         if (block.height === this.height) {
             console.log("found")
         }
-        if (sigs && block.height === this.height && (!poolNode.sigLen || poolNode.sigLen < objLen(sigs))) {
+        if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
             poolNode = this.nodePool[nodeKey]
-            poolNode.sigLen = objLen(sigs)
+            poolNode.sigs = sigs
             delete block.hash
             const hash = await Util.dataHash(stringify(block))
             block.hash = poolNode.hash = hash
