@@ -132,6 +132,7 @@ class BlockMgr {
                         this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
 
                         //check other node
+                        console.log(JSON.stringify(this.nodePool))
                         for (const pkey in this.nodePool) {
                             const node = this.nodePool[pkey]
                             if (node.uBlock.block.height > this.height) { //download missing block
