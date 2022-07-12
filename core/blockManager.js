@@ -105,7 +105,7 @@ class BlockMgr {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
             this.height = bl ? bl.height + 1 : 0
-            if (this.height < 5) { //
+            if (this.height < 15) { //
                 if (!this.uBlock) { //wait the block to confirm
                     const block = await this.createBlock(this.height)
                     if (block) {
