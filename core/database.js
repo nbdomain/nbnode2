@@ -890,6 +890,7 @@ class Database {
   }
   async saveBlock(block) {
     try {
+      console.log("Saving block: " + block.height)
       const hash = block.hash
       delete block.hash
       const sql = "Insert into blocks (height,body,hash) values (?,?,?)"

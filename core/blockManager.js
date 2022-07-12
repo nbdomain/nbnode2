@@ -75,6 +75,7 @@ class BlockMgr {
     async downloadBlocks(from, to, url) {
 
         try {
+            console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
             if (res.data) {
                 for (const blockItem of res.data) {
