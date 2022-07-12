@@ -309,8 +309,13 @@ app.get('/onSale', (req, res) => {
 app.get('/queryTX', async (req, res) => {
     const fromTime = req.query['from']
     const toTime = req.query['to']
-    const resolver = indexers.resolver
-    res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
+    const height = req.query['height']
+    if (height) {
+        res.json(await indexers.db.getBlockTxs(height))
+    } else {
+        res.json(await indexers.db.queryTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
+    }
+
 })
 app.get('/getBlocks', async (req, res) => {
     const from = req.query['from']
@@ -318,6 +323,7 @@ app.get('/getBlocks', async (req, res) => {
     const ret = indexers.db.getBlocks(from, to)
     res.json(ret)
 })
+
 app.get('/test', async (req, res) => {
     /*    let sql = "select * from ar_tx"
         const ret = indexers.db.txdb.prepare(sql).all()

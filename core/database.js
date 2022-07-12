@@ -747,6 +747,7 @@ class Database {
       this.logger.error(e)
     }
   }
+
   async queryTX(fromTime, toTime) {
     if (toTime == -1) toTime = 9999999999
     let sql = `SELECT * from txs where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime<1000) `
@@ -875,6 +876,17 @@ class Database {
       console.error(e)
     }
     return null
+  }
+  async getBlockTxs(height) {
+    const block = this.getBlock(height)
+    const ret = []
+    if (block) {
+      for (const tx of ret.txs) {
+        const txitem = await this.getFullTx({ txid: tx.txid })
+        txitem && ret.push(txitem)
+      }
+    }
+    return ret
   }
   async saveBlock(block) {
     try {

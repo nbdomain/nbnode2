@@ -73,9 +73,20 @@ class BlockMgr {
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async downloadBlocks(from, to, url) {
+        return
         try {
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
             if (res.data) {
+                for (const blockItem of res.data) {
+                    const block = JSON.parse(blockItem.body)
+                    if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
+                    const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
+                    const merkel = await this.computeMerkel(txs)
+                    if (merkel != block.merkel) { //refetch all txs
+
+                    }
+                    this.db.saveBlock(block)
+                }
 
             }
         } catch (e) {
