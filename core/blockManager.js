@@ -93,7 +93,8 @@ class BlockMgr {
                         }
                     }
                     this.db.saveBlock(block)
-                    this.uBlock = null
+
+                    return true
                 }
 
             }
@@ -140,7 +141,10 @@ class BlockMgr {
                 const node = this.nodePool[pkey]
                 if (node.uBlock.block.height > this.height) { //download missing block
                     const n = this.db.getNode(pkey)
-                    node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)
+                    if (node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)) {
+                        this.uBlock = null
+                        continue
+                    }
                 }
             }
             await wait(DEF.BLOCK_TIME)
