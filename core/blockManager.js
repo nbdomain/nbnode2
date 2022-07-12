@@ -105,43 +105,41 @@ class BlockMgr {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
             this.height = bl ? bl.height + 1 : 0
-            if (this.height < 15) { //
-                if (!this.uBlock) { //wait the block to confirm
-                    const block = await this.createBlock(this.height)
-                    if (block) {
-                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
-                        const uBlock = { sigs: {}, block }
-                        uBlock.sigs[Nodes.thisNode.key] = sig
-                        this.uBlock = uBlock
-                        console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
-                        Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
-                    }
+
+            if (!this.uBlock && this.height < 15) { //wait the block to confirm
+                const block = await this.createBlock(this.height)
+                if (block) {
+                    const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                    const uBlock = { sigs: {}, block }
+                    uBlock.sigs[Nodes.thisNode.key] = sig
+                    this.uBlock = uBlock
+                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
+                    Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
+                }
+            } else {
+                const { sigs, block } = this.uBlock
+                if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                    //save block
+                    delete block.hash
+                    block.sigs = sigs
+                    block.hash = await Util.dataHash(stringify(block))
+                    console.log("cBlock hash:", block.hash)
+                    this.indexers.db.saveBlock(block)
+                    this.uBlock = null
                 } else {
-                    const { sigs, block } = this.uBlock
-                    if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
-                        //save block
-                        delete block.hash
-                        block.sigs = sigs
-                        block.hash = await Util.dataHash(stringify(block))
-                        console.log("cBlock hash:", block.hash)
-                        this.indexers.db.saveBlock(block)
-                        this.uBlock = null
-                    } else {
-                        //broadcast my block
-                        console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
-                        this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                    //broadcast my block
+                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                    this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                }
+            }
 
-                        //check other node
-                        //console.log(JSON.stringify(this.nodePool))
-                        for (const pkey in this.nodePool) {
-                            const node = this.nodePool[pkey]
-                            if (node.uBlock.block.height > this.height) { //download missing block
-                                const n = this.db.getNode(pkey)
-                                node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)
-                            }
-                        }
-                    }
-
+            //check other node
+            //console.log(JSON.stringify(this.nodePool))
+            for (const pkey in this.nodePool) {
+                const node = this.nodePool[pkey]
+                if (node.uBlock.block.height > this.height) { //download missing block
+                    const n = this.db.getNode(pkey)
+                    node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)
                 }
             }
             await wait(DEF.BLOCK_TIME)
