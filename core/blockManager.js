@@ -13,6 +13,7 @@ class BlockMgr {
         this.height = 0
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
+        this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
@@ -40,10 +41,13 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
-            //console.log("txid:", tx.txid, " merkel:", lastHash)
+            console.log("txid:", tx.txid, " merkel:", lastHash)
             delete tx.bytes
         }
         return lastHash
+    }
+    async canResolve() {
+        return this.uBlock === null
     }
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
