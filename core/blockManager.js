@@ -43,8 +43,8 @@ class BlockMgr {
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
-
-        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = { sigLen: 0 }
+        console.log("got block height:", block.height, " from:", nodeKey)
+        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
         let poolNode = this.nodePool[nodeKey]
         if (block.height === this.height) {
