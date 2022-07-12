@@ -25,10 +25,14 @@ class BlockMgr {
             time = lastTx.txTime
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
-        if (!txs || txs.length == 0) return null
+        if (!txs || txs.length == 0) {
+            //console.log("No new tx to createBlock")
+            return null
+        }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
         block.hash = await Util.dataHash(stringify(block))
+        console.log("new block created. hash:", block.hash)
         return block
     }
     async computeMerkel(txs) {
@@ -43,7 +47,7 @@ class BlockMgr {
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
-        console.log("got block height:", block.height, " from:", nodeKey)
+        //console.log("got block height:", block.height, " from:", nodeKey)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
         let poolNode = this.nodePool[nodeKey]
@@ -107,18 +111,14 @@ class BlockMgr {
             this.height = bl ? bl.height + 1 : 0
 
             if (!this.uBlock) { //wait the block to confirm
-                console.log(1)
-                if (this.height < 25) {
-                    console.log(2)
-                    const block = await this.createBlock(this.height)
-                    if (block) {
-                        console.log(3)
-                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
-                        const uBlock = { sigs: {}, block }
-                        uBlock.sigs[Nodes.thisNode.key] = sig
-                        this.uBlock = uBlock
-                    }
+                const block = await this.createBlock(this.height)
+                if (block) {
+                    const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                    const uBlock = { sigs: {}, block }
+                    uBlock.sigs[Nodes.thisNode.key] = sig
+                    this.uBlock = uBlock
                 }
+
             } else {
                 const { sigs, block } = this.uBlock
                 if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
