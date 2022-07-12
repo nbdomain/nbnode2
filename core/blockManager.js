@@ -40,6 +40,7 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
+            console.log("txid:", tx.txid, " merkel:", lastHash)
             delete tx.bytes
         }
         return lastHash
@@ -131,8 +132,8 @@ class BlockMgr {
             }
             //broadcast my block
             if (this.uBlock) {
-                console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, this.uBlock.block.merkel, " sig:", objLen(this.uBlock.sigs))
-                console.log(this.uBlock.block.txs)
+                console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                //console.log(this.uBlock.block.txs)
                 this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
             }
             //check other node
