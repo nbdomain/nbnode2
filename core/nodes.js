@@ -113,6 +113,7 @@ class Nodes {
     async loadNodes() {
         const self = this;
         const _addFromArray = async function (nodes) {
+            if (!Array.isArray(nodes)) return
             for (const node of nodes) {
                 await self.addNode({ url: node.url ? node.url : node })
                 if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
