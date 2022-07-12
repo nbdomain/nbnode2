@@ -132,6 +132,7 @@ class BlockMgr {
             //broadcast my block
             if (this.uBlock) {
                 console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                console.log(this.uBlock.block.txs)
                 this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
             }
             //check other node
