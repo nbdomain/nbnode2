@@ -41,7 +41,7 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
-            //console.log("txid:", tx.txid, " merkel:", lastHash)
+            console.log("txid:", tx.txid, " merkel:", lastHash)
             delete tx.bytes
         }
         return lastHash
@@ -89,9 +89,10 @@ class BlockMgr {
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
                     const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
                     const merkel = await this.computeMerkel(txs)
-                    if (merkel != block.merkel) { //refetch all txs
+                    if (merkel && merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
+                            this.db.deleteTxs(txs)
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
                             }

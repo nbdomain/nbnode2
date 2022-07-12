@@ -877,6 +877,20 @@ class Database {
     }
     return null
   }
+  deleteTxs(txs) {
+    try {
+      let sql = "delete from txs where txid in (";
+      const txids = []
+      for (const tx of txs) {
+        txids.push(tx.txid)
+        sql += "?,"
+      }
+      sql = sql.slice(0, sql.length - 1) + ")"
+      this.txdb.prepare(sql).run(txids)
+    } catch (e) {
+      return false
+    }
+  }
   async getBlockTxs(height) {
     const block = this.getBlock(height)
     const ret = []
