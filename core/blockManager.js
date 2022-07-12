@@ -81,7 +81,7 @@ class BlockMgr {
             if (res.data) {
                 for (const blockItem of res.data) {
                     const block = { ...JSON.parse(blockItem.body), hash: blockItem.hash }
-                    if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
+                    //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
                     const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
                     const merkel = await this.computeMerkel(txs)
                     if (merkel != block.merkel) { //refetch all txs
