@@ -106,15 +106,15 @@ class BlockMgr {
             const bl = this.db.getLastBlock()
             this.height = bl ? bl.height + 1 : 0
 
-            if (!this.uBlock && this.height < 15) { //wait the block to confirm
-                const block = await this.createBlock(this.height)
-                if (block) {
-                    const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
-                    const uBlock = { sigs: {}, block }
-                    uBlock.sigs[Nodes.thisNode.key] = sig
-                    this.uBlock = uBlock
-                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash)
-                    Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
+            if (!this.uBlock) { //wait the block to confirm
+                if (this.height < 15) {
+                    const block = await this.createBlock(this.height)
+                    if (block) {
+                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                        const uBlock = { sigs: {}, block }
+                        uBlock.sigs[Nodes.thisNode.key] = sig
+                        this.uBlock = uBlock
+                    }
                 }
             } else {
                 const { sigs, block } = this.uBlock
@@ -126,13 +126,14 @@ class BlockMgr {
                     console.log("cBlock hash:", block.hash)
                     this.indexers.db.saveBlock(block)
                     this.uBlock = null
-                } else {
-                    //broadcast my block
-                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
-                    this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                    continue
                 }
             }
-
+            //broadcast my block
+            if (this.uBlock) {
+                console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+            }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
