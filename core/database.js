@@ -861,6 +861,11 @@ class Database {
     }
     return null
   }
+  getBlocks(from, to) {
+    const sql = "select * from blocks where height >= ? AND height <= ?"
+    const ret = this.txdb.prepare(sql).all(from, to)
+    return ret
+  }
   getBlock(height) {
     try {
       const sql = "select * from blocks where height=?"

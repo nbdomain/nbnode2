@@ -312,6 +312,12 @@ app.get('/queryTX', async (req, res) => {
     const resolver = indexers.resolver
     res.json(await resolver.readNBTX(fromTime ? fromTime : 0, toTime ? toTime : -1))
 })
+app.get('/getBlocks', async (req, res) => {
+    const from = req.query['from']
+    const to = req.query['to']
+    const ret = indexers.db.getBlocks(from, to)
+    res.json(ret)
+})
 app.get('/test', async (req, res) => {
     /*    let sql = "select * from ar_tx"
         const ret = indexers.db.txdb.prepare(sql).all()

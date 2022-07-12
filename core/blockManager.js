@@ -41,33 +41,25 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
-        const { block, sigs, type } = uBlock
+        const { block, sigs } = uBlock
+
+        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = { sigLen: 0 }
+
         let poolNode = this.nodePool[nodeKey]
-        if (type === 'c') {
-            console.log("---------------Received confirmed block------------")
+        if (block.height === this.height) {
+            console.log("found")
         }
-        if (sigs && block.height === this.height && (!poolNode || poolNode.sigLen < objLen(sigs))) {
-            poolNode = { sigLen: objLen(sigs) }
+        if (sigs && block.height === this.height && (!poolNode.sigLen || poolNode.sigLen < objLen(sigs))) {
+            poolNode = this.nodePool[nodeKey]
+            poolNode.sigLen = objLen(sigs)
             delete block.hash
             const hash = await Util.dataHash(stringify(block))
             block.hash = poolNode.hash = hash
             //check sender's sig
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
-            if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
-                //save block
-                delete uBlock.block.hash
-                uBlock.block.sigs = sigs
-                uBlock.block.hash = await Util.dataHash(stringify(block))
-                console.log("cBlock hash:", uBlock.block.hash)
-                this.indexers.db.saveBlock(uBlock.block)
-                uBlock.type = 'c'
-                Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
-                this.uBlock = null
-                return
-            }
 
-            if (this.uBlock && this.uBlock.block.hash === hash) {
+            if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
                 if (!sigs[Nodes.thisNode.key]) { //add my sig
                     const sig = await Util.bitcoinSign(CONFIG.key, hash)
                     sigs[Nodes.thisNode.key] = sig
@@ -76,7 +68,11 @@ class BlockMgr {
                     this.uBlock = uBlock
             }
         }
+        this.nodePool[nodeKey].uBlock = uBlock
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
+    }
+    async downloadBlocks(from, to, node) {
+
     }
     async run() {
         while (true) {
@@ -95,8 +91,29 @@ class BlockMgr {
                         Nodes.notifyPeers({ cmd: "newBlock", data: uBlock })
                     }
                 } else {
-                    console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
-                    this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                    const { sigs, block } = this.uBlock
+                    if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                        //save block
+                        delete block.hash
+                        block.sigs = sigs
+                        block.hash = await Util.dataHash(stringify(block))
+                        console.log("cBlock hash:", block.hash)
+                        this.indexers.db.saveBlock(block)
+                        this.uBlock = null
+                    } else {
+                        //broadcast my block
+                        console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                        this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+
+                        //check other node
+                        for (const pkey in this.nodePool) {
+                            const node = this.nodePool[pkey]
+                            if (node.uBlock.block.height > this.height) { //download missing block
+                                this.downloadBlocks(this.height, node.uBlock.block.height - 1)
+                            }
+                        }
+                    }
+
                 }
             }
             await wait(DEF.BLOCK_TIME)
