@@ -118,7 +118,7 @@ class NodeClient {
                         if (r) {
                             self.socket = socket
                             self._setup()
-                            self.pullNewTxs.bind(self)()
+                            //self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()
