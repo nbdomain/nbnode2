@@ -107,7 +107,7 @@ class BlockMgr {
             this.height = bl ? bl.height + 1 : 0
 
             if (!this.uBlock) { //wait the block to confirm
-                if (this.height < 15) {
+                if (this.height < 25) {
                     const block = await this.createBlock(this.height)
                     if (block) {
                         const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
