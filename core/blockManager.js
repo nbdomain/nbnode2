@@ -1,6 +1,7 @@
 const { DEF } = require('./def');
 const { Util } = require('./util')
 var stringify = require('json-stable-stringify');
+const { default: axios } = require('axios');
 const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => Object.keys(obj).length
@@ -71,8 +72,15 @@ class BlockMgr {
         this.nodePool[nodeKey].uBlock = uBlock
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
-    async downloadBlocks(from, to, node) {
+    async downloadBlocks(from, to, url) {
+        try {
+            const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
+            if (res.data) {
 
+            }
+        } catch (e) {
+            return false
+        }
     }
     async run() {
         while (true) {
@@ -109,7 +117,8 @@ class BlockMgr {
                         for (const pkey in this.nodePool) {
                             const node = this.nodePool[pkey]
                             if (node.uBlock.block.height > this.height) { //download missing block
-                                this.downloadBlocks(this.height, node.uBlock.block.height - 1)
+                                const n = this.db.getNode(pkey)
+                                node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)
                             }
                         }
                     }

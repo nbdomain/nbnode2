@@ -184,6 +184,7 @@ class Nodes {
             if (ret && Object.keys(this.nodeClients).length > 1) { //one node return success, send through another node, make sure it's sent
                 this.nodeClients[Object.keys(this.nodeClients)[1]].sendNewTx(obj)
             }
+            return ret
         }
         console.error("No Other nodes connected, cannot send tx")
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }

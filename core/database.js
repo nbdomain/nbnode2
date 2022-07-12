@@ -914,6 +914,10 @@ class Database {
     }
     return true
   }
+  getNode(pkey) {
+    let sql = "select * from nodes where pkey = ?"
+    return this.txdb.prepare(sql).get(pkey)
+  }
   loadNodes() {
     try {
       const sql = "select * from nodes ORDER BY score,correct DESC"
