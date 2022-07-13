@@ -61,6 +61,7 @@ class BlockMgr {
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
+        if (block.version != DEF.BLOCK_VER) return
         //console.log("got block height:", block.height, " from:", nodeKey)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
@@ -97,6 +98,7 @@ class BlockMgr {
             if (res.data) {
                 for (const blockItem of res.data) {
                     let block = JSON.parse(blockItem.body)
+                    if (block.version != DEF.BLOCK_VER) continue
                     const sigs = blockItem.sigs
                     block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
