@@ -34,7 +34,7 @@ class BlockMgr {
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) {
-            return null
+            return preBlock
         }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
@@ -54,7 +54,7 @@ class BlockMgr {
         return lastHash
     }
     canResolve() {
-        const ret = (this.uBlock === null) && this._canResolve
+        const ret = (this.uBlock === null || this.uBlock.block.height === this.height - 1) && this._canResolve
         return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
