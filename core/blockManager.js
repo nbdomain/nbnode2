@@ -34,8 +34,7 @@ class BlockMgr {
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) {
-            //console.log("No new tx to createBlock")
-            return preBlock
+            return null
         }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
