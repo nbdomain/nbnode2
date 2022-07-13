@@ -67,6 +67,7 @@ class BlockMgr {
 
         let poolNode = this.nodePool[nodeKey]
         if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
+            console.log(1)
             poolNode = this.nodePool[nodeKey]
             poolNode.sigs = sigs
             delete block.hash
@@ -75,15 +76,19 @@ class BlockMgr {
             //check sender's sig
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
-
+            console.log(2)
             if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
+                console.log(3)
                 if (!sigs[Nodes.thisNode.key]) { //add my sig
                     const sig = await Util.bitcoinSign(CONFIG.key, hash)
                     sigs[Nodes.thisNode.key] = sig
 
                 }
-                if (objLen(this.uBlock.sigs) < objLen(sigs))
+                if (objLen(this.uBlock.sigs) < objLen(sigs)) {
+                    console.log(4)
                     this.uBlock = uBlock
+                }
+                console.log(5)
             }
         }
         this.nodePool[nodeKey].uBlock = uBlock
