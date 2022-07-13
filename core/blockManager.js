@@ -62,6 +62,7 @@ class BlockMgr {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
         if (block.version != DEF.BLOCK_VER) return
+        if (!this.uBlock) return
         console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
