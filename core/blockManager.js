@@ -135,7 +135,7 @@ class BlockMgr {
 
             } else {
                 const { sigs, block } = this.uBlock
-                if (Object.keys(sigs).length > Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
+                if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
                     //save block
                     delete block.hash
                     block.sigs = sigs
