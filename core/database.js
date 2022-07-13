@@ -203,7 +203,8 @@ class Database {
       CREATE TABLE IF NOT EXISTS blocks (
         height INTEGER PRIMARY KEY UNIQUE DEFAULT (0),
         body   TEXT,
-        hash   TEXT UNIQUE
+        hash   TEXT UNIQUE,
+        sigs   TEXT
     );    
     `
       this.txdb.prepare(sql).run();
@@ -871,7 +872,7 @@ class Database {
     try {
       const sql = "select * from blocks where height=?"
       const block = this.txdb.prepare(sql).get(height)
-      return block ? { hash: block.hash, ...JSON.parse(block.body) } : null
+      return block
     } catch (e) {
       console.error(e)
     }
@@ -902,13 +903,13 @@ class Database {
     }
     return ret
   }
-  async saveBlock(block) {
+  async saveBlock({ sigs, block }) {
     try {
       console.log("Saving block: " + block.height)
       const hash = block.hash
       delete block.hash
-      const sql = "Insert into blocks (height,body,hash) values (?,?,?)"
-      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash)
+      const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
+      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
 
       const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
       const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash

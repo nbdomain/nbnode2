@@ -21,7 +21,12 @@ class BlockMgr {
         const db = this.db
         let preBlock = null, time = 0
         if (height > 0) {
-            preBlock = db.getBlock(height - 1)
+            const b = db.getBlock(height - 1)
+            if (b) {
+                preBlock = b && JSON.parse(b.body)
+                preBlock.hash = b.hash
+            }
+
         }
         if (preBlock) {
             const lastTx = preBlock.txs[preBlock.txs.length - 1]
@@ -91,7 +96,9 @@ class BlockMgr {
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
             if (res.data) {
                 for (const blockItem of res.data) {
-                    const block = { ...JSON.parse(blockItem.body), hash: blockItem.hash }
+                    let block = JSON.parse(blockItem.body)
+                    const sigs = blockItem.sigs
+                    block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
                     const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
                     const merkel = await this.computeMerkel(txs)
@@ -105,7 +112,7 @@ class BlockMgr {
                             resetDB = true
                         }
                     }
-                    this.db.saveBlock(block)
+                    this.db.saveBlock({ sigs, block })
                     ret = true
                 }
                 if (resetDB) {
@@ -142,11 +149,12 @@ class BlockMgr {
                 const { sigs, block } = this.uBlock
                 if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
                     //save block
-                    delete block.hash
-                    block.sigs = sigs
-                    block.hash = await Util.dataHash(stringify(block))
+
+                    //delete block.hash
+                    //block.sigs = sigs
+                    //block.hash = await Util.dataHash(stringify(block))
                     console.log("cBlock hash:", block.hash)
-                    this.indexers.db.saveBlock(block)
+                    this.indexers.db.saveBlock({ sigs, block })
                     this.uBlock = null
                     continue
                 }
