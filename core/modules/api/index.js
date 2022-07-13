@@ -349,8 +349,8 @@ app.get('/test', async (req, res) => {
     //Nodes.pullNewTxs()
     //const ntx = +req.query['ntx']
     //const block = await indexers.blockMgr.createBlock(0, ntx)
-    //indexers.db.dropTable(req.query['name'])
-    indexers.db.deleteBlock(req.query['height'])
+    indexers.db.dropTable('blocks')
+    //indexers.db.deleteBlock(req.query['height'])
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {
