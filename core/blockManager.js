@@ -128,13 +128,17 @@ class BlockMgr {
         }
         return ret
     }
+    async onNewTx() {
+        this.hasNewTX = true
+    }
     async run() {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
             this.height = bl ? bl.height + 1 : 0
 
-            if (!this.uBlock) { //wait the block to confirm
+            if (!this.uBlock || this.hasNewTX) { //wait the block to confirm
+                this.hasNewTX = false
                 let block = await this.createBlock(this.height)
                 if (block) {
                     if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
