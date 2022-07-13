@@ -14,6 +14,7 @@ class BlockMgr {
         this.signedBlock = -1
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
+        this._canResolve = true
         this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
@@ -49,7 +50,7 @@ class BlockMgr {
         return lastHash
     }
     async canResolve() {
-        return this.uBlock === null
+        return this.uBlock === null && this._canResolve
     }
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
@@ -82,7 +83,8 @@ class BlockMgr {
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async downloadBlocks(from, to, url) {
-        let ret = false
+        let ret = false, resetDB = false
+        this._canResolve = false
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
@@ -99,16 +101,22 @@ class BlockMgr {
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
                             }
+                            resetDB = true
                         }
                     }
                     this.db.saveBlock(block)
                     ret = true
                 }
-                return ret
+                if (resetDB) {
+                    this.db.resetDB("domain")
+                }
             }
         } catch (e) {
             return false
+        } finally {
+            this._canResolve = true
         }
+        return ret
     }
     async run() {
         while (true) {
