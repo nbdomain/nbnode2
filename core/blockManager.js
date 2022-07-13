@@ -35,7 +35,7 @@ class BlockMgr {
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) {
             //console.log("No new tx to createBlock")
-            return null
+            return preBlock
         }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
@@ -76,11 +76,11 @@ class BlockMgr {
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
 
-            if (this.signedBlock != this.height && this.uBlock && this.uBlock.block.hash === hash) { //same as my block
+            if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
                 if (!sigs[Nodes.thisNode.key]) { //add my sig
                     const sig = await Util.bitcoinSign(CONFIG.key, hash)
                     sigs[Nodes.thisNode.key] = sig
-                    this.signedBlock = this.height //make sure only sign one block
+
                 }
                 if (objLen(this.uBlock.sigs) < objLen(sigs))
                     this.uBlock = uBlock
@@ -163,7 +163,7 @@ class BlockMgr {
             }
             //broadcast my block
             if (this.uBlock) {
-                console.log("broadcast newBlock, height:", this.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
+                console.log("broadcast newBlock, height:", this.uBlock.block.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
                 //console.log(this.uBlock.block.txs)
                 this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
             }
