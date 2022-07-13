@@ -141,6 +141,11 @@ app.get('/user/:account', async function (req, res) {
     const ret = await resolver.readUser(account)
     res.json(ret)
 })
+app.get('/fetchtx/:txid', async (req, res) => {
+    const txid = req.params['txid']
+    handleNewTx({ txid, force: true })
+    res.end("ok")
+})
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
@@ -149,19 +154,18 @@ app.post('/sendTx', async function (req, res) {
 });
 async function handleNewTx(para, from, force = false) {
     let db = indexers.db
-    const chain = para.chain ? para.chain : 'bsv'
-    if (!db.isTransactionParsed(para.txid, false, chain) || force) {
-        const data = await Nodes.getTx(para.txid, from, chain)
+    if (!db.isTransactionParsed(para.txid, false) || force) {
+        const data = await Nodes.getTx(para.txid, from)
         if (data) {
             console.log("handleNewTx:", para.txid)
             const item = data.oDataRecord
-            const ret = await (Parser.parse({ rawtx: data.tx.rawtx || data.rawtx, oData: item?.raw, height: -1, chain }));
+            const ret = await (Parser.parse({ rawtx: data.tx.rawtx || data.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain }));
             if (ret.code == 0 && ret.rtx?.oHash === item.hash)
                 await indexers.db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
             else {
                 console.error("wrong rawtx format. ret:", ret)
             }
-            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, oDataRecord: data.oDataRecord, chain })
+            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })
         }
     }
 }

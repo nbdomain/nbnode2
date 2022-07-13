@@ -189,22 +189,24 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx")
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
-    async getTx(txid, from, chain) {
+    async getTx(txid, from) {
         try {
-            const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}`)
-            if (res.data) {
-                if (res.data.code == 0) return res.data
+            if (from) {
+                const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}`)
+                if (res.data) {
+                    if (res.data.code == 0) return res.data
+                }
             }
-        } catch (e) { e.error("getTx:", e.message) }
+        } catch (e) { console.error("getTx:", e.message) }
         for (const node of this.getNodes()) {
             if (node.id == from) continue
             const url = node.id + "/api/p2p/gettx?txid=" + txid
             try {
                 const res = await axios.get(url)
                 if (res.data) {
-                    if (res.data.code == 0) return res.data
+                    if (res.data.tx) return res.data
                 }
-            } catch (e) { e.error("getTx:", e.message) }
+            } catch (e) { console.error("getTx:", e.message) }
         }
         return null
     }
