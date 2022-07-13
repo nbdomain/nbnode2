@@ -49,8 +49,9 @@ class BlockMgr {
         }
         return lastHash
     }
-    async canResolve() {
-        return this.uBlock === null && this._canResolve
+    canResolve() {
+        const ret = (this.uBlock === null) && this._canResolve
+        return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
         const { Nodes } = this.indexers
@@ -125,8 +126,12 @@ class BlockMgr {
             this.height = bl ? bl.height + 1 : 0
 
             if (!this.uBlock) { //wait the block to confirm
-                const block = await this.createBlock(this.height)
+                let block = await this.createBlock(this.height)
                 if (block) {
+                    if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
+                        await wait(DEF.BLOCK_TIME * 2)
+                        block = await this.createBlock(this.height)
+                    }
                     const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
                     const uBlock = { sigs: {}, block }
                     uBlock.sigs[Nodes.thisNode.key] = sig
