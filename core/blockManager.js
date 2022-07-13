@@ -32,6 +32,7 @@ class BlockMgr {
         }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
+        console.log(block)
         block.hash = await Util.dataHash(stringify(block))
         console.log("new block created. hash:", block.hash)
         return block
