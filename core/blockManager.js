@@ -61,13 +61,13 @@ class BlockMgr {
         const { Nodes } = this.indexers
         const { block, sigs } = uBlock
         if (block.version != DEF.BLOCK_VER) return
+        //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
+        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
+
         if (!this.uBlock) {
             this.nodePool[nodeKey].uBlock = uBlock
             return
         }
-        //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
-        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
-
         let poolNode = this.nodePool[nodeKey]
         if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
             poolNode = this.nodePool[nodeKey]
