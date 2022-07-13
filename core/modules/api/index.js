@@ -345,8 +345,9 @@ app.get('/test', async (req, res) => {
     //Nodes.pullNewTxs()
     //const ntx = +req.query['ntx']
     //const block = await indexers.blockMgr.createBlock(0, ntx)
-    indexers.db.dropTable(req.query['name'])
-    res.end(block.hash)
+    //indexers.db.dropTable(req.query['name'])
+    indexers.db.deleteBlock(req.query['height'])
+    res.end("ok")
 })
 app.get('/reverify', async (req, res) => {
     const txid = req.query['txid']

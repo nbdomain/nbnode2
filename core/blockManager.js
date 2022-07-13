@@ -11,6 +11,7 @@ class BlockMgr {
         this.nodePool = {}
         this.blockPool = {}
         this.height = 0
+        this.signedBlock = -1
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this.indexers.resolver.addController(this)
@@ -42,7 +43,7 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
-            console.log("txid:", tx.txid, " merkel:", lastHash)
+            //console.log("txid:", tx.txid, " merkel:", lastHash)
             delete tx.bytes
         }
         return lastHash
@@ -67,10 +68,11 @@ class BlockMgr {
             const sigSender = sigs[nodeKey]
             if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
 
-            if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
+            if (this.signedBlock != this.height && this.uBlock && this.uBlock.block.hash === hash) { //same as my block
                 if (!sigs[Nodes.thisNode.key]) { //add my sig
                     const sig = await Util.bitcoinSign(CONFIG.key, hash)
                     sigs[Nodes.thisNode.key] = sig
+                    this.signedBlock = this.height //make sure only sign one block
                 }
                 if (objLen(this.uBlock.sigs) < objLen(sigs))
                     this.uBlock = uBlock
@@ -125,7 +127,7 @@ class BlockMgr {
 
             } else {
                 const { sigs, block } = this.uBlock
-                if (Object.keys(sigs).length > DEF.CONSENSUE_COUNT - 1) {
+                if (Object.keys(sigs).length > Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
                     //save block
                     delete block.hash
                     block.sigs = sigs

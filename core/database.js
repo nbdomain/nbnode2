@@ -919,7 +919,14 @@ class Database {
       console.error(e)
     }
   }
-
+  deleteBlock(height) {
+    try {
+      const sql = "delete from blocks where height = ?"
+      this.txdb.prepare(sql).run(height)
+    } catch (e) {
+      return false
+    }
+  }
   //------------------------------Nodes---------------------------------
   addNode({ url, info }) {
     try {
