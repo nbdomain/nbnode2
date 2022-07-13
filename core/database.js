@@ -893,7 +893,9 @@ class Database {
     }
   }
   async getBlockTxs(height) {
-    const block = this.getBlock(height)
+    const BL = this.getBlock(height)
+    if (!BL) return []
+    const block = JSON.parse(BL.body)
     const ret = []
     if (block) {
       for (const tx of block.txs) {
