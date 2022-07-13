@@ -323,7 +323,8 @@ app.get('/queryTX', async (req, res) => {
 })
 app.get('/getBlocks', async (req, res) => {
     const from = req.query['from']
-    const to = req.query['to']
+    const to = req.query['to'] ? req.query['to'] : from
+
     const ret = indexers.db.getBlocks(from, to)
     res.json(ret)
 })
