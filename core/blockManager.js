@@ -107,7 +107,7 @@ class BlockMgr {
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
                     const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
                     const merkel = await this.computeMerkel(txs)
-                    if (merkel && merkel != block.merkel) { //refetch all txs in the block
+                    if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
                             this.db.deleteTxs(txs)
