@@ -174,7 +174,7 @@ class BlockMgr {
             if (!broadcastBlock) broadcastBlock = this.db.getBlock(this.height - 1, true)
             if (broadcastBlock) {
                 console.log("broadcast newBlock, height:", broadcastBlock.height, " hash:", broadcastBlock.hash, " sig:", objLen(broadcastBlock.sigs))
-                Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+                Nodes.notifyPeers({ cmd: "newBlock", data: { sigs: broadcastBlock.sigs, block: broadcastBlock } })
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
