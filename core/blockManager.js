@@ -107,7 +107,7 @@ class BlockMgr {
                 for (const blockItem of res.data) {
                     let block = JSON.parse(blockItem.body)
                     if (block.version != DEF.BLOCK_VER) continue
-                    const sigs = blockItem.sigs
+                    const sigs = JSON.parse(blockItem.sigs)
                     block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
                     const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
