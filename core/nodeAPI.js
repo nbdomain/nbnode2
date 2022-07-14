@@ -118,7 +118,8 @@ class NodeClient {
                         if (r) {
                             self.socket = socket
                             self._setup()
-                            //self.pullNewTxs.bind(self)()
+                            //if (node.pkey === "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85")
+                            //    self.pullNewTxs.bind(self)({ from: 0 })
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()
@@ -164,7 +165,7 @@ class NodeClient {
         this.socket.emit("queryTx", para, async (res) => {
             console.log("get reply from queryTx:")
             for (const tx of res) {
-                if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.txTime ? tx.txTime : tx.time, chain: tx.chain })) {
+                if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })) {
 
                 }
             }
