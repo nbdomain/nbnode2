@@ -127,7 +127,8 @@ class BlockMgr {
                     ret = true
                 }
                 if (resetDB) {
-                    this.db.resetDB("domain")
+                    console.log("will call resetDB ")
+                    //this.db.resetDB("domain")
                 }
             }
         } catch (e) {
