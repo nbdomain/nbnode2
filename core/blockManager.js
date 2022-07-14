@@ -28,11 +28,15 @@ class BlockMgr {
             }
 
         }
+        let removeTX = [] // remove the txs that's already in preBlock
         if (preBlock) {
             const lastTx = preBlock.txs[preBlock.txs.length - 1]
             time = lastTx.txTime
+            for (const tx of preBlock.txs) {
+                if (tx.txTime == time) removeTX.push(tx.txid)
+            }
         }
-        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
+        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH, remove: removeTX })
         if (!txs || txs.length == 0) {
             //return preBlock
             return null
@@ -170,11 +174,11 @@ class BlockMgr {
                 }
             }
             //broadcast current block or last block
-            let broadcastBlock = this.uBlock
-            if (!broadcastBlock) broadcastBlock = this.db.getBlock(this.height - 1, true)
-            if (broadcastBlock) {
-                console.log("broadcast newBlock, height:", broadcastBlock.height, " hash:", broadcastBlock.hash, " sig:", objLen(broadcastBlock.sigs))
-                Nodes.notifyPeers({ cmd: "newBlock", data: { sigs: broadcastBlock.sigs, block: broadcastBlock } })
+            let bcBlock = this.uBlock
+            if (!bcBlock) bcBlock = this.db.getBlock(this.height - 1, true)
+            if (bcBlock) {
+                console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " sig:", objLen(bcBlock.sigs))
+                Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))

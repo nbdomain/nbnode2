@@ -424,9 +424,21 @@ class Database {
       if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
     })
   }
-  getTransactions({ time, limit }) {
-    const sql = `select txid,bytes,txTime from txs where txTime >? AND txTime!=${DEF.TX_INVALIDTX} ORDER BY txTime,txid ASC limit ?`
-    return this.txdb.prepare(sql).all(time, limit)
+
+  getTransactions({ time, limit, remove }) {
+    if (!remove) remove = []
+    const sql = `select txid,bytes,txTime from txs where txTime >= ? AND txTime!=${DEF.TX_INVALIDTX} ORDER BY txTime,txid ASC limit ?`
+    let ret = this.txdb.prepare(sql).all(time, limit + remove.length)
+    if (remove.length > 0) {
+      ret = ret.filter(item => {
+        for (const txid of remove) {
+          if (item.txid === txid) return false
+        }
+        return true
+      })
+      ret = ret.slice(0, 100)
+    }
+    return ret
   }
   getTransaction(txid) {
     const sql = `select * from txs WHERE txid = ?`
@@ -868,12 +880,12 @@ class Database {
     const ret = this.txdb.prepare(sql).all(from, to)
     return ret
   }
-  getBlock(height, parse = false) {
+  getBlock(height, uBlockType = false) {
     try {
       const sql = "select * from blocks where height=?"
       let block = this.txdb.prepare(sql).get(height)
-      if (parse) {
-        block = { ...JSON.parse(block.body), sigs: JSON.parse(block.sigs), hash: block.hash }
+      if (uBlockType) {
+        return { block: { ...JSON.parse(block.body), hash: block.hash }, sigs: JSON.parse(block.sigs) }
       }
       return block
     } catch (e) {
