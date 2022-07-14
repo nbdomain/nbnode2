@@ -103,7 +103,7 @@ class Indexer {
     return this.database.getTransactionTime(txid)
   }
 
-  async addTxFull({ txid, rawtx, time, oDataRecord, noVerify = false, force = false, chain }) {
+  async addTxFull({ txid, rawtx, time, txTime, oDataRecord, noVerify = false, force = false, chain }) {
 
     if (!force && this.database.isTransactionParsed(txid, false)) {
       console.log("Skipping:", txid)
@@ -115,6 +115,7 @@ class Indexer {
     let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 
     const ts = ret.code == 0 ? ret.rtx.time : DEF.TX_INVALIDTX
+    if (txTime) ts = txTime
     if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
       await this.database.addFullTx({ txid, rawtx, time: ts, oDataRecord, chain })
       console.log("Added txid:", txid)

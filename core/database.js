@@ -418,11 +418,8 @@ class Database {
     return row && row[0]
   }
   deleteTransaction(txid) {
-    this.transaction(() => {
-      const sql = `DELETE FROM txs WHERE txid = ?`
-      this.txdb.prepare(sql).run(txid)
-      if (this.onDeleteTransaction) this.onDeleteTransaction(txid)
-    })
+    const sql = "delete from txs where txid = ?"
+    this.txdb.prepare(sql).run(txid)
   }
 
   getTransactions({ time, limit, remove }) {

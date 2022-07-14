@@ -146,6 +146,11 @@ app.get('/fetchtx/:txid', async (req, res) => {
     handleNewTx({ txid, force: true })
     res.end("ok")
 })
+app.get('/deletetx/:txid', async (req, res) => {
+    const txid = req.params['txid']
+    indexers.db.deleteTransaction(txid)
+    res.end("ok")
+})
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
@@ -158,7 +163,7 @@ async function handleNewTx(para, from, force = false) {
         const data = await Nodes.getTx(para.txid, from)
         if (data) {
             console.log("handleNewTx:", para.txid)
-            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, oDataRecord: data.oDataRecord, chain: data.tx.chain })
+            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })
         }
     }
 }
