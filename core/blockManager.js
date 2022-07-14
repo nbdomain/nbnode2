@@ -119,7 +119,8 @@ class BlockMgr {
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
                             }
-                            resetDB = true
+                            if (merkel)
+                                resetDB = true //reset domain db if there are conflicts
                         }
                     }
                     this.db.saveBlock({ sigs, block })
