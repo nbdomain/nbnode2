@@ -868,10 +868,13 @@ class Database {
     const ret = this.txdb.prepare(sql).all(from, to)
     return ret
   }
-  getBlock(height) {
+  getBlock(height, parse = false) {
     try {
       const sql = "select * from blocks where height=?"
-      const block = this.txdb.prepare(sql).get(height)
+      let block = this.txdb.prepare(sql).get(height)
+      if (parse) {
+        block = { ...JSON.parse(block.body), sigs: JSON.parse(block.sigs), hash: block.hash }
+      }
       return block
     } catch (e) {
       console.error(e)

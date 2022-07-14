@@ -34,7 +34,8 @@ class BlockMgr {
         }
         const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH })
         if (!txs || txs.length == 0) {
-            return preBlock
+            //return preBlock
+            return null
         }
         const merkel = await this.computeMerkel(txs)
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
@@ -54,7 +55,7 @@ class BlockMgr {
         return lastHash
     }
     canResolve() {
-        const ret = (this.uBlock === null || this.uBlock.block.height === this.height - 1) && this._canResolve
+        const ret = (this.uBlock === null) && this._canResolve
         return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
@@ -138,12 +139,12 @@ class BlockMgr {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
-            this.height = bl ? bl.height + 1 : 0
-
             if (!this.uBlock || this.hasNewTX) { //wait the block to confirm
                 this.hasNewTX = false
+                this.height = bl ? bl.height + 1 : 0
                 let block = await this.createBlock(this.height)
                 if (block) {
+                    this.height = block.height
                     if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
                         await wait(DEF.BLOCK_TIME * 2)
                         block = await this.createBlock(this.height)
@@ -168,11 +169,12 @@ class BlockMgr {
                     continue
                 }
             }
-            //broadcast my block
-            if (this.uBlock) {
-                console.log("broadcast newBlock, height:", this.uBlock.block.height, " hash:", this.uBlock.block.hash, " sig:", objLen(this.uBlock.sigs))
-                //console.log(this.uBlock.block.txs)
-                this.uBlock && Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
+            //broadcast current block or last block
+            let broadcastBlock = this.uBlock
+            if (!broadcastBlock) broadcastBlock = this.db.getBlock(this.height - 1, true)
+            if (broadcastBlock) {
+                console.log("broadcast newBlock, height:", broadcastBlock.height, " hash:", broadcastBlock.hash, " sig:", objLen(broadcastBlock.sigs))
+                Nodes.notifyPeers({ cmd: "newBlock", data: this.uBlock })
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
