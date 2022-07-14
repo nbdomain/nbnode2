@@ -207,7 +207,7 @@ class rpcHandler {
                 }
                 if (await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
-                    indexers.blockMgr.onNewTx(para.txid)
+                    //indexers.blockMgr.onNewTx(para.txid)
                 }
                 delete this.handlingMap[para.txid]
             })

@@ -118,6 +118,7 @@ class Indexer {
     if (txTime) ts = txTime
     if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
       await this.database.addFullTx({ txid, rawtx, time: ts, oDataRecord, chain })
+      indexers.blockMgr.onNewTx(txid)
       console.log("Added txid:", txid)
     }
     else {
