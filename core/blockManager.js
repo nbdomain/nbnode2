@@ -140,14 +140,12 @@ class BlockMgr {
     }
     async onNewTx() {
         this.hasNewTX = true
-        this.uBlock = null
     }
     async run() {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
             if (!this.uBlock || this.hasNewTX) { //wait the block to confirm
-                this.hasNewTX = false
                 this.height = bl ? bl.height + 1 : 0
                 let block = await this.createBlock(this.height)
                 if (block) {
@@ -173,6 +171,7 @@ class BlockMgr {
                     console.log("cBlock hash:", block.hash)
                     this.indexers.db.saveBlock({ sigs, block })
                     this.uBlock = null
+                    this.hasNewTX = false
                     continue
                 }
             }
@@ -191,6 +190,7 @@ class BlockMgr {
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)) {
                         this.uBlock = null
+                        this.hasNewTX = false
                         break;
                     }
                 }
