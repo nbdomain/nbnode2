@@ -140,6 +140,7 @@ class BlockMgr {
     }
     async onNewTx() {
         this.hasNewTX = true
+        this.uBlock = null
     }
     async run() {
         while (true) {
