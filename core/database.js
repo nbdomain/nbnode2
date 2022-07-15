@@ -352,11 +352,12 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, time, oDataRecord, chain }) {
+  addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain }) {
     try {
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
       const sql = `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
-      this.txdb.prepare(sql).run(txid, bytes, 9999999999, time, chain)
+      if (!time) time = 9999999999
+      this.txdb.prepare(sql).run(txid, bytes, time, txTime, chain)
       if (oDataRecord)
         this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
     } catch (e) {
