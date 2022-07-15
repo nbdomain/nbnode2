@@ -110,8 +110,8 @@ class BlockMgr {
                     const sigs = JSON.parse(blockItem.sigs)
                     block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
-                    const txs = this.db.getTransactions({ time: block.txs[0].txTime - 1, limit: block.txs.length })
-                    const merkel = await this.computeMerkel(txs)
+                    const tempBlock = await this.createBlock(block.height)
+                    const merkel = tempBlock ? tempBlock.merkel : null
                     if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
