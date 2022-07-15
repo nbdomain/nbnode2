@@ -117,7 +117,7 @@ class BlockMgr {
                         if (btx.data) {
                             //this.db.deleteTxs(txs)
                             for (const ftx of btx.data) {
-                                this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
+                                this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
                             }
                             if (merkel)
                                 resetDB = true //reset domain db if there are conflicts
