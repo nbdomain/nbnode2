@@ -110,14 +110,18 @@ class BlockMgr {
                     const sigs = JSON.parse(blockItem.sigs)
                     block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false
-                    const tempBlock = await this.createBlock(block.height)
+                    let tempBlock = await this.createBlock(block.height)
                     const merkel = tempBlock ? tempBlock.merkel : null
                     if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
                             //this.db.deleteTxs(txs)
                             for (const ftx of btx.data) {
-                                this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain })
+                                this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
+                            }
+                            tempBlock = await this.createBlock(block.height)
+                            if (tempBlock.merkel != block.merkel) {
+                                console.log("found")
                             }
                             if (merkel)
                                 resetDB = true //reset domain db if there are conflicts

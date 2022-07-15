@@ -350,6 +350,11 @@ app.get('/test', async (req, res) => {
     //const block = await indexers.blockMgr.createBlock(0, ntx)
     //indexers.db.dropTable('blocks')
     //indexers.db.deleteBlock(req.query['height'])
+    const cmd = req.query('cmd')
+    switch (cmd) {
+        case 'resetdb': indexers.db.resetDB(); break;
+        case 'resetblocks': indexers.db.dropTable('blocks'); break;
+    }
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

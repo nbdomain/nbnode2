@@ -352,10 +352,10 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain }) {
+  addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain, replace = false }) {
     try {
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-      const sql = `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
+      const sql = replace ? `insert or replace into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) ` : `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
       if (!time) time = 9999999999
       this.txdb.prepare(sql).run(txid, bytes, time, txTime, chain)
       if (oDataRecord)
