@@ -199,23 +199,21 @@ class rpcHandler {
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
-                /*  const item = data.oDataRecord
-                 const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
-                 if (ret.code == 0 && ret.rtx?.oHash === item.hash)
-                     await db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
-                 else {
-                     console.error("wrong rawtx format. ret:", ret)
-                 }
-                 if (await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                const item = data.oDataRecord
+                const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
+                if (ret.code == 0 && ret.rtx?.oHash === item.hash)
+                    await db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
+                else {
+                    console.error("wrong rawtx format. ret:", ret)
+                }
+                /* if (await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                      Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
                      //indexers.blockMgr.onNewTx(para.txid)
-                 } */
-                if (data) {
-                    console.log("handleNewTx:", para.txid)
-                    if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
-                        Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
-                    }
+                 }*/
+                if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
                 }
+
                 delete this.handlingMap[para.txid]
             })
         }
