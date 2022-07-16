@@ -861,7 +861,7 @@ class Database {
     for (const item of ret) {
       if (item.time != 9999999999) {
         console.log("found txid:", item.txid, " time:", item.time)
-        //this.setTxTime(item.txid, item.time)
+        this.setTxTime(item.txid, item.time)
       }
       else {
         console.log("time is 9999999999:", item.txid)
