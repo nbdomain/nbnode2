@@ -119,7 +119,7 @@ class NodeClient {
                             self.socket = socket
                             self._setup()
                             //if (node.pkey === "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85")
-                            //    self.pullNewTxs.bind(self)({ from: 0 })
+                            self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()

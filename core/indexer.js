@@ -114,8 +114,9 @@ class Indexer {
     }
     let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 
-    let ts = ret.code == 0 ? (ret.rtx.ts ? ret.rtx.ts : ret.rtx.time) : DEF.TX_INVALIDTX
+    let ts = (ret.rtx.ts ? ret.rtx.ts : ret.rtx.time)
     if (txTime) ts = txTime
+    if (ret.code != 0) ts = DEF.TX_INVALIDTX
     if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
       await this.database.addFullTx({ txid, rawtx, time, txTime: ts, oDataRecord, chain, replace })
       this.indexers.blockMgr.onNewTx(txid)
