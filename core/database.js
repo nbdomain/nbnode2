@@ -859,8 +859,10 @@ class Database {
     let sql = `select txid,time,txTime from txs where txTime IS NULL`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
-      if (item.time != 9999999999)
-        this.setTxTime(item.txid, item.time)
+      if (item.time != 9999999999) {
+        console.log("found txid:", item.txid, " time:", item.time)
+        //this.setTxTime(item.txid, item.time)
+      }
       else {
         console.log("time is 9999999999:", item.txid)
       }
