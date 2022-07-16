@@ -48,6 +48,12 @@ class NodeServer {
             const { from, to } = para
             ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
         })
+        socket.on("pullNewTx", async (para, ret) => {
+            console.log("pullNewTx:", para)
+            const { db } = indexers
+            ret(await db.pullNewTx(para.afterHeight))
+        })
+
         socket.on("sendNewTx", async (obj, ret) => {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
         })
@@ -158,12 +164,13 @@ class NodeClient {
     }
     async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
         const { db, indexer } = this.indexers
+        const height = +db.readConfig("txdb", "height")
         if (para == null) {
-            para = { from: db.getLatestTxTime() }
+            para = { afterHeight: height }
         }
         para.v = 1
-        this.socket.emit("queryTx", para, async (res) => {
-            console.log("get reply from queryTx:")
+        this.socket.emit("pullNewTx", para, async (res) => {
+            console.log("get reply from pullNewTx:")
             for (const tx of res) {
                 if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })) {
 

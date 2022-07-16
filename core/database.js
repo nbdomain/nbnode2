@@ -868,6 +868,14 @@ class Database {
     }
     console.log("verify finish")*/
   }
+  async pullNewTx(afterHeight) {
+    const uBlock = this.getBlock(afterHeight, true)
+    if (uBlock) {
+      const block = uBlock.block
+      const tx = block.txs[block.txs.length - 1]
+      return await this.queryTX(tx.txTime - 1, -1)
+    }
+  }
   //------------------------------Blocks--------------------------------
   getLastBlock() {
     try {
