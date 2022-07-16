@@ -559,7 +559,16 @@ class Database {
     const ret2 = this.dtdb.prepare(sql).get()
     sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
     const ret3 = this.dmdb.prepare(sql).get()
-    return { ...ret, ...ret1, ...ret2, ...ret3, v: 2 }
+
+    //count txs in blocks
+    sql = "select body from blocks"
+    let txsCount = 0
+    const ret4 = this.txdb.prepare(sql).all()
+    for (const item of ret4) {
+      const txs = JSON.parse(item.body).txs
+      txsCount += txs.length
+    }
+    return { ...ret, ...ret1, ...ret2, ...ret3, v: 2, txsBlocks: txsCount }
   }
   queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
