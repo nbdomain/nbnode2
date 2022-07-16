@@ -854,19 +854,18 @@ class Database {
       return null
     }
   }
-  async verifyTxDB(chain) {
-    /*console.log("verifying...", chain)
-    let sql = `select txid,bytes from txs where bytes IS NULL`
+  async verifyTxDB() {
+    console.log("verifying...")
+    let sql = `select txid,time,txTime from txs where txTime IS NULL`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
-      if (!item.bytes) {
-        const res = await axios.get("https://tnode.nbdomain.com/api/getdata?txid=" + item.txid)
-        if (res.data) {
-          this.setTransactionRaw(item.txid, res.data.tx.rawtx, chain)
-        }
+      if (item.time != 9999999999)
+        this.setTxTime(item.txid, item.time)
+      else {
+        console.log("time is 9999999999:", item.txid)
       }
     }
-    console.log("verify finish")*/
+    console.log("verify finish")
   }
   async pullNewTx(afterHeight) {
     const uBlock = this.getBlock(afterHeight, true)

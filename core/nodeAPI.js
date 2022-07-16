@@ -251,7 +251,7 @@ class rpcHandler {
             if (ret.rtx && ret.rtx.oHash) {
                 oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
             }
-            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, oDataRecord, noVerify: true, chain: obj.chain }))
+            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain }))
                 Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: obj.chain }) })
         } else {
             console.log("send tx failed")

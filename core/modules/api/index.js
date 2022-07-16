@@ -357,6 +357,7 @@ app.get('/test', async (req, res) => {
         case 'resetblocks': indexers.db.dropTable('blocks'); break;
         case 'pulltx': db.pullNewTx(100); break;
     }
+    db.verifyTxDB();
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {
