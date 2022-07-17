@@ -962,7 +962,7 @@ class Database {
       //set height of the tx
       const txs = block.txs
       for (const tx of txs) {
-        this.setTransactionHeight(tx.txid, i)
+        this.setTransactionHeight(tx.txid, block.height)
       }
       const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
       const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
