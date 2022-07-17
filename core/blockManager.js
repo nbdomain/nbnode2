@@ -149,14 +149,10 @@ class BlockMgr {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
-            console.log(111)
             if (!this.uBlock) { //wait the block to confirm
-
                 this.height = bl ? bl.height + 1 : 0
-                console.log(222, this.height)
                 let block = await this.createBlock(this.height)
                 if (block) {
-                    console.log(333)
                     this.height = block.height
                     if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
                         await wait(DEF.BLOCK_TIME * 2)
@@ -194,12 +190,9 @@ class BlockMgr {
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
-                console.log(1)
                 if (node.uBlock.block.height > this.height) { //download missing block
-                    console.log(2)
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)) {
-                        console.log(3)
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
