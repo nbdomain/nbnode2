@@ -875,7 +875,7 @@ class Database {
     }*/
 
     //set height for all txs
-    const maxHeight = this.readConfig('txdb', 'height')
+    const maxHeight = this.getLastBlock().height
     for (let i = 0; i <= maxHeight; i++) {
       const uBlock = this.getBlock(i, true)
       const txs = uBlock.block.txs
@@ -955,20 +955,22 @@ class Database {
   async saveBlock({ sigs, block }) {
     try {
       console.log("Saving block: " + block.height)
-      const hash = block.hash
-      delete block.hash
-      const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
-      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
-      //set height of the tx
-      const txs = block.txs
-      for (const tx of txs) {
-        this.setTransactionHeight(tx.txid, block.height)
-      }
-      const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
-      const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
-      this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
+      this.transaction(async () => {
+        const hash = block.hash
+        delete block.hash
+        const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
+        this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
+        //set height of the tx
+        const txs = block.txs
+        for (const tx of txs) {
+          this.setTransactionHeight(tx.txid, block.height)
+        }
+        const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
+        const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
+        this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
 
-      this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
+        this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
+      })
     } catch (e) {
       console.error(e)
     }
