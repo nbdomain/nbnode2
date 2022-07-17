@@ -150,10 +150,13 @@ class BlockMgr {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
+            console.log(111)
             if (!this.uBlock) { //wait the block to confirm
+                console.log(222)
                 this.height = bl ? bl.height + 1 : 0
                 let block = await this.createBlock(this.height)
                 if (block) {
+                    console.log(333)
                     this.height = block.height
                     if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
                         await wait(DEF.BLOCK_TIME * 2)
