@@ -152,8 +152,9 @@ class BlockMgr {
             const bl = this.db.getLastBlock()
             console.log(111)
             if (!this.uBlock) { //wait the block to confirm
-                console.log(222)
+
                 this.height = bl ? bl.height + 1 : 0
+                console.log(222, this.height)
                 let block = await this.createBlock(this.height)
                 if (block) {
                     console.log(333)
