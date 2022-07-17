@@ -499,7 +499,7 @@ class Database {
   }*/
   async getUnresolvedTX(count) {
     try {
-      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY txTime ASC LIMIT ?`
+      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height IS NOT NULL ORDER BY txTime ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
       return list;
     } catch (e) {
@@ -858,8 +858,10 @@ class Database {
       return null
     }
   }
+
   async verifyTxDB() {
     console.log("verifying...")
+    /* //find NULL txTime and set it
     let sql = `select txid,time,txTime from txs where txTime IS NULL`
     const ret = this.txdb.prepare(sql).all()
     for (const item of ret) {
@@ -869,6 +871,16 @@ class Database {
       }
       else {
         console.log("time is 9999999999:", item.txid)
+      }
+    }*/
+
+    //set height for all txs
+    const maxHeight = this.readConfig('txdb', 'height')
+    for (let i = 0; i <= maxHeight; i++) {
+      const uBlock = this.getBlock(i, true)
+      const txs = uBlock.block.txs
+      for (const tx of txs) {
+        this.setTransactionHeight(tx.txid, i)
       }
     }
     console.log("verify finish")
@@ -947,7 +959,11 @@ class Database {
       delete block.hash
       const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
       this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
-
+      //set height of the tx
+      const txs = block.txs
+      for (const tx of txs) {
+        this.setTransactionHeight(tx.txid, i)
+      }
       const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
       const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
       this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)

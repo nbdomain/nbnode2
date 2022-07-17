@@ -148,6 +148,11 @@ class BlockMgr {
     async run() {
         while (true) {
             const { Nodes } = this.indexers
+            if (this.hasNewTX) {
+                this.hasNewTX = false
+                await wait(DEF.BLOCK_TIME)
+                continue
+            }
             const bl = this.db.getLastBlock()
             if (!this.uBlock) { //wait the block to confirm
                 this.height = bl ? bl.height + 1 : 0
@@ -168,10 +173,6 @@ class BlockMgr {
                 const { sigs, block } = this.uBlock
                 if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
                     //save block
-
-                    //delete block.hash
-                    //block.sigs = sigs
-                    //block.hash = await Util.dataHash(stringify(block))
                     console.log("cBlock hash:", block.hash)
                     this.indexers.db.saveBlock({ sigs, block })
                     this.uBlock = null

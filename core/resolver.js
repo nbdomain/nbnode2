@@ -5,7 +5,7 @@ const { Util } = require('./util')
 
 
 
-const MAX_RESOLVE_COUNT = 10000
+const MAX_RESOLVE_COUNT = 100
 
 /**
    * Filter out private keys from object.
@@ -38,7 +38,7 @@ class Resolver {
     constructor(database) {
 
         this.db = database
-        this.resolveNextBatchInterval = 5000
+        this.resolveNextBatchInterval = 2000
         this.resolveNextBatchTimerId = 0
 
         this.controllers = [] //control resolve switch
