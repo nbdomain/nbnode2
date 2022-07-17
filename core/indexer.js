@@ -110,7 +110,7 @@ class Indexer {
       return false
     }
     if (noVerify && time) {
-      return await this.database.addFullTx({ txid, rawtx, time, oDataRecord, chain })
+      return await this.database.addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain })
     }
     let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 

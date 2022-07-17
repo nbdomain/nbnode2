@@ -354,6 +354,10 @@ class Database {
   }
   addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain, replace = false }) {
     try {
+      if (!txTime && time != 9999999999) txTime = time
+      if (!txTime) {
+        console.error("ERROR: txTime is NULL txid:", txid)
+      }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
       const sql = replace ? `insert or replace into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) ` : `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
       if (!time) time = 9999999999

@@ -26,7 +26,6 @@ class BlockMgr {
                 preBlock = b && JSON.parse(b.body)
                 preBlock.hash = b.hash
             }
-
         }
         let removeTX = [] // remove the txs that's already in preBlock
         if (preBlock) {
