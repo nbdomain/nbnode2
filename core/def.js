@@ -87,6 +87,7 @@ class MemDomains {
             for (const key in this.objs) {
                 delete this.objs[key]
             }
+            this.objs = {}
         }
     }
 }

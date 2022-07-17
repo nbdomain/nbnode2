@@ -14,7 +14,7 @@ const { DEF, MemDomains } = require('./def')
 var Path = require('path');
 const { default: axios } = require('axios')
 const hash = require('bsv/lib/crypto/hash')
-
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
@@ -164,9 +164,8 @@ class Database {
     this.dtdb.pragma('journal_mode = WAL')
     // Synchronizes WAL at checkpoints
     this.dtdb.pragma('synchronous = NORMAL')
-
-
     this.preDealData()
+    this.backupDB()
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
@@ -294,6 +293,12 @@ class Database {
       this.dtdb = null
     }
 
+  }
+  async backupDB() {
+    // while (true) {
+    await this.dmdb.backup(__dirname + `/db/backup-${Date.now()}.db`)
+    //   await wait(5000);
+    //}
   }
 
   transaction(f) {
