@@ -900,7 +900,7 @@ class Database {
     try {
       const sql = "select * from blocks where height=?"
       let block = this.txdb.prepare(sql).get(height)
-      if (uBlockType) {
+      if (uBlockType && block) {
         return { block: { ...JSON.parse(block.body), hash: block.hash }, sigs: JSON.parse(block.sigs) }
       }
       return block

@@ -171,6 +171,7 @@ class NodeClient {
         para.v = 1
         this.socket.emit("pullNewTx", para, async (res) => {
             console.log("get reply from pullNewTx:")
+            if (!res) return
             for (const tx of res) {
                 if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })) {
 
