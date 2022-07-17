@@ -13,7 +13,8 @@ const { default: axios } = require('axios');
 const { CONFIG } = require('./config')
 const NBLib = require("nblib2");
 
-const rwc = require("random-weighted-choice")
+const rwc = require("random-weighted-choice");
+const { bsv } = require('nbpay');
 const LocalStorage = require('node-localstorage').LocalStorage;
 Storage = new LocalStorage('./storage');
 nbpay.auto_config();
@@ -81,6 +82,18 @@ class Util {
             tld_config: CONSTS.tld_config,
             enable_write: false  //enable functions that can update and write value to NBdomain
         });
+    }
+    static async verifyTX(txs) {
+        const bsvTX = txs.filter(tx => tx.chain === 'bsv')
+        const arTX = txs.filter(tx => tx.chain === 'ar')
+        if (bsvTX && bsvTX.length > 0) {
+            const status = await bsvLib.getTxStatus(bsvTX)
+        }
+        if (arTX && arTX.length > 0) {
+            const status = await arLib.getTxStatus(arTX)
+        }
+
+        return null
     }
     static async bitcoinSign(privateKey, data) {
         return await bsvLib.sign(privateKey, data)

@@ -296,7 +296,7 @@ class Database {
   }
   async backupDB() {
     // while (true) {
-    await this.dmdb.backup(__dirname + `/db/backup-${Date.now()}.db`)
+    //await this.dmdb.backup(__dirname + `/db/backup-${Date.now()}.db`)
     //   await wait(5000);
     //}
   }
@@ -880,14 +880,19 @@ class Database {
     }*/
 
     //set height for all txs
-    const maxHeight = this.getLastBlock().height
+    /*const maxHeight = this.getLastBlock().height
     for (let i = 0; i <= maxHeight; i++) {
       const uBlock = this.getBlock(i, true)
       const txs = uBlock.block.txs
       for (const tx of txs) {
         this.setTransactionHeight(tx.txid, i)
       }
-    }
+    }*/
+    let sql = "select txid from txs where chain='bsv' limit 100"
+    const ret = this.txdb.prepare(sql).raw(true).all().map(row => row[0])
+    ret[0] = "dadsfsafsafsfsf"
+    Util.verifyTX(ret, 'bsv')
+
     console.log("verify finish")
   }
   async pullNewTx(afterHeight) {
