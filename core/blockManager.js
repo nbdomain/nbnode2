@@ -150,7 +150,7 @@ class BlockMgr {
         while (true) {
             const { Nodes } = this.indexers
             const bl = this.db.getLastBlock()
-            if (!this.uBlock || this.hasNewTX) { //wait the block to confirm
+            if (!this.uBlock) { //wait the block to confirm
                 this.height = bl ? bl.height + 1 : 0
                 let block = await this.createBlock(this.height)
                 if (block) {
