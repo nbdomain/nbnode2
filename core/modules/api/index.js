@@ -353,11 +353,12 @@ app.get('/test', async (req, res) => {
     const db = indexers.db
     const cmd = req.query['cmd']
     switch (cmd) {
-        case 'resetdb': indexers.db.resetDB(); break;
-        case 'resetblocks': indexers.db.dropTable('blocks'); break;
+        case 'resetdb': db.resetDB(); break;
+        case 'resetblocks': db.dropTable('blocks'); break;
         case 'pulltx': db.pullNewTx(100); break;
+        case 'vdb': db.verifyTxDB(); break;
     }
-    db.verifyTxDB();
+
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {
