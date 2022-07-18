@@ -387,7 +387,7 @@ class Database {
     this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
   }
   setTransactionHeight(txid, height) {
-    const sql = `UPDATE txs SET height = ? WHERE txid = ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
+    const sql = `UPDATE txs SET height = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(height, txid)
   }
 
@@ -880,19 +880,45 @@ class Database {
     }*/
 
     //set height for all txs
-    /*const maxHeight = this.getLastBlock().height
+    const maxHeight = this.getLastBlock().height
     for (let i = 0; i <= maxHeight; i++) {
       const uBlock = this.getBlock(i, true)
       const txs = uBlock.block.txs
       for (const tx of txs) {
         this.setTransactionHeight(tx.txid, i)
       }
-    }*/
-    let sql = "select txid from txs where chain='bsv' limit 100"
+    }
+    //verifyTX
+    /*let sql = "select txid from txs where chain='bsv' limit 100"
     const ret = this.txdb.prepare(sql).raw(true).all().map(row => row[0])
     ret[0] = "dadsfsafsafsfsf"
-    Util.verifyTX(ret, 'bsv')
+    Util.verifyTX(ret, 'bsv')*/
 
+    //remove dup time
+    let sql = "select txid,time,txTime from txs where txTime < 10000 order by txTime"
+    let ret = this.txdb.prepare(sql).all()
+    for (let i = 0; i < ret.length - 1; i++) {
+      let k = 1, m = 0
+      if (!ret[i]) {
+        console.log("found")
+      }
+      while (ret[i].time === ret[i + k].time) {
+        k++
+      }
+      while (k > 1) {
+        this.setTransactionTime(ret[i + k - 1].txid, ret[i].time + k)
+        k--
+        m++
+      }
+      if (m) i += m
+    }
+    //move time to txTime
+    sql = "select txid,time,txTime from txs where txTime < 10000 order by txTime"
+    ret = this.txdb.prepare(sql).all()
+    for (let i = 0; i < ret.length; i++) {
+      if (ret[i].txTime != 1)
+        this.setTxTime(ret[i].txid, ret[i].time)
+    }
     console.log("verify finish")
   }
   async pullNewTx(afterHeight) {
