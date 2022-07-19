@@ -184,7 +184,7 @@ class Resolver {
                     const resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
                     if (resolvedHeight < this.resolvedHeight) {
                         this.db.writeConfig('dmdb', 'resolvedHeight', this.resolvedHeight.toString())
-                        if (this.resolvedHeight % 2 == 0) {
+                        if (this.resolvedHeight % 9 == 0) {
                             this.db.backupDB()
                         }
                     }

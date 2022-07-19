@@ -295,7 +295,10 @@ class Database {
 
   }
   async backupDB() {
-    await this.dmdb.backup(__dirname + `/db/bkDomains.db`)
+    const dbname = __dirname + `/db/bkDomains.db`
+    console.log("backup db to:", dbname)
+    await this.dmdb.backup(dbname)
+    console.log("backup finished")
   }
 
   transaction(f) {
