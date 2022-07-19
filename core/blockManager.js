@@ -15,7 +15,7 @@ class BlockMgr {
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this._canResolve = true
-        this.indexers.resolver.addController(this)
+        //this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
         const db = this.db

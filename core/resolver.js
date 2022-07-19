@@ -40,13 +40,18 @@ class Resolver {
         this.db = database
         this.resolveNextBatchInterval = 2000
         this.resolveNextBatchTimerId = 0
-
+        this.resolvedHeight = -1
         this.controllers = [] //control resolve switch
 
     }
     start() {
         if (this.started) return
         this.started = true
+        this.resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
+        if (isNaN(this.resolvedHeight)) {
+            this.db.writeConfig('dmdb', 'resolvedHeight', '-1')
+            this.resolvedHeight = -1
+        }
         this.resolveNextBatch()
     }
     stop() {
@@ -172,13 +177,22 @@ class Resolver {
         const nidObjMap = MemDomains.getMap()
         try {
             if (rtxArray == null || rtxArray.length == 0) {
-                if (!this.firstFinish) {
+                if (!this.resolveFinish) {
                     console.warn(`--$----Handled All current TX from DB-------`)
-                    this.firstFinish = true
+                    this.resolveFinish = true
                     MemDomains.clearObj(); //release memory
+                    const resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
+                    if (resolvedHeight < this.resolvedHeight) {
+                        this.db.writeConfig('dmdb', 'resolvedHeight', this.resolvedHeight.toString())
+                        if (this.resolvedHeight % 2 == 0) {
+                            this.db.backupDB()
+                        }
+                    }
                 }
+
             } else {
                 console.log("get ", rtxArray.length, " txs from DB")
+                this.resolveFinish = false
                 for (const item of rtxArray) {
                     try {
                         const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
@@ -191,6 +205,8 @@ class Resolver {
                             console.log("found")
                         }
                         this.db.setTransactionResolved(item.txid, item.chain)
+                        if (item.height > this.resolvedHeight)
+                            this.resolvedHeight = item.height
                         const res = await Parser.parseTX({ rawtx, height: item.height, time: item.time, chain: item.chain })
                         if (!res) continue
                         const rtx = { ...res.rtx, ...item }

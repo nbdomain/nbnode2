@@ -41,7 +41,7 @@ class Indexer {
 
     //this.crawler = new Crawler(api, db, this.chain)
     this.resolver = new Resolver(this.database)
-    this.resolver.addController(Nodes)
+    //this.resolver.addController(Nodes)
     Parser.init(this.database)
 
     //    this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)

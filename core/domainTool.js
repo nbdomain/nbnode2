@@ -19,8 +19,10 @@ class DomainTool {
             domain = encodeURIComponent(domain)
             const otherNode = Nodes.get({})
             if (otherNode) {
-                let res = await axios.get(otherNode + "/api/?nid=" + key + ".nbinfo.b")
-                if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
+                try {
+                    let res = await axios.get(otherNode + "/api/?nid=" + key + ".nbinfo.b")
+                    if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
+                } catch (e) { }
             }
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
             console.log(`Sending request to URL ${url}`);

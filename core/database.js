@@ -295,10 +295,7 @@ class Database {
 
   }
   async backupDB() {
-    // while (true) {
-    //await this.dmdb.backup(__dirname + `/db/backup-${Date.now()}.db`)
-    //   await wait(5000);
-    //}
+    await this.dmdb.backup(__dirname + `/db/bkDomains.db`)
   }
 
   transaction(f) {
@@ -357,16 +354,16 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain, replace = false }) {
+  addFullTx({ txid, rawtx, txTime, oDataRecord, chain, replace = false }) {
     try {
-      if (!txTime && time != 9999999999) txTime = time
+      //if (!txTime && time != 9999999999) txTime = time
       if (!txTime) {
         console.error("ERROR: txTime is NULL txid:", txid)
       }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-      const sql = replace ? `insert or replace into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) ` : `insert into txs (txid,bytes,time,txTime,chain) VALUES(?,?,?,?,?) `
-      if (!time) time = 9999999999
-      this.txdb.prepare(sql).run(txid, bytes, time, txTime, chain)
+      const sql = replace ? `insert or replace into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) ` : `insert into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) `
+      //if (!time) time = 9999999999
+      this.txdb.prepare(sql).run(txid, bytes, txTime, chain)
       if (oDataRecord)
         this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
     } catch (e) {
@@ -845,6 +842,18 @@ class Database {
     }
     //ret.raw = this.readDataFromDisk(hash, option)
     return ret
+  }
+  writeConfig(dbName, key, value) {
+    try {
+      let db = null
+      if (dbName == 'txdb') db = this.txdb
+      if (dbName === 'dmdb') db = this.dmdb
+      if (dbName === 'dtdb') db = this.dtdb
+      const sql = 'insert or replace into config (key,value) values(?,?)'
+      db.prepare(sql).run(key, value)
+    } catch (e) {
+      console.log(e.message)
+    }
   }
   readConfig(dbName, key) {
     try {
