@@ -294,9 +294,18 @@ class Database {
     }
 
   }
+
+
   async backupDB() {
+    const { createGzip } = require('zlib');
+    const { pipeline } = require('stream');
+
     try {
       const dbname = __dirname + `/db/bkDomains.db`
+      const gzip = createGzip();
+      const source = fs.createReadStream(dbname);
+      const destination = fs.createWriteStream(dbname + '.gz');
+
       if (fs.existsSync(dbname))
         fs.unlinkSync(dbname)
       const sql = "VACUUM main INTO '" + dbname + "'"
@@ -304,7 +313,13 @@ class Database {
       this.dmdb.prepare(sql).run()
 
       //    await this.dmdb.backup(dbname)
-      console.log("backup finished")
+      pipeline(source, gzip, destination, (err) => {
+        if (err) {
+          console.error('An error occurred:', err);
+          process.exitCode = 1;
+        }
+        console.log("backup finished")
+      });
     } catch (e) {
       console.error(e.message)
     }
