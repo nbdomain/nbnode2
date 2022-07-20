@@ -44,6 +44,7 @@ class Database {
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
+    this.resolvedHeight = -1
   }
   open() {
     let noTxdb = false;
@@ -297,14 +298,14 @@ class Database {
 
 
   async backupDB() {
-    const { createGzip } = require('zlib');
-    const { pipeline } = require('stream');
+    //const { createGzip } = require('zlib');
+    //const { pipeline } = require('stream');
 
     try {
       const dbname = __dirname + `/db/bkDomains.db`
-      const gzip = createGzip();
-      const source = fs.createReadStream(dbname);
-      const destination = fs.createWriteStream(dbname + '.gz');
+      // const gzip = createGzip();
+      // const source = fs.createReadStream(dbname);
+      // const destination = fs.createWriteStream(dbname + '.gz');
 
       if (fs.existsSync(dbname))
         fs.unlinkSync(dbname)
@@ -313,13 +314,13 @@ class Database {
       this.dmdb.prepare(sql).run()
 
       //    await this.dmdb.backup(dbname)
-      pipeline(source, gzip, destination, (err) => {
-        if (err) {
-          console.error('An error occurred:', err);
-          process.exitCode = 1;
-        }
-        console.log("backup finished")
-      });
+      /* pipeline(source, gzip, destination, (err) => {
+         if (err) {
+           console.error('An error occurred:', err);
+           process.exitCode = 1;
+         }
+         console.log("backup finished")
+       });*/
     } catch (e) {
       console.error(e.message)
     }
@@ -509,28 +510,13 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
-  /*async getUnresolvedTX(count, chain) {
-    try {
-      let list = [];
-      if (chain == 'bsv') {
-        const sql = `SELECT * FROM txs WHERE time <= 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} ORDER BY id ASC LIMIT ?`
-        list = this.txdb.prepare(sql).raw(false).all(count);
-      }
-      if (list.length == 0) { //no more old format tx
-        const sql = `SELECT * FROM txs WHERE time > 1641199176 AND txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime IS NOT NULL ORDER BY time,txTime ASC LIMIT ?`
-        const list1 = this.txdb.prepare(sql).raw(false).all(count);
-        list = list.concat(list1)
-      }
-      return list;
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }*/
   async getUnresolvedTX(count) {
     try {
-      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height IS NOT NULL ORDER BY txTime ASC LIMIT ?`
+      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
+      if (list.length > 0) {
+        console.log("found")
+      }
       return list;
     } catch (e) {
       console.error(e)

@@ -84,16 +84,17 @@ class Util {
         });
     }
     static async verifyTX(txs) {
-        const bsvTX = txs.filter(tx => tx.chain === 'bsv')
-        const arTX = txs.filter(tx => tx.chain === 'ar')
+        const bsvTX = txs.filter(tx => tx.chain === 'bsv').map(item => item.txid)
+        const arTX = txs.filter(tx => tx.chain === 'ar').map(item => item.txid)
+        let status = []
         if (bsvTX && bsvTX.length > 0) {
-            const status = await bsvLib.getTxStatus(bsvTX)
+            status = await bsvLib.verifyTX(bsvTX)
         }
         if (arTX && arTX.length > 0) {
-            const status = await arLib.getTxStatus(arTX)
+            status = await arLib.verifyTX(arTX)
         }
 
-        return null
+        return status
     }
     static async bitcoinSign(privateKey, data) {
         return await bsvLib.sign(privateKey, data)

@@ -205,8 +205,11 @@ class Resolver {
                             console.log("found")
                         }
                         this.db.setTransactionResolved(item.txid, item.chain)
-                        if (item.height > this.resolvedHeight)
+                        if (item.height > this.resolvedHeight) {
                             this.resolvedHeight = item.height
+                            this.db.resolvedHeight = item.height
+                        }
+
                         const res = await Parser.parseTX({ rawtx, height: item.height, time: item.time, chain: item.chain })
                         if (!res) continue
                         const rtx = { ...res.rtx, ...item }

@@ -1,6 +1,5 @@
 const { Server } = require('socket.io')
 const axios = require('axios')
-const coinfly = require('coinfly')
 const CONFIG = require('./config').CONFIG
 
 const cmd = {
@@ -72,6 +71,7 @@ class NodeServer {
     }
 }
 const { Manager } = require('socket.io-client');
+const { Util } = require('./util')
 class NodeClient {
     constructor(indexers, domain) {
         this.indexers = indexers
@@ -204,6 +204,12 @@ class rpcHandler {
 
         if (!db.isTransactionParsed(para.txid, false) || force) {
             para.v = 1
+            const tx = para
+            const ret = await Util.verifyTX([tx]) //return invalid tx array
+            if (ret.length > 0) {
+                console.error("tx not found in mempool:", tx.txid)
+                return
+            }
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
