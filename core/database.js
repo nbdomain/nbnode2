@@ -295,10 +295,20 @@ class Database {
 
   }
   async backupDB() {
-    const dbname = __dirname + `/db/bkDomains.db`
-    console.log("backup db to:", dbname)
-    await this.dmdb.backup(dbname)
-    console.log("backup finished")
+    try {
+      const dbname = __dirname + `/db/bkDomains.db`
+      if (fs.existsSync(dbname))
+        fs.unlinkSync(dbname)
+      const sql = "VACUUM main INTO '" + dbname + "'"
+      console.log("backup to:", dbname)
+      this.dmdb.prepare(sql).run()
+
+      //    await this.dmdb.backup(dbname)
+      console.log("backup finished")
+    } catch (e) {
+      console.error(e.message)
+    }
+
   }
 
   transaction(f) {
