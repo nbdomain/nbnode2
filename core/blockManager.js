@@ -153,39 +153,41 @@ class BlockMgr {
                 await wait(DEF.BLOCK_TIME)
                 continue
             }
-            const bl = this.db.getLastBlock()
-            if (!this.uBlock) { //wait the block to confirm
-                this.height = bl ? bl.height + 1 : 0
-                let block = await this.createBlock(this.height)
-                if (block) {
-                    this.height = block.height
-                    if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
-                        await wait(DEF.BLOCK_TIME * 2)
-                        block = await this.createBlock(this.height)
+            if (Nodes.isProducer()) { //create and broadcast blocks
+                const bl = this.db.getLastBlock()
+                if (!this.uBlock) { //wait the block to confirm
+                    this.height = bl ? bl.height + 1 : 0
+                    let block = await this.createBlock(this.height)
+                    if (block) {
+                        this.height = block.height
+                        if (block.txs.length < 100) { //less than 100, wait for a while, give time for new tx to broadcast
+                            await wait(DEF.BLOCK_TIME * 2)
+                            block = await this.createBlock(this.height)
+                        }
+                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                        const uBlock = { sigs: {}, block }
+                        uBlock.sigs[Nodes.thisNode.key] = sig
+                        this.uBlock = uBlock
                     }
-                    const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
-                    const uBlock = { sigs: {}, block }
-                    uBlock.sigs[Nodes.thisNode.key] = sig
-                    this.uBlock = uBlock
-                }
 
-            } else {
-                const { sigs, block } = this.uBlock
-                if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
-                    //save block
-                    console.log("cBlock hash:", block.hash)
-                    this.indexers.db.saveBlock({ sigs, block })
-                    this.uBlock = null
-                    this.hasNewTX = false
-                    continue
+                } else {
+                    const { sigs, block } = this.uBlock
+                    if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
+                        //save block
+                        console.log("cBlock hash:", block.hash)
+                        this.indexers.db.saveBlock({ sigs, block })
+                        this.uBlock = null
+                        this.hasNewTX = false
+                        continue
+                    }
                 }
-            }
-            //broadcast current block or last block
-            let bcBlock = this.uBlock
-            if (!bcBlock) bcBlock = this.db.getBlock(this.height - 1, true)
-            if (bcBlock) {
-                console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " sig:", objLen(bcBlock.sigs))
-                Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
+                //broadcast current block or last block
+                let bcBlock = this.uBlock
+                if (!bcBlock) bcBlock = this.db.getBlock(this.height - 1, true)
+                if (bcBlock) {
+                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " sig:", objLen(bcBlock.sigs))
+                    Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
+                }
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))

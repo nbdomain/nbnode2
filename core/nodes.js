@@ -5,7 +5,7 @@ const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
-const { timingSafeEqual } = require('crypto');
+const CONSTS = require('./const')
 
 //const Peer = require('peerjs-on-node')
 let g_node = null
@@ -42,6 +42,7 @@ class Nodes {
         const lib = await coinfly.create('bsv')
         const pkey = await lib.getPublicKey(config.key)
         this.thisNode = { key: pkey }
+        this._isProducer = this.isProducer(pkey)
         this.indexers = indexers
         this.nodeClient = new NodeClient()
         this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
@@ -130,9 +131,16 @@ class Nodes {
         }
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
+    isProducer(pkey) {
+        if (!pkey) return this._isProducer
+        return CONSTS.producers.indexOf(pkey) != -1
+    }
     async connectOneNode(node) {
         if (this.nodeClients[node.id]) {
             //disconnect lastone
+        }
+        if (!this.isProducer(node.pkey)) {
+            return false
         }
         const client = new NodeClient(this.indexers, config.server.domain);
         if (await client.connect(node)) {
