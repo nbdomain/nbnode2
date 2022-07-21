@@ -52,7 +52,7 @@ class BlockMgr {
         for (const tx of txs) {
             const hash = await Util.dataHash(tx.txid + tx.bytes.toString("hex") + tx.txTime)
             lastHash = lastHash ? await Util.dataHash(hash + lastHash) : hash
-            console.log("txid:", tx.txid, " merkel:", lastHash)
+            //console.log("txid:", tx.txid, " merkel:", lastHash)
             delete tx.bytes
         }
         return lastHash
