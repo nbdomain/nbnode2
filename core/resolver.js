@@ -216,7 +216,7 @@ class Resolver {
                             this.db.resolvedHeight = item.height
                         }
 
-                        const res = await Parser.parseTX({ rawtx, height: item.height, time: item.time, chain: item.chain })
+                        const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
                         if (!res) continue
                         const rtx = { ...res.rtx, ...item }
                         if (!rtx.output || rtx.output?.err) {
