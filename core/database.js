@@ -186,6 +186,7 @@ class Database {
       fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       const states = fs.statSync(this.dmpath + "." + VER_DMDB)
       TXRESOLVED_FLAG = states.birthtimeMs
+      this.resolvedHeight = -1
     }
     if (this.onResetDB) {
       this.onResetDB(type)
@@ -514,9 +515,7 @@ class Database {
     try {
       const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
-      if (list.length > 0) {
-        console.log("found")
-      }
+
       return list;
     } catch (e) {
       console.error(e)
@@ -1012,9 +1011,9 @@ class Database {
     return ret
   }
   async saveBlock({ sigs, block }) {
-    try {
-      console.log("Saving block: " + block.height)
-      this.transaction(async () => {
+    console.log("Saving block: " + block.height)
+    this.transaction(async () => {
+      try {
         const hash = block.hash
         delete block.hash
         const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
@@ -1029,10 +1028,10 @@ class Database {
         this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
 
         this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
-      })
-    } catch (e) {
-      console.error(e)
-    }
+      } catch (e) {
+        console.error(e.message)
+      }
+    })
   }
   deleteBlock(height) {
     try {

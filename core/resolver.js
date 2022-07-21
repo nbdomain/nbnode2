@@ -42,6 +42,7 @@ class Resolver {
         this.resolveNextBatchTimerId = 0
         this.resolvedHeight = -1
         this.controllers = [] //control resolve switch
+        this.db.onResetDB = this.onResetDB;
 
     }
     start() {
@@ -58,6 +59,11 @@ class Resolver {
         this.started = false
         clearTimeout(this.resolveNextBatchTimerId)
         this.pollForNewBlocksTimerId = null
+    }
+    onResetDB(type) {
+        if (type == "domain") {
+            this.resolvedHeight = -1
+        }
     }
     findDomain(k, v) {
         let result = this.db.queryDomains(k, v);
