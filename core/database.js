@@ -783,6 +783,7 @@ class Database {
       })
       this.tickerAll.broadcast("key_update", obj)
     } catch (e) {
+      console.log(obj)
       this.logger.error(e)
     }
   }
