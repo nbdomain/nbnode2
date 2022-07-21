@@ -218,7 +218,7 @@ class Resolver {
 
                         const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
                         if (!res) continue
-                        const rtx = { ...res.rtx, ...item }
+                        const rtx = { ...item, ...res.rtx }
                         if (!rtx.output || rtx.output?.err) {
                             //console.error(item.txid, " parse error:", rtx.output?.err)
                             continue
