@@ -153,10 +153,10 @@ class BlockMgr {
                 await wait(DEF.BLOCK_TIME)
                 continue
             }
+            const bl = this.db.getLastBlock()
+            this.height = bl ? bl.height + 1 : 0
             if (Nodes.isProducer()) { //create and broadcast blocks
-                const bl = this.db.getLastBlock()
                 if (!this.uBlock) { //wait the block to confirm
-                    this.height = bl ? bl.height + 1 : 0
                     let block = await this.createBlock(this.height)
                     if (block) {
                         this.height = block.height
