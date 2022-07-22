@@ -10,6 +10,7 @@ const cmd = {
         v: 1, rv: 1
     }
 }
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
@@ -205,11 +206,17 @@ class rpcHandler {
         if (!db.isTransactionParsed(para.txid, false) || force) {
             para.v = 1
             const tx = para
-            const ret = await Util.verifyTX([tx]) //return invalid tx array
-            if (ret.length > 0) {
-                console.error("tx not found in mempool:", tx.txid)
-                return
+            for (let i = 0; i < 5; i++) {
+                const ret = await Util.verifyTX([tx]) //return invalid tx array
+                if (ret.length > 0) {
+                    console.error("tx not found in mempool:", tx.txid)
+                    if (i >= 4) return
+                } else {
+                    break;
+                }
+                await wait(2000)
             }
+
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
