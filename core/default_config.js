@@ -23,7 +23,7 @@ const CONFIG = {
     socketPort: 31415, //(optional)port for socket RPC. default: 31415 . Plz make sure it's reachable from outside
   },
   dataPath: "", //Existing Disk Path for big data, default is core/db/data
-  peers: ["https://tnode.nbdomain.com"],//other(than public) nbnode peers and will not share with other nodes
+  pnodes: ["https://api.nbdomain.com"],//other(than public) nbnode peers and will not share with other nodes
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit
 }
 // ------------------------------------------------------------------------------------------------
