@@ -224,8 +224,9 @@ app.get('/nodes', async (_, res) => {
     const lib = await coinfly.create('bsv')
     const pkey = await lib.getPublicKey(CONFIG.key)
     const s = CONFIG.server
-    const serverUrl = (s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
-    res.json(Nodes.getNodes(false).concat([{ id: serverUrl, pkey, weight: 50 }]))
+    const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
+    const nodes = Nodes.getNodes(false)
+    res.json(serverUrl ? nodes : nodes.concat([{ id: serverUrl, pkey, weight: 50 }]))
 })
 app.get('/sub/:domain/', async (req, res) => {
     const domain = req.params['domain']
