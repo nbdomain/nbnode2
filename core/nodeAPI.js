@@ -212,6 +212,7 @@ class rpcHandler {
                     console.error("tx not found in mempool:", tx.txid)
                     if (i >= 4) return
                 } else {
+                    console.log("tx verified:", tx.txid)
                     break;
                 }
                 await wait(2000)

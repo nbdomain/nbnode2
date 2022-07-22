@@ -200,7 +200,7 @@ class BlockMgr {
                 const node = this.nodePool[pkey]
                 if (node.uBlock.block.height > this.height) { //download missing block
                     const n = this.db.getNode(pkey)
-                    if (node && await this.downloadBlocks(this.height, node.uBlock.block.height - 1, n.url)) {
+                    if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
