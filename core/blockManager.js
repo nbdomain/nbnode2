@@ -15,6 +15,7 @@ class BlockMgr {
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this._canResolve = true
+        this.removeTX = []
         //this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
@@ -27,15 +28,19 @@ class BlockMgr {
                 preBlock.hash = b.hash
             }
         }
-        let removeTX = [] // remove the txs that's already in preBlock
         if (preBlock) {
             const lastTx = preBlock.txs[preBlock.txs.length - 1]
             time = lastTx.txTime
+            if (!this.lastBlockTime) this.lastBlockTime = time
+            if (this.lastBlockTime < time) {
+                this.lastBlockTime = time
+                this.removeTX = [] // used to remove the txs that's already in previous Block
+            }
             for (const tx of preBlock.txs) {
-                if (tx.txTime == time) removeTX.push(tx.txid)
+                if (tx.txTime == time) this.removeTX.push(tx.txid)
             }
         }
-        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH, remove: removeTX })
+        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH, remove: this.removeTX })
         if (!txs || txs.length == 0) {
             //return preBlock
             return null

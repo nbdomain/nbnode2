@@ -8,7 +8,6 @@ const CONSTS = {
         bsv: "planaria", ar: 'arnode'
     },  // 'planaria','mattercloud','urchain','nbnode'
     PLANARIA_TOKEN: "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiIxQzc5M0RkVjI0Q3NORTJFUDZNbVZmckhqVlNGVmc2dU4iLCJpc3N1ZXIiOiJnZW5lcmljLWJpdGF1dGgifQ.SUJlYUc2TGNGdFlZaGk3amxwa3ZoRGZJUEpFcGhObWhpdVNqNXVBbkxORTdLMWRkaGNESC81SWJmM2J1N0V5SzFuakpKTWFPNXBTcVJlb0ZHRm5uSi9VPQ",
-    NODEKEY: 'S3dFUFdBVmhvQVVhaGV2a3pyYm9UNm9pSEZDeWU5c0JUa2phZDJoZmU4blRIdGlSVXpiUw==',
     TXDB: 'txs.db',
     DMDB: 'domains.db',
     WORKERS: 4,
@@ -24,7 +23,7 @@ const CONSTS = {
         },
     },
     producers: [
-        "036260ebdb52056455ad89c0733a52623f350c350b45f37ba974a44b1401ae553d-old",
+        "036260ebdb52056455ad89c0733a52623f350c350b45f37ba974a44b1401ae553d",
         "0290086d885b6bbe7c88c5effde0b8cfafae5ee02104b6d1cef117c4804d997e8e",
         "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85"
     ],

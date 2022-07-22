@@ -580,7 +580,7 @@ class Database {
     const ret3 = this.dmdb.prepare(sql).get()
 
     //count txs in blocks
-    sql = "select body from blocks"
+    sql = "select body,height from blocks"
     let txsCount = 0
     const ret4 = this.txdb.prepare(sql).all()
     for (const item of ret4) {
