@@ -154,8 +154,8 @@ class LocalServer {
         },
       });
       const res = await greenlock.sites.add({
-        subject: pURL.domain,
-        altnames: [pURL.domain],
+        subject: pURL.hostname,
+        altnames: [pURL.hostname],
       });
       console.log("sites.add", res);
       const green = require("greenlock-express").init(() => {
