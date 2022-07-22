@@ -73,6 +73,7 @@ class NodeServer {
 }
 const { Manager } = require('socket.io-client');
 const { Util } = require('./util')
+const URL = require('url')
 class NodeClient {
     constructor(indexers, domain) {
         this.indexers = indexers
@@ -85,7 +86,8 @@ class NodeClient {
         try {
             const res = await axios.get(url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
-                socketUrl = "ws://" + res.data.domain + ":" + (res.data.socketPort || 31415)
+                const pUrl = URL.parse(url)
+                socketUrl = "ws://" + pUrl.hostname + ":" + (res.data.socketPort || 31415)
                 if (res.data.socketServer) {
                     socketUrl = "ws://" + res.data.socketServer + ":" + (res.data.socketPort || 31415)
                 }
