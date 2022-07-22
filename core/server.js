@@ -8,6 +8,7 @@ const express = require('express')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const URL = require('url')
 var dns = require("dns");
 var axios = require("axios");
 const { ExpressPeerServer } = require('peer');
@@ -78,7 +79,7 @@ function isAPICall(host) {
   return (
     host.indexOf("localhost") != -1 ||
     host.indexOf("127.0.0.1") != -1 ||
-    host.indexOf(CONFIG.server.domain) != -1
+    host.indexOf(CONFIG.server.publicUrl) != -1
   );
 }
 
@@ -127,7 +128,8 @@ class LocalServer {
   }
   async startSSLServer() {
     //Start HTTPS server
-    if (CONFIG.server.domain && CONFIG.server.https) {
+    if (CONFIG.server.publicUrl && CONFIG.server.autoSSL) {
+      const pURL = URL.parse(CONFIG.server.publicUrl)
       var appSSL = express();
       const localAPI = "http://localhost:" + CONFIG.server.port;
       appSSL.use(createProxyMiddleware("**", { target: localAPI }));
@@ -152,8 +154,8 @@ class LocalServer {
         },
       });
       const res = await greenlock.sites.add({
-        subject: CONFIG.server.domain,
-        altnames: [CONFIG.server.domain],
+        subject: pURL.domain,
+        altnames: [pURL.domain],
       });
       console.log("sites.add", res);
       const green = require("greenlock-express").init(() => {

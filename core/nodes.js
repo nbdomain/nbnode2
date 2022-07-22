@@ -45,8 +45,8 @@ class Nodes {
         this._isProducer = this.isProducer(pkey)
         this.indexers = indexers
         this.nodeClient = new NodeClient()
-        this.endpoint = (config.server.https ? "https://" : "http://") + config.server.domain
-        if (!config.server.https) this.endpoint += ":" + config.server.port
+        this.endpoint = config.server.publicUrl
+        //if (!config.server.https) this.endpoint += ":" + config.server.port
 
         this.startNodeServer()
         await this.loadNodes(true)
@@ -142,7 +142,7 @@ class Nodes {
         if (!this.isProducer(node.pkey)) {
             return false
         }
-        const client = new NodeClient(this.indexers, config.server.domain);
+        const client = new NodeClient(this.indexers, config.server.publicUrl);
         if (await client.connect(node)) {
             console.log("connected to:", node.id)
             this.nodeClients[node.id] = client

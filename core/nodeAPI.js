@@ -112,9 +112,9 @@ class NodeClient {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
                 const s = CONFIG.server
-                const serverUrl = (s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
+                const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
                 let helloPara = { data: datav, v: cmd.hello.v }
-                if (s.public) helloPara.server = serverUrl
+                if (s.publicUrl) helloPara.server = serverUrl
                 socket.emit("hello", helloPara, (res) => {
                     console.log("reply from hello:", res)
                     if (!res.sig) {
@@ -206,16 +206,18 @@ class rpcHandler {
         if (!db.isTransactionParsed(para.txid, false) || force) {
             para.v = 1
             const tx = para
-            for (let i = 0; i < 5; i++) {
-                const ret = await Util.verifyTX([tx]) //return invalid tx array
-                if (ret.length > 0) {
-                    console.error("tx not found in mempool:", tx.txid)
-                    if (i >= 4) return
-                } else {
-                    console.log("tx verified:", tx.txid)
-                    break;
+            if (Nodes.isProducer()) { //verify tx
+                for (let i = 0; i < 5; i++) {
+                    const ret = await Util.verifyTX([tx]) //return invalid tx array
+                    if (ret.length > 0) {
+                        console.error("tx not found in mempool:", tx.txid)
+                        if (i >= 4) return
+                    } else {
+                        console.log("tx verified:", tx.txid)
+                        break;
+                    }
+                    await wait(2000)
                 }
-                await wait(2000)
             }
 
             socket.emit("getTx", para, async (data) => {
