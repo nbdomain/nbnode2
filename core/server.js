@@ -29,6 +29,7 @@ let domainMap = {};
 let localWebGateway = null;
 let localAPIGateway = null;
 const verNode = require('../package.json').version;
+let localDomain = ""
 
 async function proxyRequest(req, res, path, nbdomain) {
   try {
@@ -79,7 +80,7 @@ function isAPICall(host) {
   return (
     host.indexOf("localhost") != -1 ||
     host.indexOf("127.0.0.1") != -1 ||
-    host.indexOf(CONFIG.server.publicUrl) != -1
+    host.indexOf(localDomain) != -1
   );
 }
 
@@ -130,6 +131,7 @@ class LocalServer {
     //Start HTTPS server
     if (CONFIG.server.publicUrl && CONFIG.server.autoSSL) {
       const pURL = URL.parse(CONFIG.server.publicUrl)
+      localDomain = pURL.hostname
       var appSSL = express();
       const localAPI = "http://localhost:" + CONFIG.server.port;
       appSSL.use(createProxyMiddleware("**", { target: localAPI }));
