@@ -119,7 +119,7 @@ class BlockMgr {
                     if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
-                            this.db.deleteTxs(btx.txs)
+                            this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
                             }
@@ -198,9 +198,12 @@ class BlockMgr {
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
-                if (node.uBlock.block.height > this.height) { //download missing block
+                console.log(1)
+                if (node.uBlock.block.height >= this.height) { //download missing block
+                    console.log(2)
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
+                        console.log(3)
                         this.uBlock = null
                         this.hasNewTX = false
                         break;

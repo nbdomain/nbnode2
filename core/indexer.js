@@ -117,13 +117,14 @@ class Indexer {
     let ts = 0
     if (ret.code != 0 || !ret.rtx) ts = DEF.TX_INVALIDTX
     else {
-      ts = (ret.rtx.ts ? ret.rtx.ts : ret.rtx.time)
-      if (txTime) ts = txTime
+      ts = (ret.rtx.ts ? +ret.rtx.ts : +ret.rtx.time)
+      if (txTime) ts = +txTime
+      if (!time) time = ts
     }
 
 
     if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
-      await this.database.addFullTx({ txid, rawtx, time, txTime: ts, oDataRecord, chain, replace })
+      await this.database.addFullTx({ txid, rawtx, time, txTime: ts, oDataRecord, chain, replace: replace || force })
       this.indexers.blockMgr.onNewTx(txid)
       console.log("Added txid:", txid)
     }
@@ -134,7 +135,7 @@ class Indexer {
   }
   /*  async _parseAndStoreTransaction(txid, rawtx) {
       if (this.database.isTransactionParsed(txid, false, this.chain)) return
-  
+   
       if (!rawtx) {
         this.logger.warn(txid, ":", "no rawtx");
         return
@@ -157,7 +158,7 @@ class Indexer {
         // console.error(e);
         this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
       }
-  
+   
       return
     } */
 
