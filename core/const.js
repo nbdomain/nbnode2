@@ -25,7 +25,8 @@ const CONSTS = {
     producers: [
         "036260ebdb52056455ad89c0733a52623f350c350b45f37ba974a44b1401ae553d",
         "0290086d885b6bbe7c88c5effde0b8cfafae5ee02104b6d1cef117c4804d997e8e",
-        "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85"
+        "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85",
+        "02fc634b9a9d43141fb08d6d3365a1d4071ad7614b4076887eac092baf06b4698b"
     ],
     "proxy_map": {
         "/api/": "api",
