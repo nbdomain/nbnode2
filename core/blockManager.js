@@ -198,12 +198,9 @@ class BlockMgr {
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
-                console.log(1)
                 if (node.uBlock.block.height >= this.height) { //download missing block
-                    console.log(2)
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
-                        console.log(3)
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
