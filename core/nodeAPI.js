@@ -57,6 +57,9 @@ class NodeServer {
         socket.on("sendNewTx", async (obj, ret) => {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
         })
+        socket.on("disconnect", (reason) => {
+            console.error("server disconnected:", reason)
+        })
         socket.onAny((event, ...args) => {
             console.log(`server got ${event}`);
         });
