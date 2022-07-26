@@ -7,7 +7,8 @@ const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
 const CONSTS = require('./const')
 
-//const Peer = require('peerjs-on-node')
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 let g_node = null
 class Nodes {
     constructor() {
@@ -50,6 +51,7 @@ class Nodes {
 
         this.startNodeServer()
         await this.loadNodes(true)
+        this.pullNewTxs()
         //await this.connectNodes()
 
         return true
@@ -243,10 +245,14 @@ class Nodes {
         this.indexers = indexers
     }
     async pullNewTxs(fullSync = false) {
-        const { db } = this.indexers
-        let latestTime = fullSync ? db.getLastFullSyncTime() : db.getLatestTxTime()
-        for (const id in this.nodeClients) {
-            await this.nodeClients[id].pullNewTxs({ from: latestTime })
+        while (true) {
+            //const { db } = this.indexers
+            //let latestTime = fullSync ? db.getLastFullSyncTime() : db.getLatestTxTime()
+            for (const id in this.nodeClients) {
+                //await this.nodeClients[id].pullNewTxs({ from: latestTime })
+                this.nodeClients[id].pullNewTxs();
+            }
+            await wait(1000 * 60)
         }
     }
     static inst() {
