@@ -119,7 +119,7 @@ class BlockMgr {
                     if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
-                            this.db.deleteTxs(tempBlock.txs)
+                            tempBlock && this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
                             }

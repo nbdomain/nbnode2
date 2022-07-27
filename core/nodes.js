@@ -137,6 +137,9 @@ class Nodes {
         if (!pkey) return this._isProducer
         return CONSTS.producers.indexOf(pkey) != -1
     }
+    onNodeDisconnect(node) {
+        delete this.nodeClients[node.id]
+    }
     async connectOneNode(node) {
         if (this.nodeClients[node.id]) {
             //disconnect lastone

@@ -141,6 +141,7 @@ class NodeClient {
                 })
             });
             socket.on('disconnect', function () {
+                self.indexers.Nodes.onNodeDisconnect(self.node)
                 console.log('Disconnected to:', socketUrl)
             })
             socket.onAny((event, ...args) => {
