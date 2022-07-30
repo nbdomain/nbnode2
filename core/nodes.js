@@ -95,9 +95,9 @@ class Nodes {
         return false
     }
     removeNode(url) {
-        const index = this.pnodes.findIndex(item => item.id == url)
-        if (index != -1) this.pnodes.splice(index, 1)
-        delete this.nodeClients[url]
+        // const index = this.pnodes.findIndex(item => item.id == url)
+        // if (index != -1) this.pnodes.splice(index, 1)
+        // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
         if (this.hasNode(url)) {
