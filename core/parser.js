@@ -32,7 +32,7 @@ class Parser {
         }
         const rtx = ret.rtx
         try {
-            if (newTx && height == -1) { //p2p rawtx
+            if (newTx) { //new rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
                 if (tspan > 120 || tspan < -1) {

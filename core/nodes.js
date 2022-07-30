@@ -199,7 +199,7 @@ class Nodes {
             }
             return ret
         }
-        console.error("No Other nodes connected, cannot send tx")
+        console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
     async getTx(txid, from) {
