@@ -91,8 +91,13 @@ class Nodes {
         this.indexers.db.updateNodeScore(key, false)
     }
     hasNode(url) {
-        if (this.pnodes.find(item => item.id == url) || this.pnodes.find(item => item.id == url)) return true
+        if (this.pnodes.find(item => item.id == url)) return true
         return false
+    }
+    removeNode(url) {
+        const index = this.pnodes.findIndex(item => item.id == url)
+        if (index != -1) this.pnodes.splice(index, 1)
+        delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
         if (this.hasNode(url)) {
@@ -138,7 +143,7 @@ class Nodes {
         return CONSTS.producers.indexOf(pkey) != -1
     }
     onNodeDisconnect(node) {
-        delete this.nodeClients[node.id]
+        this.removeNode(node.id)
     }
     async connectOneNode(node) {
         if (this.nodeClients[node.id]) {
