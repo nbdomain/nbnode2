@@ -267,8 +267,8 @@ class Nodes {
             //const { db } = this.indexers
             //let latestTime = fullSync ? db.getLastFullSyncTime() : db.getLatestTxTime()
             for (const id in this.nodeClients) {
-                //await this.nodeClients[id].pullNewTxs({ from: latestTime })
-                this.nodeClients[id].pullNewTxs();
+                if (this.nodeClients[id].connected)
+                    this.nodeClients[id].pullNewTxs();
             }
             await wait(1000 * 60)
         }
