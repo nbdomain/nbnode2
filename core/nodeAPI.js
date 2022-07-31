@@ -58,7 +58,7 @@ class NodeServer {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
         })
         socket.on("disconnect", (reason) => {
-            console.error("server disconnected:", reason, " :", socket.url)
+            console.error("server disconnected:", reason, " :", socket.handshake.auth.serverUrl)
         })
         socket.onAny((event, ...args) => {
             console.log(`server got ${event}`);
@@ -107,7 +107,7 @@ class NodeClient {
         return new Promise(resolve => {
             const manager = new Manager(socketUrl, { autoConnect: false });
             const socket = manager.socket("/");
-            socket.auth = { username: "abc", key: "123" }
+            socket.auth = { username: "abc", key: "123", serverUrl: CONFIG.server.publicUrl }
             manager.open((err) => {
                 if (err) {
                     console.error(err)
@@ -121,7 +121,7 @@ class NodeClient {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
                 const s = CONFIG.server
-                const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
+                const serverUrl = s.publicUrl
                 let helloPara = { data: datav, v: cmd.hello.v }
                 if (s.publicUrl) helloPara.server = serverUrl
                 socket.emit("hello", helloPara, (res) => {
