@@ -345,7 +345,6 @@ app.get('/test', async (req, res) => {
     //indexers.ar.reCrawlAll()
     //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
     //indexers.db.resetDB()
-    //Nodes.startTxSync(indexers)
     //Nodes.pullNewTxs()
     //const ntx = +req.query['ntx']
     //const block = await indexers.blockMgr.createBlock(0, ntx)
@@ -359,7 +358,7 @@ app.get('/test', async (req, res) => {
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
     }
-
+    Nodes.sendNewTx({})
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

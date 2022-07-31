@@ -195,14 +195,24 @@ class Nodes {
             this.nodeServer.notify({ cmd, data })
         }
     }
+    getConnectedClients() {
+        let connected_clients = []
+        for (const id in this.nodeClients) {
+            const client = this.nodeClients[id]
+            if (client.connected) connected_clients.push(client)
+        }
+        return connected_clients
+    }
     async sendNewTx(obj) {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
-            //return rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
-            const ret = await this.nodeClients[Object.keys(this.nodeClients)[0]].sendNewTx(obj)
-            if (ret && Object.keys(this.nodeClients).length > 1) { //one node return success, send through another node, make sure it's sent
-                this.nodeClients[Object.keys(this.nodeClients)[1]].sendNewTx(obj)
+            const clients = this.getConnectedClients()
+            if (clients.length > 0) {
+                const ret = await clients[0].sendNewTx(obj)
+                if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
+                    clients[1].sendNewTx(obj)
+                }
+                return ret
             }
-            return ret
         }
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }

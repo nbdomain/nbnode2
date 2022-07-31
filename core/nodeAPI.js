@@ -81,6 +81,10 @@ class NodeClient {
     constructor(indexers, domain) {
         this.indexers = indexers
         this.from = domain
+        this.connected = false
+    }
+    setConnected(connected) {
+        this.connected = connected
     }
     async connect(node) {
         const Util = this.indexers.Util
@@ -128,6 +132,7 @@ class NodeClient {
                     }
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
+                            self.setConnected(true)
                             self.socket = socket
                             self._setup()
                             //if (node.pkey === "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85")
@@ -141,7 +146,8 @@ class NodeClient {
                 })
             });
             socket.on('disconnect', function () {
-                self.indexers.Nodes.onNodeDisconnect(self.node)
+                //self.indexers.Nodes.onNodeDisconnect(self.node)
+                self.setConnected(false)
                 console.log('Disconnected to:', socketUrl)
             })
             socket.onAny((event, ...args) => {
