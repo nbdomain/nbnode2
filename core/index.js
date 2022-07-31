@@ -11,16 +11,11 @@ const { Nodes } = require('./nodes')
 const CONSTS = require('./const')
 const Parser = require('./parser')
 const { Util } = require('./util')
-const Planaria = require('./planaria')
-//const UrChain = require('./urchain')
-//const RunConnectFetcher = require('./run-connect')
-//const BitcoinNodeConnection = require('./bitcoin-node-connection')
 const parseArgs = require('minimist')
 const fs = require('fs')
-const AWNode = require('./arapi')
+const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 const BlockMgr = require('./blockManager')
-//const BitcoinRpc = require('./bitcoin-rpc')
-//const BitcoinZmq = require('./bitcoin-zmq')
+
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -50,17 +45,21 @@ class Indexers {
     this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger)
     this.db.open()
   }
-  static init() {
+  static async checkEnv() {
+    const timeSync = NtpTimeSync.getInstance();
+    const result = await timeSync.getTime();
+    console.log("real time", result.now);
+    console.log("offset in milliseconds", result.offset);
+    if (result.offset > 1000) {
+      console.error("OS time is not in sync with NTP, please resync")
+      return false
+    }
+    return true
+  }
+  static async init() {
 
-    /* switch (CONSTS.API.bsv) {
-       case 'planaria': apiBSV = new Planaria(CONSTS.PLANARIA_TOKEN, this.db, logger); break
-       //default: throw new Error(`Unknown API: ${API}`)
-     }
-     switch (CONSTS.API.ar) {
-       case 'arnode': apiAR = new AWNode("", this.db, logger); break
-       //default: throw new Error(`Unknown API: ${API}`)
-     }*/
-
+    if (!await this.checkEnv()) return false
+    this.initDB()
     this.indexer = new Indexer(this.db, CONSTS.FETCH_LIMIT, logger)
     //this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
     this.indexer.indexers = this
@@ -69,6 +68,7 @@ class Indexers {
     this.Util = Util
     this.resolver = this.indexer.resolver
     this.blockMgr = new BlockMgr(this)
+    return true
   }
   static async start() {
     //await this.db.verifyTxDB('bsv')
@@ -83,8 +83,9 @@ class Indexers {
   }
 }
 async function main() {
-  Indexers.initDB()
-  Indexers.init()
+  if (!await Indexers.init()) {
+    process.exit(-1)
+  }
 
   server = new LocalServer(Indexers, logger)
   server.start()
