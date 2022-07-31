@@ -188,7 +188,10 @@ class BlockMgr {
                 }
                 //broadcast current block or last block
                 let bcBlock = this.uBlock
-                if (!bcBlock) bcBlock = this.db.getBlock(this.height - 1, true)
+                if (!bcBlock) {
+                    bcBlock = this.db.getBlock(this.height - 1, true)
+                    bcBlock.confirmed = true
+                }
                 if (bcBlock) {
                     console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " sig:", objLen(bcBlock.sigs))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
@@ -198,7 +201,8 @@ class BlockMgr {
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
-                if (node.uBlock.block.height >= this.height) { //download missing block
+                const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
+                if (height >= this.height) { //download missing block
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
                         this.uBlock = null
