@@ -31,7 +31,7 @@ const VER_TXDB = 5
 // ------------------------------------------------------------------------------------------------
 
 class Database {
-  constructor(txpath, dmpath, logger) {
+  constructor(txpath, dmpath, logger, indexers) {
     //this.chain = chain
     this.dtpath = __dirname + "/db/odata.db"
     this.path = txpath
@@ -45,6 +45,7 @@ class Database {
     this.onDeleteTransaction = null
     this.onResetDB = null
     this.resolvedHeight = -1
+    this.indexers = indexers
   }
   open() {
     let noTxdb = false;
@@ -195,10 +196,11 @@ class Database {
   preDealData() {
     try {
       //this.combineTXDB();
-      let sql = "DROP table IF EXISTS ar_tx"
-      this.txdb.prepare(sql).run()
-      sql = "DROP table IF EXISTS bsv_tx"
-      this.txdb.prepare(sql).run()
+      let sql = ""
+      try {
+        sql = "ALTER TABLE txs ADD sigs text"
+        this.txdb.prepare(sql).run()
+      } catch (e) { }
 
       sql = `
       CREATE TABLE IF NOT EXISTS blocks (
@@ -337,36 +339,12 @@ class Database {
   // tx
   // --------------------------------------------------------------------------
 
-  addNewTransaction(txid, chain) {
-    if (this.hasTransaction(txid, chain)) return
-
-    const sql = `INSERT OR IGNORE INTO txs (txid, height, time, bytes) VALUES (?, null, ?, null)`
-    this.txdb.prepare(sql).run(txid, 9999999999)
-
-    if (this.onAddTransaction) this.onAddTransaction(txid)
-  }
   getLatestTxTime() {
     const sql = `SELECT txTime from txs ORDER BY txTime DESC`
     const res = this.txdb.prepare(sql).get()
     return res ? res.txTime : -1
   }
-  getLastFullSyncTime() {
-    try {
-      const sql = `SELECT fullSyncTime from config`
-      const res = this.txdb.prepare(sql).get()
-      return res ? res : 0
-    } catch (e) {
-      return 0
-    }
-  }
-  saveLastFullSyncTime(time) {
-    try {
-      const sql = `insert or replace into config (key,value) VALUES('fullSyncTime',?) `
-      this.txdb.prepare(sql).run(time)
-    } catch (e) {
-      console.log(e)
-    }
-  }
+
   getFullTx({ txid }) {
     const tx = this.getTransaction(txid);
     if (!tx) return null
@@ -401,11 +379,7 @@ class Database {
     }
     return true
   }
-  setTransactionRaw(txid, rawtx, chain) {
-    const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-    const sql = `UPDATE txs SET bytes = ? WHERE txid = ?`
-    this.txdb.prepare(sql).run(bytes, txid)
-  }
+
   setTxTime(txid, txTime) {
     const sql = `UPDATE txs SET txTime = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(txTime, txid)
@@ -449,11 +423,7 @@ class Database {
     const row = this.txdb.prepare(sql).raw(true).get(txid)
     return row && row[0]
   }
-  getTransactionIndex(txid) {
-    const sql = `SELECT id FROM txs WHERE txid = ?`
-    const row = this.txdb.prepare(sql).raw(true).get(txid)
-    return row && row[0]
-  }
+
   deleteTransaction(txid) {
     const sql = "delete from txs where txid = ?"
     this.txdb.prepare(sql).run(txid)
@@ -489,10 +459,22 @@ class Database {
     if (andValid) return ret[0] != 1
     return true
   }
+  getTransactionSigs(txid) {
+    const sql = 'Select sigs from txs where txid=?'
+    const ret = this.txdb.prepare(sql).get(txid)
+    return ret && Util.parseJson(ret.sigs)
+  }
+  addTransactionSigs(txid, sig) {
+    try {
+      let sigs = this.getTransactionSigs(txid)
+      if (!sigs) sigs = {}
+      if (sigs[sig.key]) return
+      sigs[sig.key] = sig.sig
+      const sql = 'Update txs set sigs = ? where txid=?'
+      this.txdb.prepare(sql).run(JSON.stringify(sigs), txid)
+    } catch (e) {
 
-  getMempoolTransactionsBeforeTime(time) {
-    const sql = `SELECT txid FROM txs WHERE txTime < ? AND (height IS NULL OR height = ${HEIGHT_MEMPOOL})`
-    return this.txdb.prepare(sql).raw(true).all(time).map(row => row[0])
+    }
   }
 
 
@@ -886,62 +868,28 @@ class Database {
       return null
     }
   }
-
+  async verifyAllTXs() {
+    const { Nodes } = this.indexers
+    let sql = 'select txid,chain from txs where txTime > 10 AND sigs IS NULL'
+    const txs = this.txdb.prepare(sql).all()
+    const step = 1000
+    for (let i = 0; i < txs.length; i += step) {
+      const txs1 = txs.slice(i, i + step)
+      const ret = []//await Util.verifyTX(txs1)
+      for (const tx of txs1) {
+        if (ret && ret.indexOf(tx.txid) != -1) {
+          console.log("found fake txid:", tx.txid)
+          continue
+        }
+        const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
+        this.addTransactionSigs(tx.txid, { key: Nodes.thisNode.key, sig })
+        console.log("Signed:", tx.txid)
+      }
+    }
+  }
   async verifyTxDB() {
     console.log("verifying...")
-    /* //find NULL txTime and set it
-    let sql = `select txid,time,txTime from txs where txTime IS NULL`
-    const ret = this.txdb.prepare(sql).all()
-    for (const item of ret) {
-      if (item.time != 9999999999) {
-        console.log("found txid:", item.txid, " time:", item.time)
-        this.setTxTime(item.txid, item.time)
-      }
-      else {
-        console.log("time is 9999999999:", item.txid)
-      }
-    }*/
-
-    //set height for all txs
-    const maxHeight = this.getLastBlock().height
-    for (let i = 0; i <= maxHeight; i++) {
-      const uBlock = this.getBlock(i, true)
-      const txs = uBlock.block.txs
-      for (const tx of txs) {
-        this.setTransactionHeight(tx.txid, i)
-      }
-    }
-    //verifyTX
-    /*let sql = "select txid from txs where chain='bsv' limit 100"
-    const ret = this.txdb.prepare(sql).raw(true).all().map(row => row[0])
-    ret[0] = "dadsfsafsafsfsf"
-    Util.verifyTX(ret, 'bsv')*/
-
-    //remove dup time
-    let sql = "select txid,time,txTime from txs where txTime < 10000 order by txTime"
-    let ret = this.txdb.prepare(sql).all()
-    for (let i = 0; i < ret.length - 1; i++) {
-      let k = 1, m = 0
-      if (!ret[i]) {
-        console.log("found")
-      }
-      while (ret[i].time === ret[i + k].time) {
-        k++
-      }
-      while (k > 1) {
-        this.setTransactionTime(ret[i + k - 1].txid, ret[i].time + k)
-        k--
-        m++
-      }
-      if (m) i += m
-    }
-    //move time to txTime
-    sql = "select txid,time,txTime from txs where txTime < 10000 order by txTime"
-    ret = this.txdb.prepare(sql).all()
-    for (let i = 0; i < ret.length; i++) {
-      if (ret[i].txTime != 1)
-        this.setTxTime(ret[i].txid, ret[i].time)
-    }
+    await this.verifyAllTXs()
     console.log("verify finish")
   }
   async pullNewTx(afterHeight) {

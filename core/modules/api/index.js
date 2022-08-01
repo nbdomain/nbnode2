@@ -358,7 +358,7 @@ app.get('/test', async (req, res) => {
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
     }
-    Nodes.sendNewTx({})
+    //Nodes.sendNewTx({})
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

@@ -135,7 +135,6 @@ class NodeClient {
                             self.setConnected(true)
                             self.socket = socket
                             self._setup()
-                            //if (node.pkey === "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85")
                             self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
@@ -223,7 +222,10 @@ class rpcHandler {
                     const ret = await Util.verifyTX([tx]) //return invalid tx array
                     if (ret.length > 0) {
                         console.error("tx not found in mempool:", tx.txid)
-                        if (i >= 4) return
+                        if (i >= 4) {
+                            console.error("tx will be rejected:", tx.txid)
+                            return
+                        }
                     } else {
                         console.log("tx verified:", tx.txid)
                         break;
@@ -242,11 +244,9 @@ class rpcHandler {
                 else {
                     console.error("wrong rawtx format. ret:", ret)
                 }
-                /* if (await indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
-                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
-                     //indexers.blockMgr.onNewTx(para.txid)
-                 }*/
                 if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                    const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
+                    db.addTransactionSigs(para.txid, { key: Nodes.thisNode.key, sig })
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
                 }
 

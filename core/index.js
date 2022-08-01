@@ -42,7 +42,7 @@ let indexers = null, server = null;
 let apiAR = null, apiBSV = null;
 class Indexers {
   static initDB() {
-    this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger)
+    this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger, this)
     this.db.open()
   }
   static async checkEnv() {

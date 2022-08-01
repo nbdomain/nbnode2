@@ -15,6 +15,7 @@ const { Nodes } = require('./nodes')
 const { CONFIG } = require('./config')
 const { DEF } = require('./def')
 const process = require('process')
+const { Util } = require('./util')
 
 // ------------------------------------------------------------------------------------------------
 // Indexer
@@ -109,9 +110,15 @@ class Indexer {
       console.log("Skipping:", txid)
       return false
     }
+    const tid = Util.rawToTxid(rawtx, chain)
+    if (tid !== txid) {
+      console.error("txid verify error:", txid)
+      return false
+    }
     if (noVerify && time) {
       return await this.database.addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain })
     }
+
     let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
 
     let ts = 0
@@ -133,34 +140,6 @@ class Indexer {
     }
     return ret.code == 0;
   }
-  /*  async _parseAndStoreTransaction(txid, rawtx) {
-      if (this.database.isTransactionParsed(txid, false, this.chain)) return
-   
-      if (!rawtx) {
-        this.logger.warn(txid, ":", "no rawtx");
-        return
-      }
-      const height = this.database.getTransactionHeight(txid, this.chain);
-      const block_time = this.database.getTransactionTime(txid, this.chain);
-      let attrib = {}
-      try {
-        //just save, no verify
-        this.database.setTransactionRaw(txid, rawtx, this.chain)
-        const ret = await Parser.parse({ rawtx, height, time: block_time,chain:this.chain });
-        //attrib = await Parser.getAttrib({ rawtx,chain })
-        //this.database.setTxTime(txid, attrib.ts ? attrib.ts : 2, this.chain)
-        if (ret.code == 0) {
-          this.database.setTxTime(txid, ret.rtx.ts ? ret.rtx.ts : DEF.TX_FORMAT2, this.chain)
-        } else {
-          this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
-        }
-      } catch (e) {
-        // console.error(e);
-        this.database.setTxTime(txid, DEF.TX_INVALIDTX, this.chain)
-      }
-   
-      return
-    } */
 
   _parseTxid(txid) {
     //  txid = txid.trim().toLowerCase()

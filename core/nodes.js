@@ -208,9 +208,9 @@ class Nodes {
             const clients = this.getConnectedClients()
             if (clients.length > 0) {
                 const ret = await clients[0].sendNewTx(obj)
-                if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
+                /*if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
                     clients[1].sendNewTx(obj)
-                }
+                }*/
                 return ret
             }
         }
@@ -262,10 +262,8 @@ class Nodes {
     async startTxSync(indexers) {
         this.indexers = indexers
     }
-    async pullNewTxs(fullSync = false) {
+    async pullNewTxs() {
         while (true) {
-            //const { db } = this.indexers
-            //let latestTime = fullSync ? db.getLastFullSyncTime() : db.getLatestTxTime()
             for (const id in this.nodeClients) {
                 if (this.nodeClients[id].connected)
                     this.nodeClients[id].pullNewTxs();

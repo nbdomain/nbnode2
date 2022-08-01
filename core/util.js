@@ -99,6 +99,10 @@ class Util {
     static async bitcoinSign(privateKey, data) {
         return await bsvLib.sign(privateKey, data)
     }
+    static rawToTxid(rawtx, chain) {
+        const lib = chain === 'bsv' ? bsvLib : arLib
+        return lib.rawToTxid(rawtx)
+    }
     static async bitcoinVerify(publicKey, data, sig) {
         return await bsvLib.verify(publicKey, data, sig)
     }
