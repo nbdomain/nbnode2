@@ -104,7 +104,7 @@ class Indexer {
     return this.database.getTransactionTime(txid)
   }
 
-  async addTxFull({ txid, rawtx, time, txTime, oDataRecord, noVerify = false, force = false, chain, replace = false }) {
+  async addTxFull({ txid, rawtx, txTime, oDataRecord, noVerify = false, force = false, chain, replace = false }) {
 
     if (!force && this.database.isTransactionParsed(txid, false)) {
       console.log("Skipping:", txid)
@@ -115,23 +115,23 @@ class Indexer {
       console.error("txid verify error:", txid)
       return false
     }
-    if (noVerify && time) {
+    /*if (noVerify && time) {
+      this.indexers.blockMgr.onNewTx(txid)
       return await this.database.addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain })
-    }
+    }*/
 
-    let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time, chain }));
+    let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
 
     let ts = 0
     if (ret.code != 0 || !ret.rtx) ts = DEF.TX_INVALIDTX
     else {
       ts = (ret.rtx.ts ? +ret.rtx.ts : +ret.rtx.time)
       if (txTime) ts = +txTime
-      if (!time) time = ts
     }
 
 
-    if (time < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
-      await this.database.addFullTx({ txid, rawtx, time, txTime: ts, oDataRecord, chain, replace: replace || force })
+    if (txTime < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
+      await this.database.addFullTx({ txid, rawtx, txTime: ts, oDataRecord, chain, replace: replace || force })
       this.indexers.blockMgr.onNewTx(txid)
       console.log("Added txid:", txid)
     }
@@ -139,12 +139,6 @@ class Indexer {
       console.error("Invalid tx:", ret, txid)
     }
     return ret.code == 0;
-  }
-
-  _parseTxid(txid) {
-    //  txid = txid.trim().toLowerCase()
-    //  if (!/^[0-9a-f]{64}$/.test(txid)) throw new Error('Not a txid: ' + txid)
-    return txid
   }
 }
 

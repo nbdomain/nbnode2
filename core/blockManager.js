@@ -122,6 +122,7 @@ class BlockMgr {
                             tempBlock && this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
                                 this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
+                                this.db.addTransactionSigs(ftx.txid, ftx.sigs)
                             }
                             tempBlock = await this.createBlock(block.height)
                             if (tempBlock.merkel != block.merkel) {
@@ -205,6 +206,7 @@ class BlockMgr {
                 if (height >= this.height) { //download missing block
                     const n = this.db.getNode(pkey)
                     if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
+
                         this.uBlock = null
                         this.hasNewTX = false
                         break;

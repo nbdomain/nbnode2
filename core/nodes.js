@@ -217,6 +217,24 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
+    async getConfirmations(txids, min) {
+        let ret = []
+        for (const client of this.getConnectedClients()) {
+            const ret1 = await client.getConfirmations(txids)
+            const ret2 = ret1.filter(item => {
+                const sigs = JSON.parse(sigs)
+                if (Object.keys(sigs).length >= min) {
+                    ret.push(item)
+                    return false
+                } else {
+                    return true
+                }
+            })
+            if (ret2.length == 0) break;
+            txids = ret2
+        }
+        return ret
+    }
     async getTx(txid, from) {
         try {
             if (from) {

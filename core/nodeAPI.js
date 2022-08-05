@@ -53,6 +53,11 @@ class NodeServer {
             const { db } = indexers
             ret(await db.pullNewTx(para.afterHeight))
         })
+        socket.on("getConfirmations", (para, ret) => {
+            console.log("getConfirmations:", para)
+            const { db } = indexers
+            ret(db.getConfirmations(para.txids))
+        })
 
         socket.on("sendNewTx", async (obj, ret) => {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
@@ -159,8 +164,7 @@ class NodeClient {
         this.socket.on('notify', (arg) => {
             //console.log('got notify:', arg)
             if (arg.cmd === "newtx") {
-                const d = arg.data;
-                const para = JSON.parse(d)
+                const para = JSON.parse(arg.data)
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
@@ -174,6 +178,15 @@ class NodeClient {
 
         })
     }
+    async getConfirmations(txids) {
+        return new Promise(resolve => {
+            const para = { txids }
+            this.socket.emit("getConfirmations", para, (res) => {
+                resolve(res)
+            })
+        })
+
+    }
     async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
         const { db, indexer } = this.indexers
         const height = +db.readConfig("txdb", "height")
@@ -185,9 +198,8 @@ class NodeClient {
             console.log("get reply from pullNewTx:")
             if (!res) return
             for (const tx of res) {
-                if (await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })) {
-
-                }
+                await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
+                db.addTransactionSigs(tx.txid, tx.sigs)
             }
         })
     }
@@ -208,6 +220,9 @@ class rpcHandler {
     static handlingMap = {}
     static async handleNewTxNotify({ indexers, para, socket, force = false }) {
         let { db, Parser, indexer, Nodes } = indexers
+        if (para.sigs) {
+            db.addTransactionSigs(para.txid, para.sigs)
+        }
         if (this.handlingMap[para.txid]) {
             console.log("already handled")
             return
@@ -233,23 +248,16 @@ class rpcHandler {
                     await wait(2000)
                 }
             }
-
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
-                const item = data.oDataRecord
-                const ret = await Parser.parse({ rawtx: data.tx.rawtx, oData: item?.raw, height: -1, chain: data.tx.chain });
-                if (ret.code == 0 && ret.rtx?.oHash === item.hash)
-                    await db.saveData({ data: item.raw, owner: item.owner, time: item.time, hash: item.hash, from: "api/handleNewTx" })
-                else {
-                    console.error("wrong rawtx format. ret:", ret)
-                }
-                if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
-                    const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
-                    db.addTransactionSigs(para.txid, { key: Nodes.thisNode.key, sig })
-                    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid }) })
-                }
 
+                if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                    const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
+                    db.addTransactionSigs(para.txid, { [Nodes.thisNode.key]: sig })
+                    const sigs = db.getTransactionSigs(para.txid)
+                    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
+                }
                 delete this.handlingMap[para.txid]
             })
         }
@@ -280,7 +288,7 @@ class rpcHandler {
             if (ret.rtx && ret.rtx.oHash) {
                 oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
             }
-            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, time: ret.rtx.time, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain }))
+            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain }))
                 Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: obj.chain }) })
         } else {
             console.log("send tx failed")

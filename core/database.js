@@ -464,16 +464,39 @@ class Database {
     const ret = this.txdb.prepare(sql).get(txid)
     return ret && Util.parseJson(ret.sigs)
   }
-  addTransactionSigs(txid, sig) {
+  addTransactionSigs(txid, sigs) {
     try {
-      let sigs = this.getTransactionSigs(txid)
-      if (!sigs) sigs = {}
-      if (sigs[sig.key]) return
-      sigs[sig.key] = sig.sig
+      if (typeof sigs === "string")
+        sigs = Util.parseJson(sigs)
+      if (!sigs) return false;
+      let existing_sigs = this.getTransactionSigs(txid)
+      if (!existing_sigs) existing_sigs = {}
+      let dirty = false
+      for (const key in sigs) {
+        if (existing_sigs[key]) continue
+        existing_sigs[key] = sigs[key]
+        dirty = true
+      }
+      if (!dirty) return false
       const sql = 'Update txs set sigs = ? where txid=?'
-      this.txdb.prepare(sql).run(JSON.stringify(sigs), txid)
+      this.txdb.prepare(sql).run(JSON.stringify(existing_sigs), txid)
+      return true
     } catch (e) {
-
+    }
+    return false
+  }
+  getConfirmations(txids) {
+    try {
+      let sql = "select sigs from txs where txid in (";
+      for (const tx of txs) {
+        txids.push(tx.txid)
+        sql += "?,"
+      }
+      sql = sql.slice(0, sql.length - 1) + ")"
+      const ret = this.txdb.prepare(sql).all(txids)
+      return ret
+    } catch (e) {
+      return []
     }
   }
 
@@ -961,8 +984,8 @@ class Database {
   }
   async saveBlock({ sigs, block }) {
     console.log("Saving block: " + block.height)
-    this.transaction(async () => {
-      try {
+    try {
+      this.transaction(async () => {
         const hash = block.hash
         delete block.hash
         const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
@@ -975,12 +998,11 @@ class Database {
         const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
         const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
         this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
-
         this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
-      } catch (e) {
-        console.error(e.message)
-      }
-    })
+      })
+    } catch (e) {
+      console.error("saveBlock:", e.message)
+    }
   }
   deleteBlock(height) {
     try {
