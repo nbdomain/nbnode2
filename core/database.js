@@ -480,6 +480,7 @@ class Database {
       if (!dirty) return false
       const sql = 'Update txs set sigs = ? where txid=?'
       this.txdb.prepare(sql).run(JSON.stringify(existing_sigs), txid)
+      console.log("Added tx sigs:", existing_sigs)
       return true
     } catch (e) {
     }
