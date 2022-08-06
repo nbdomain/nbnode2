@@ -161,31 +161,6 @@ class Nodes {
         console.error("failed to connect:", node.id)
         return false
     }
-    /*    async fastestNode(nodes) {
-            return new Promise(resolve => {
-                for (const node of nodes) {
-                    try {
-                        axios.get(node.id + "/api/nodeInfo").then(res => {
-                            if (res.data && res.data.pkey) {
-                                resolve(node)
-                                return
-                            }
-                        })
-                    } catch (e) { console.error("fastestNode:", e.message) }
-                }
-            })
-        }
-        async connectNodes() {
-            for (const node of this.pnodes) {
-                if (await this.connectOneNode(node)) {
-                }
-            }
-            if (!this.nodeClients || Object.keys(this.nodeClients).length == 0) {
-                console.error("cannot connect to any node")
-                return false
-            }
-            return true
-        } */
     getNodes() {
         return this.pnodes
     }
@@ -216,9 +191,6 @@ class Nodes {
         }
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
-    }
-    isProducer(key) { //check if the key belongs to a producer
-        return true
     }
     async verifySigs({ txTime, txid, sigs }) {
         const { Util } = this.indexers
