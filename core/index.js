@@ -60,9 +60,7 @@ class Indexers {
 
     if (!await this.checkEnv()) return false
     this.initDB()
-    this.indexer = new Indexer(this.db, CONSTS.FETCH_LIMIT, logger)
-    //this.ar = new Indexer(this.db, "ar", CONSTS.FETCH_LIMIT, logger)
-    this.indexer.indexers = this
+    this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
     this.Parser = Parser
     this.Util = Util
@@ -71,10 +69,8 @@ class Indexers {
     return true
   }
   static async start() {
-    //await this.db.verifyTxDB('bsv')
-    await Nodes.startTxSync(this)
+    const seedNode = await Nodes.init(this)
     await this.indexer.start()
-
     this.blockMgr.run()
   }
   static async stop() {
@@ -86,14 +82,9 @@ async function main() {
   if (!await Indexers.init()) {
     process.exit(-1)
   }
-
   server = new LocalServer(Indexers, logger)
   server.start()
-
-  const seedNode = await Nodes.init(Indexers)
-
   await Indexers.start()
-
 
 }
 

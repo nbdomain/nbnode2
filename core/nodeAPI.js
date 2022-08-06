@@ -198,8 +198,7 @@ class NodeClient {
             console.log("get reply from pullNewTx:")
             if (!res) return
             for (const tx of res) {
-                await indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
-                db.addTransactionSigs(tx.txid, tx.sigs)
+                await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
             }
         })
     }
@@ -263,7 +262,7 @@ class rpcHandler {
         }
     }
     static async handleNewTxFromApp({ indexers, obj }) {
-        const { indexer, Parser, Util, Nodes } = indexers
+        const { indexer, Parser, Util, Nodes, db } = indexers
         let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
         if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
             console.error("parseRaw error err:", ret)
@@ -288,8 +287,12 @@ class rpcHandler {
             if (ret.rtx && ret.rtx.oHash) {
                 oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
             }
-            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain }))
-                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, chain: obj.chain }) })
+            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
+                const sig = await Util.bitcoinSign(CONFIG.key, ret1.txid)
+                db.addTransactionSigs(ret1.txid, { [Nodes.thisNode.key]: sig })
+                const sigs = db.getTransactionSigs(ret1.txid)
+                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+            }
         } else {
             console.log("send tx failed")
         }

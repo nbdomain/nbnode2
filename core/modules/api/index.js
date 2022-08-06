@@ -157,13 +157,13 @@ app.post('/sendTx', async function (req, res) {
     const ret = await Nodes.sendNewTx(obj)
     res.json(ret);
 });
-async function handleNewTx(para, from, force = false) {
+async function handleNewTx({ txid, force = false }) {
     let db = indexers.db
-    if (!db.isTransactionParsed(para.txid, false) || force) {
-        const data = await Nodes.getTx(para.txid, from)
+    if (!db.isTransactionParsed(txid, false) || force) {
+        const data = await Nodes.getTx(txid)
         if (data) {
-            console.log("handleNewTx:", para.txid)
-            await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })
+            console.log("handleNewTx:", txid)
+            await indexers.indexer.addTxFull({ txid: txid, sigs: data.tx.sigs, rawtx: data.tx.rawtx || data.rawtx, time: data.tx.time, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, force, chain: data.tx.chain })
         }
     }
 }
@@ -365,7 +365,7 @@ app.get('/reverify', async (req, res) => {
     const txid = req.query['txid']
     const ret = indexers.db.getFullTx({ txid })
     const tx = ret.tx
-    indexers.indexer.addTxFull({ txid: tx.txid, rawtx: tx.rawtx, time: tx.time, force: true, chain: tx.chain })
+    indexers.indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, time: tx.time, force: true, chain: tx.chain })
 })
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())

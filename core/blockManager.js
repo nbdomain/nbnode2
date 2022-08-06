@@ -103,6 +103,7 @@ class BlockMgr {
     }
     async downloadBlocks(from, to, url) {
         let ret = false, resetDB = false
+        const { db, indexer } = this.indexers
         this._canResolve = false
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
@@ -121,11 +122,10 @@ class BlockMgr {
                         if (btx.data) {
                             tempBlock && this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
-                                this.db.addFullTx({ txid: ftx.txid, rawtx: ftx.rawtx, time: ftx.time, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
-                                this.db.addTransactionSigs(ftx.txid, ftx.sigs)
+                                await indexer.addTxFull({ txid: ftx.txid, sigs: ftx.sigs, rawtx: ftx.rawtx, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
                             }
                             tempBlock = await this.createBlock(block.height)
-                            if (tempBlock.merkel != block.merkel) {
+                            if (tempBlock && (tempBlock.merkel != block.merkel)) {
                                 console.log("found")
                             }
                             if (merkel)
@@ -141,6 +141,7 @@ class BlockMgr {
                 }
             }
         } catch (e) {
+            console.error(e.message)
             return false
         } finally {
             this._canResolve = true

@@ -389,7 +389,7 @@ class Database {
   }
   setTransactionHeight(txid, height) {
     const sql = `UPDATE txs SET height = ? WHERE txid = ?`
-    this.txdb.prepare(sql).run(height, txid)
+    const ret = this.txdb.prepare(sql).run(height, txid)
   }
 
   setTransactionTime(txid, time) {
@@ -480,7 +480,7 @@ class Database {
       if (!dirty) return false
       const sql = 'Update txs set sigs = ? where txid=?'
       this.txdb.prepare(sql).run(JSON.stringify(existing_sigs), txid)
-      console.log("Added tx sigs:", existing_sigs)
+      console.log("Added tx sigs txid:", txid, existing_sigs)
       return true
     } catch (e) {
     }
@@ -994,6 +994,7 @@ class Database {
         //set height of the tx
         const txs = block.txs
         for (const tx of txs) {
+          console.log("set txid:", tx.txid, " height:", block.height)
           this.setTransactionHeight(tx.txid, block.height)
         }
         const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()

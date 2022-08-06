@@ -22,13 +22,13 @@ const { Util } = require('./util')
 // ------------------------------------------------------------------------------------------------
 
 class Indexer {
-  constructor(db, numParallelDownloads, logger) {
+  constructor(db, indexers, logger) {
     this.logger = logger || {}
     this.logger.info = this.logger.info || (() => { })
     this.logger.warn = this.logger.warn || (() => { })
     this.logger.error = this.logger.error || (() => { })
     this.logger.debug = this.logger.debug || (() => { })
-
+    this.indexers = indexers
     this.onDownload = null
     this.onFailToDownload = null
     this.onIndex = null
@@ -37,24 +37,11 @@ class Indexer {
     this.onReorg = null
 
 
-    this.database = db; //new Database(chain, txdb, dmdb, this.logger)
-    //    this.downloader = new Downloader(BSVChain.fetchRaw, numParallelDownloads)
-
-    //this.crawler = new Crawler(api, db, this.chain)
+    this.database = db;
     this.resolver = new Resolver(this.database)
     //this.resolver.addController(Nodes)
     Parser.init(this.database)
 
-    //    this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)
-    //    this.downloader.onFailedToDownloadTransaction = this._onFailedToDownloadTransaction.bind(this)
-    //    this.downloader.onRetryingDownload = this._onRetryingDownload.bind(this)
-
-    /*this.crawler.onCrawlError = this._onCrawlError.bind(this)
-    this.crawler.onCrawlBlockTransactions = this._onCrawlBlockTransactions.bind(this)
-    this.crawler.onRewindBlocks = this._onRewindBlocks.bind(this)
-    this.crawler.onMempoolTransaction = this._onMempoolTransaction.bind(this)
-    this.crawler.onExpireMempoolTransactions = this._onExpireMempoolTransactions.bind(this)
-    this.crawler.onConfirmTransactions = this._onConfirmTransactions.bind(this)*/
   }
   async restart() {
     await this.stop();
@@ -65,11 +52,7 @@ class Indexer {
   pauseResolve(pause) {
     this.resolver.pauseResolve = pause
   }
-  /*async reCrawlAll() {
-    this.database.setHeightAndHash(this.startHeight, "", this.chain)
-    await this.stop();
-    this.start()
-  }*/
+
   async start() {
     this.resolver.start()
     if (CONFIG.exit_count != 0)
@@ -104,41 +87,47 @@ class Indexer {
     return this.database.getTransactionTime(txid)
   }
 
-  async addTxFull({ txid, rawtx, txTime, oDataRecord, noVerify = false, force = false, chain, replace = false }) {
+  async addTxFull({ txid, sigs, rawtx, txTime, oDataRecord, force = false, chain, replace = false }) {
+    try {
+      const { Nodes } = this.indexers
+      if (!force && this.database.isTransactionParsed(txid, false) && !replace) {
+        console.log("Skipping:", txid)
+        return false
+      }
+      const tid = Util.rawToTxid(rawtx, chain)
+      if (tid !== txid) {
+        console.error("txid verify error:", txid)
+        return false
+      }
+      if (!await Nodes.verifySigs({ txTime, txid, sigs })) return false
 
-    if (!force && this.database.isTransactionParsed(txid, false)) {
-      console.log("Skipping:", txid)
+      let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
+
+      let ts = 0
+      if (ret.code != 0 || !ret.rtx) ts = DEF.TX_INVALIDTX
+      else {
+        ts = (ret.rtx.ts ? +ret.rtx.ts : +ret.rtx.time)
+        if (txTime) ts = +txTime
+      }
+
+
+      if (txTime < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
+        await this.database.addFullTx({ txid, rawtx, txTime: ts, oDataRecord, chain, replace: replace || force })
+        if (sigs) {
+          this.database.addTransactionSigs(txid, sigs)
+        }
+        this.indexers.blockMgr.onNewTx(txid)
+        console.log("Added txid:", txid)
+      }
+      else {
+        console.error("Invalid tx:", ret, txid)
+      }
+      return ret.code == 0;
+    } catch (e) {
+      console.error(e)
       return false
     }
-    const tid = Util.rawToTxid(rawtx, chain)
-    if (tid !== txid) {
-      console.error("txid verify error:", txid)
-      return false
-    }
-    /*if (noVerify && time) {
-      this.indexers.blockMgr.onNewTx(txid)
-      return await this.database.addFullTx({ txid, rawtx, time, txTime, oDataRecord, chain })
-    }*/
 
-    let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
-
-    let ts = 0
-    if (ret.code != 0 || !ret.rtx) ts = DEF.TX_INVALIDTX
-    else {
-      ts = (ret.rtx.ts ? +ret.rtx.ts : +ret.rtx.time)
-      if (txTime) ts = +txTime
-    }
-
-
-    if (txTime < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
-      await this.database.addFullTx({ txid, rawtx, txTime: ts, oDataRecord, chain, replace: replace || force })
-      this.indexers.blockMgr.onNewTx(txid)
-      console.log("Added txid:", txid)
-    }
-    else {
-      console.error("Invalid tx:", ret, txid)
-    }
-    return ret.code == 0;
   }
 }
 

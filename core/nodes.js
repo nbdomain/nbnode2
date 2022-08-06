@@ -217,6 +217,24 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
+    isProducer(key) { //check if the key belongs to a producer
+        return true
+    }
+    async verifySigs({ txTime, txid, sigs }) {
+        const { Util } = this.indexers
+        if (txTime >= 1659689820) { //chect sigs from other node after this time
+            if (!sigs) return false
+            if (typeof sigs === 'string')
+                sigs = Util.parseJson(sigs)
+            for (const key in sigs) {
+                if (!this.isProducer(key) || await Util.bitcoinVerify(key, txid, sigs[key]) == false) {
+                    console.error("sig verify failed:", sigs)
+                    return false
+                }
+            }
+        }
+        return true
+    }
     async getConfirmations(txids, min) {
         let ret = []
         for (const client of this.getConnectedClients()) {
@@ -239,8 +257,8 @@ class Nodes {
         try {
             if (from) {
                 const res = await axios.get(`${from}/api/p2p/gettx?txid=${txid}`)
-                if (res.data) {
-                    if (res.data.code == 0) return res.data
+                if (res.data.tx) {
+                    return res.data
                 }
             }
         } catch (e) { console.error("getTx:", e.message) }
