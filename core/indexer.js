@@ -94,13 +94,14 @@ class Indexer {
         console.log("Skipping:", txid)
         return false
       }
-      const tid = Util.rawToTxid(rawtx, chain)
-      if (tid !== txid) {
-        console.error("txid verify error:", txid)
+      if (!await Util.verifyRaw({ expectedId: txid, rawtx, chain })) {
+        console.error("rawtx verify error:", txid)
         return false
       }
-      if (!await Nodes.verifySigs({ txTime, txid, sigs })) return false
-
+      if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
+        console.error("tx sigs verification failed")
+        return false
+      }
       let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
 
       let ts = 0
