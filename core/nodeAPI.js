@@ -287,10 +287,11 @@ class rpcHandler {
             if (ret.rtx && ret.rtx.oHash) {
                 oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
             }
-            if (await indexer.addTxFull({ txid: ret1.txid, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
-                const sig = await Util.bitcoinSign(CONFIG.key, ret1.txid)
-                db.addTransactionSigs(ret1.txid, { [Nodes.thisNode.key]: sig })
-                const sigs = db.getTransactionSigs(ret1.txid)
+            const sig = await Util.bitcoinSign(CONFIG.key, ret1.txid)
+            let sigs = { [Nodes.thisNode.key]: sig }
+            if (await indexer.addTxFull({ txid: ret1.txid, sigs, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
+                db.addTransactionSigs(ret1.txid, sigs)
+                sigs = db.getTransactionSigs(ret1.txid)
                 Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
             }
         } else {

@@ -124,7 +124,7 @@ class Indexer {
       }
       return ret.code == 0;
     } catch (e) {
-      console.error(e)
+      console.error("Invalid tx:", txid, e.message)
       return false
     }
 

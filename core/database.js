@@ -386,6 +386,8 @@ class Database {
   }
   setTransactionResolved(txid) {
     this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
+    const time = this.getTransactionTime(txid)
+    this.writeConfig("dmdb", "lastResolvedTxTime", time.toString())
   }
   setTransactionHeight(txid, height) {
     const sql = `UPDATE txs SET height = ? WHERE txid = ?`
@@ -519,7 +521,7 @@ class Database {
   }
   async getUnresolvedTX(count) {
     try {
-      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime ASC LIMIT ?`
+      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
 
       return list;

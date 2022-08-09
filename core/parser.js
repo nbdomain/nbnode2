@@ -35,8 +35,13 @@ class Parser {
             if (newTx) { //new rawtx
                 const tsNow = Date.now() / 1000
                 const tspan = tsNow - rtx.ts
-                if (tspan > 120 || tspan < -1) {
+                if (tspan > 120 || tspan < -1) { //shall not after tsNow
                     console.error("invalid timestamp:tspan=", tspan, " tsNow:", tsNow, " ts:", rtx.ts)
+                    return { code: 1, msg: "invalid timestamp" }
+                }
+                const txTimeLatest = this.db.getLatestTxTime() //shall not before latest tx
+                if (rtx.ts < txTimeLatest - 120) {
+                    console.error("invalid timestamp txLast:", txTimeLatest, " ts:", rtx.ts)
                     return { code: 1, msg: "invalid timestamp" }
                 }
             }

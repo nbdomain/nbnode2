@@ -15,7 +15,7 @@ class BlockMgr {
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this._canResolve = true
-        this.removeTX = []
+        this.removeTX = new Set()
         //this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
@@ -34,13 +34,13 @@ class BlockMgr {
             if (!this.lastBlockTime) this.lastBlockTime = time
             if (this.lastBlockTime < time) {
                 this.lastBlockTime = time
-                this.removeTX = [] // used to remove the txs that's already in previous Block
+                this.removeTX = new Set() // used to remove the txs that's already in previous Block
             }
             for (const tx of preBlock.txs) {
-                if (tx.txTime == time) this.removeTX.push(tx.txid)
+                if (tx.txTime == time) this.removeTX.add(tx.txid)
             }
         }
-        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH, remove: this.removeTX })
+        const txs = db.getTransactions({ time, limit: DEF.MAX_BLOCK_LENGTH, remove: Array.from(this.removeTX) })
         if (!txs || txs.length == 0) {
             //return preBlock
             return null
@@ -49,7 +49,7 @@ class BlockMgr {
         const block = { version: DEF.BLOCK_VER, height: height, merkel, txs, preHash: preBlock ? preBlock.hash : null }
         //console.log(block)
         block.hash = await Util.dataHash(stringify(block))
-        console.log("new block created. hash:", block.hash)
+        console.log("new block created. hash:", block.hash, " height:", block.height)
         return block
     }
     async computeMerkel(txs) {

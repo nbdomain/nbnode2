@@ -124,7 +124,7 @@ class CMD_REGISTER {
             }
             if (rtx.out[0].s5 == 'v2') {
                 output.owner_key = rtx.publicKey
-                if (rtx.ts && rtx.ts > 1653635945) { //enforce price check after this time
+                if (rtx.ts && rtx.ts > 2653635945) { //enforce price check after this time
                     const payment = +rtx.out[2].e.v
                     const resp = await DomainTool.fetchDomainPrice(domain, this.parser.db, newTx)
                     if (resp.code != 0 || !resp.price) {
