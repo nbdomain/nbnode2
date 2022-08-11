@@ -92,6 +92,9 @@ class Indexer {
       const { Nodes } = this.indexers
       if (!force && this.database.isTransactionParsed(txid, false) && !replace) {
         console.log("Skipping:", txid)
+        if (sigs) {
+          this.database.addTransactionSigs(txid, sigs)
+        }
         return false
       }
       if (!await Util.verifyRaw({ expectedId: txid, rawtx, chain })) {

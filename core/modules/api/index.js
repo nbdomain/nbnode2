@@ -354,7 +354,11 @@ app.get('/test', async (req, res) => {
     const cmd = req.query['cmd']
     switch (cmd) {
         case 'resetdb': db.resetDB(); break;
-        case 'resetblocks': db.dropTable('blocks'); break;
+        case 'resetblocks': {
+            db.dropTable('blocks');
+            indexers.shutdown()
+            break;
+        }
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
     }
@@ -365,7 +369,7 @@ app.get('/reverify', async (req, res) => {
     const txid = req.query['txid']
     const ret = indexers.db.getFullTx({ txid })
     const tx = ret.tx
-    indexers.indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, time: tx.time, force: true, chain: tx.chain })
+    indexers.indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, txTime: tx.txTime, force: true, chain: tx.chain })
 })
 app.get('/dataCount', (req, res) => {
     res.json(indexers.db.getDataCount())

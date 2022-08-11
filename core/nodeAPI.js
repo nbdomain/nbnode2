@@ -227,7 +227,7 @@ class rpcHandler {
             return
         }
         this.handlingMap[para.txid] = true
-
+        let mySig = null
         if (!db.isTransactionParsed(para.txid, false) || force) {
             para.v = 1
             const tx = para
@@ -246,14 +246,13 @@ class rpcHandler {
                     }
                     await wait(2000)
                 }
+
             }
             socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
-
-                if (await indexers.indexer.addTxFull({ txid: para.txid, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
-                    const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
-                    db.addTransactionSigs(para.txid, { [Nodes.thisNode.key]: sig })
+                mySig = await Util.bitcoinSign(CONFIG.key, tx.txid)
+                if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     const sigs = db.getTransactionSigs(para.txid)
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
                 }
