@@ -384,8 +384,9 @@ class Database {
     const sql = `UPDATE txs SET txTime = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(txTime, txid)
   }
-  setTransactionResolved(txid) {
-    this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(txid)
+  setTransactionResolved(txid, resolved = true) {
+    const resolvedString = resolved ? TXRESOLVED_FLAG : "1"
+    this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
     const time = this.getTransactionTime(txid)
     this.writeConfig("dmdb", "lastResolvedTxTime", time.toString())
   }

@@ -195,7 +195,7 @@ class BlockMgr {
                     bcBlock.confirmed = true
                 }
                 if (bcBlock) {
-                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " sig:", objLen(bcBlock.sigs))
+                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             }
