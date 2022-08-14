@@ -369,9 +369,13 @@ class Database {
         console.error("ERROR: txTime is NULL txid:", txid)
       }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-      const sql = replace ? `insert or replace into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) ` : `insert into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) `
-      //if (!time) time = 9999999999
-      this.txdb.prepare(sql).run(txid, bytes, txTime, chain)
+      const sql = replace ? `update txs set bytes=?,txTime=?,chain=? where txid = ? ` : `insert into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) `
+      if (replace) {
+        this.txdb.prepare(sql).run(bytes, txTime, chain, txid)
+      } else {
+        this.txdb.prepare(sql).run(txid, bytes, txTime, chain)
+      }
+
       if (oDataRecord)
         this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
     } catch (e) {
