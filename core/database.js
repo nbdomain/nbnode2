@@ -299,7 +299,18 @@ class Database {
 
   }
 
-
+  resetBlocks() {
+    this.dropTable("blocks")
+    let sql = `
+      CREATE TABLE IF NOT EXISTS blocks (
+        height INTEGER PRIMARY KEY UNIQUE DEFAULT (0),
+        body   TEXT,
+        hash   TEXT UNIQUE,
+        sigs   TEXT
+    );    
+    `
+    this.txdb.prepare(sql).run();
+  }
   async backupDB() {
     //const { createGzip } = require('zlib');
     //const { pipeline } = require('stream');
@@ -367,6 +378,9 @@ class Database {
       //if (!txTime && time != 9999999999) txTime = time
       if (!txTime) {
         console.error("ERROR: txTime is NULL txid:", txid)
+      }
+      if (replace) {
+        replace = this.hasTransaction(txid)
       }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
       const sql = replace ? `update txs set bytes=?,txTime=?,chain=? where txid = ? ` : `insert into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) `

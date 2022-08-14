@@ -355,7 +355,7 @@ app.get('/test', async (req, res) => {
     switch (cmd) {
         case 'resetdb': db.resetDB(); break;
         case 'resetblocks': {
-            db.dropTable('blocks');
+            db.resetBlocks()
             indexers.shutdown()
             break;
         }
