@@ -192,7 +192,7 @@ class BlockMgr {
                 let bcBlock = this.uBlock
                 if (!bcBlock) {
                     bcBlock = this.db.getBlock(this.height - 1, true)
-                    bcBlock.confirmed = true
+                    if (bcBlock) bcBlock.confirmed = true
                 }
                 if (bcBlock) {
                     console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs))
