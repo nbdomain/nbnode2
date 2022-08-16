@@ -614,7 +614,8 @@ class Database {
       const txs = JSON.parse(item.body).txs
       txsCount += txs.length
     }
-    return { ...ret, ...ret1, ...ret2, ...ret3, v: 2, txsBlocks: txsCount, blocks: ret4.length - 1 }
+    const statusHash = this.readConfig('txdb', 'statusHash')
+    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, statusHash }
   }
   queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
