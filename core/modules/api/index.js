@@ -356,7 +356,7 @@ app.get('/test', async (req, res) => {
         case 'resetdb': db.resetDB(); break;
         case 'resetblocks': {
             db.resetBlocks()
-            //indexers.shutdown()
+            indexers.shutdown()
             break;
         }
         case 'pulltx': db.pullNewTx(100); break;
