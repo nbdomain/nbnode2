@@ -5,7 +5,7 @@ const { Util } = require('./util')
 
 
 
-const MAX_RESOLVE_COUNT = 500
+const MAX_RESOLVE_COUNT = 200
 
 /**
    * Filter out private keys from object.
