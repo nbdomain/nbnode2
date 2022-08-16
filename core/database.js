@@ -832,9 +832,10 @@ class Database {
     }
   }
 
-  async queryTX(fromTime, toTime) {
+  async queryTX(fromTime, toTime, limit = -1) {
     if (toTime == -1) toTime = 9999999999
     let sql = `SELECT * from txs where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime<1000) `
+    if (limit != -1) sql += "limit " + limit
     //console.log(sql,fromTime,toTime)
     const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
     //console.log(ret)
@@ -959,7 +960,7 @@ class Database {
     if (uBlock) {
       const block = uBlock.block
       const tx = block.txs[block.txs.length - 1]
-      return await this.queryTX(tx.txTime - 1, -1)
+      return await this.queryTX(tx.txTime - 1, -1, 500)
     }
   }
   //------------------------------Blocks--------------------------------
