@@ -5,7 +5,7 @@ const { Util } = require('./util')
 
 
 
-const MAX_RESOLVE_COUNT = 100
+const MAX_RESOLVE_COUNT = 500
 
 /**
    * Filter out private keys from object.
@@ -250,7 +250,7 @@ class Resolver {
                     if (nidObjMap[domain].owner_key != null && nidObjMap[domain].dirty === true) {
                         console.log("saving:", domain)
                         delete nidObjMap[domain].dirty
-                        this.db.saveDomainObj(nidObjMap[domain])
+                        await this.db.saveDomainObj(nidObjMap[domain])
 
                     }
                 }

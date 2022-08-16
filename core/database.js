@@ -171,6 +171,8 @@ class Database {
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
+      this.writeConfig("dmdb", "domainHash", null)
+
       let sql = "DELETE from nidobj"
       this.dmdb.prepare(sql).run()
       sql = "DELETE from keys"
@@ -341,10 +343,15 @@ class Database {
 
   }
 
-  transaction(f) {
+  tx_transaction(f) {
     if (!this.txdb) return
     this.txdb.transaction(f)()
   }
+  dm_transaction(f) {
+    if (!this.dmdb) return
+    this.dmdb.transaction(f)()
+  }
+
 
   // --------------------------------------------------------------------------
   // tx
@@ -407,6 +414,7 @@ class Database {
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
     const time = this.getTransactionTime(txid)
     this.writeConfig("dmdb", "lastResolvedTxTime", time.toString())
+    this.writeConfig("dmdb", "lastResolvedTx", txid)
   }
   setTransactionHeight(txid, height) {
     const sql = `UPDATE txs SET height = ? WHERE txid = ?`
@@ -686,7 +694,7 @@ class Database {
   }
   saveKeyHistory(nidObj, keyName, value) {
     try {
-      this.transaction(() => {
+      this.dm_transaction(() => {
         if (nidObj.domain == "10200.test") {
           console.log("found")
         }
@@ -784,9 +792,17 @@ class Database {
     }
 
   }
-  saveDomainObj(obj) {
+  async saveDomainObj(obj) {
     try {
-      this.transaction(() => {
+      if (!obj.owner) {
+        console.error("no owner, pass")
+        return
+      }
+      let domainHash = this.readConfig("dmdb", "domainHash")
+      if (!domainHash) domainHash = ""
+      domainHash = await Util.dataHash(JSON.stringify(obj) + domainHash)
+
+      this.dm_transaction(() => {
         this.saveKeys(obj);
         this.saveTags(obj);
         this.saveUsers(obj);
@@ -795,19 +811,17 @@ class Database {
                 (domain, txCreate,txUpdate,owner, owner_key, status, last_txid, jsonString, tld) 
                 VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
                 ON CONFLICT( domain ) DO UPDATE
-                SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?
-    `
-        //let sql = 'UPDATE nidobj SET txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=? where domain = ?';
+                SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?`
         const txUpdate = obj.last_ts
         const txCreate = obj.reg_ts
-        if (obj.domain == "107493.b") {
-          console.log("found")
-        }
         this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
           txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
 
         sql = "Update config set value = value+1 where key = 'domainUpdates'"
         this.dmdb.prepare(sql).run()
+
+        this.writeConfig("dmdb", "domainHash", domainHash)
+
       })
       this.tickerAll.broadcast("key_update", obj)
     } catch (e) {
@@ -1008,19 +1022,21 @@ class Database {
   async saveBlock({ sigs, block }) {
     console.log("Saving block: " + block.height)
     try {
-      this.transaction(async () => {
-        const hash = block.hash
-        delete block.hash
-        const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
+      const hash = block.hash
+      delete block.hash
+      const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
+
+      const statusHash = block.height == 0 ? null : this.readConfig('txdb', 'statusHash')
+      const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
+
+      this.tx_transaction(() => {
         this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
         //set height of the tx
         const txs = block.txs
         for (const tx of txs) {
-          console.log("set txid:", tx.txid, " height:", block.height)
+          //console.log("set txid:", tx.txid, " height:", block.height)
           this.setTransactionHeight(tx.txid, block.height)
         }
-        const statusHash = block.height == 0 ? null : this.txdb.prepare("select value from config where key='statusHash' ").get()
-        const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
         this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
         this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
       })
