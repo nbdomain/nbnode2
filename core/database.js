@@ -364,7 +364,7 @@ class Database {
   // --------------------------------------------------------------------------
 
   getLatestTxTime() {
-    const sql = `SELECT txTime from txs ORDER BY txTime DESC`
+    const sql = `SELECT txTime from txs where status!=1 ORDER BY txTime DESC`
     const res = this.txdb.prepare(sql).get()
     return res ? res.txTime : -1
   }
@@ -559,8 +559,24 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
+  async markResolvedTX() {
+    const resolvedTX = this.readConfig("dmdb", "lastResolvedTx")
+    let found = false
+    if (resolvedTX) {
+      while (true) {
+        const arr = await this.getUnresolvedTX(100)
+        if (arr.length === 0) return
+        for (const tx of arr) {
+          if (tx.txid === resolvedTX) found = true
+          this.setTransactionResolved(tx.txid)
+          if (found) return
+        }
+      }
+    }
+  }
   async getUnresolvedTX(count) {
     try {
+      await this.markResolvedTX()
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
 
