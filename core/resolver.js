@@ -210,7 +210,7 @@ class Resolver {
                         if (item.txid == "7661b057d372fb247ff5f86f17f66ab804c7b17bc41e837b98ff699396c4ba32") {
                             console.log("found")
                         }
-                        this.db.setTransactionResolved(item.txid, item.chain)
+                        this.db.setTransactionResolved(item.txid, item.txTime)
                         if (item.height > this.resolvedHeight) {
                             this.resolvedHeight = item.height
                             this.db.resolvedHeight = item.height

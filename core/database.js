@@ -172,6 +172,8 @@ class Database {
   resetDB(type = 'domain') {
     if (type === 'domain') {
       this.writeConfig("dmdb", "domainHash", null)
+      this.writeConfig("dmdb", "maxResolvedTx", null)
+      this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
 
       let sql = "DELETE from nidobj"
       this.dmdb.prepare(sql).run()
@@ -421,12 +423,15 @@ class Database {
     this.txdb.prepare(sql).run(status, txid)
   }
 
-  setTransactionResolved(txid, resolved = true) {
+  setTransactionResolved(txid, time, resolved = true) {
     const resolvedString = resolved ? TXRESOLVED_FLAG : "1"
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
-    const time = this.getTransactionTime(txid)
-    this.writeConfig("dmdb", "lastResolvedTxTime", time.toString())
-    this.writeConfig("dmdb", "lastResolvedTx", txid)
+    const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
+    const maxResolvedTx = this.readConfig("dmdb", "maxResolvedTx")
+    if (maxTime < time || (maxTime === time && maxResolvedTx > txid) || isNaN(maxTime)) {
+      this.writeConfig("dmdb", "maxResolvedTxTime", time.toString())
+      this.writeConfig("dmdb", "maxResolvedTx", txid)
+    }
   }
   setTransactionHeight(txid, height) {
     const sql = `UPDATE txs SET height = ? WHERE txid = ?`
@@ -560,18 +565,16 @@ class Database {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
   markResolvedTX() {
-    const resolvedTX = this.readConfig("dmdb", "lastResolvedTx")
-    let found = false
+    const resolvedTX = this.readConfig("dmdb", "maxResolvedTx")
+
     if (resolvedTX) {
+      const rTime = this.getTransactionTime(resolvedTX)
       while (true) {
         const arr = this.getUnresolvedTX(100, false)
         if (arr.length === 0) return
         for (const tx of arr) {
-          if (tx.txid === resolvedTX)
-            found = true
+          if (tx.txTime > rTime || (tx.txTime === rTime && tx.txid > resolvedTX)) return
           this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(tx.txid)
-          if (found)
-            return
         }
       }
     }
@@ -656,8 +659,8 @@ class Database {
     }
     const txHash = this.readConfig('txdb', 'statusHash')
     const dmHash = this.readConfig('dmdb', 'domainHash')
-    const lastResolvedTx = this.readConfig('dmdb', 'lastResolvedTx')
-    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, lastResolvedTx }
+    const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
+    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx }
   }
   queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
