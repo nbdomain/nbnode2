@@ -428,6 +428,7 @@ class Database {
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
     const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
     const maxResolvedTx = this.readConfig("dmdb", "maxResolvedTx")
+    console.log(maxTime, ":::", time)
     if (maxTime < time || (maxTime === time && maxResolvedTx > txid) || isNaN(maxTime)) {
       this.writeConfig("dmdb", "maxResolvedTxTime", time.toString())
       this.writeConfig("dmdb", "maxResolvedTx", txid)
