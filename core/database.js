@@ -428,9 +428,9 @@ class Database {
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
     const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
     const maxResolvedTx = this.readConfig("dmdb", "maxResolvedTx")
-    console.log(maxTime, ":::", time)
+    //console.log(maxTime, ":::", time)
     if (maxTime < time || (maxTime === time && maxResolvedTx > txid) || isNaN(maxTime)) {
-      console.log("here")
+      //console.log("here")
       this.writeConfig("dmdb", "maxResolvedTxTime", time.toString())
       this.writeConfig("dmdb", "maxResolvedTx", txid)
     }
@@ -953,7 +953,7 @@ class Database {
       if (dbName === 'dtdb') db = this.dtdb
       const sql = 'insert or replace into config (key,value) values(?,?)'
       const ret = db.prepare(sql).run(key, value)
-      console.log(ret)
+      //console.log(ret)
     } catch (e) {
       console.log(e.message)
     }
