@@ -576,7 +576,7 @@ class Database {
   }
   async getUnresolvedTX(count) {
     try {
-      await this.markResolvedTX()
+      //await this.markResolvedTX()
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
 
