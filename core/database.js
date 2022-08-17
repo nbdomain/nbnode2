@@ -416,6 +416,11 @@ class Database {
     const sql = `UPDATE txs SET txTime = ? WHERE txid = ?`
     this.txdb.prepare(sql).run(txTime, txid)
   }
+  setTxStatus(txid, status) {
+    const sql = `UPDATE txs SET status = ? WHERE txid = ?`
+    this.txdb.prepare(sql).run(status, txid)
+  }
+
   setTransactionResolved(txid, resolved = true) {
     const resolvedString = resolved ? TXRESOLVED_FLAG : "1"
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
@@ -463,7 +468,7 @@ class Database {
   deleteTransaction(txid) {
     const sql = "delete from txs where txid = ?"
     const ret = this.txdb.prepare(sql).run(txid)
-    console.log("delete:", txid, "---", ret) 
+    console.log("delete:", txid, "---", ret)
   }
 
   getTransactions({ time, limit, remove }) {
@@ -949,9 +954,11 @@ class Database {
     const txs = this.txdb.prepare(sql).all()
     for (let tx of txs) {
       const full = this.getFullTx({ txid: tx.txid }).tx
-      if (!await Util.verifyRaw({ expectedId: full.txid, rawtx: full.rawtx, chain: full.chain })) {
-        console.error("rawtx verify error:", tx.txid)
-        this.deleteTransaction(tx.txid)
+      let status = 0
+      if (full.txTime === 1) {
+        status = 1
+        this.setTxTime(tx.txid, full.status)
+        this.setTxStatus(tx.txid, status)
       }
     }
   }
