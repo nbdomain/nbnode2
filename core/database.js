@@ -386,7 +386,7 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, txTime, oDataRecord, status, chain, replace = false }) {
+  addFullTx({ txid, rawtx, txTime, oDataRecord, status = 0, chain, replace = false }) {
     try {
 
       if (!txTime) {
