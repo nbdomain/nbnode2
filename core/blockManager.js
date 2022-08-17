@@ -182,7 +182,7 @@ class BlockMgr {
                     if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
                         //save block
                         console.log("cBlock hash:", block.hash)
-                        this.indexers.db.saveBlock({ sigs, block })
+                        await this.indexers.db.saveBlock({ sigs, block })
                         this.uBlock = null
                         this.hasNewTX = false
                         continue
