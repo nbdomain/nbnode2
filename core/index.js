@@ -60,7 +60,7 @@ class Indexers {
     const result = await timeSync.getTime();
     console.log("real time", result.now);
     console.log("offset in milliseconds", result.offset);
-    if (Math.abs(result.offset) > 1000) {
+    if (Math.abs(result.offset) > 2000) {
       console.error("OS time is not in sync with NTP, please resync")
       return false
     }

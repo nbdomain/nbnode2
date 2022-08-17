@@ -147,9 +147,11 @@ class CMD_REGISTER {
                     output.err = "Input address not in authorities.";
                 }
                 output.owner_key = rtx.out[0].s5;
+                if (!output.owner_key) output.owner_key = rtx.publicKey
                 if (rtx.out[0].s6) {
-                    var extra = JSON.parse(rtx.out[0].s6);
-                    output.payTx = extra["pay_txid"];
+                    const extra = Util.parseJson(rtx.out[0].s6);
+                    if (extra)
+                        output.payTx = extra["pay_txid"];
                 }
                 if (rtx.out[0].s7) output.agent = rtx.out[0].s7;
             }
@@ -208,16 +210,17 @@ class CMD_BUY {
                 output.newOwner = rtx.out[0].s5
                 output.sellDomain = output.domain
                 //no need to verify since it's verified by admin
-                let ret = this.parser.db.loadDomain(output.sellDomain)
+                /*let ret = this.parser.db.loadDomain(output.sellDomain)
                 if (!ret || !ret.sell_info) {
                     output.err = output.sellDomain + " is not onsale."
-                }
+                }*/
                 return output
             }
             output.sell_txid = extra.sell_txid;
 
             const pay1 = rtx.out[2].e
             const pay2 = rtx.out[3].e
+            //TODO: move to fillobj
             let ret = this.parser.db.loadDomain(output.sellDomain)
             if (ret && ret.sell_info) {
                 const delta = Math.abs(ret.sell_info.price - pay1.v)
@@ -417,10 +420,10 @@ class CMD_KEY {
             }
             if (hasPay)
                 output.pay = pay
-            //verify
-            const err = this.verify(rtx, output)
+            //only verify tx related
+            /*const err = this.verify(rtx, output)
             if (err != 1)
-                output.err = err
+                output.err = err*/
         } catch (e) {
             output.err = e.message
         }

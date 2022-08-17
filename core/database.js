@@ -204,6 +204,12 @@ class Database {
         this.txdb.prepare(sql).run()
       } catch (e) { }
 
+      try {
+        sql = "ALTER TABLE txs RENAME COLUMN time TO status"
+        this.txdb.prepare(sql).run()
+      } catch (e) { }
+
+
       sql = `
       CREATE TABLE IF NOT EXISTS blocks (
         height INTEGER PRIMARY KEY UNIQUE DEFAULT (0),
@@ -380,9 +386,9 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, txTime, oDataRecord, chain, replace = false }) {
+  addFullTx({ txid, rawtx, txTime, oDataRecord, status, chain, replace = false }) {
     try {
-      //if (!txTime && time != 9999999999) txTime = time
+
       if (!txTime) {
         console.error("ERROR: txTime is NULL txid:", txid)
       }
@@ -390,11 +396,12 @@ class Database {
         replace = this.hasTransaction(txid)
       }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-      const sql = replace ? `update txs set bytes=?,txTime=?,chain=? where txid = ? ` : `insert into txs (txid,bytes,txTime,chain) VALUES(?,?,?,?) `
+      const sql = replace ? `update txs set bytes=?,txTime=?,status = ?, chain=? where txid = ? ` : `insert into txs (txid,bytes,txTime,status,chain) VALUES(?,?,?,?,?) `
+      let ret = null
       if (replace) {
-        this.txdb.prepare(sql).run(bytes, txTime, chain, txid)
+        ret = this.txdb.prepare(sql).run(bytes, txTime, status, chain, txid)
       } else {
-        this.txdb.prepare(sql).run(txid, bytes, txTime, chain)
+        ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain)
       }
 
       if (oDataRecord)
@@ -455,12 +462,13 @@ class Database {
 
   deleteTransaction(txid) {
     const sql = "delete from txs where txid = ?"
-    this.txdb.prepare(sql).run(txid)
+    const ret = this.txdb.prepare(sql).run(txid)
+    console.log("delete:", txid, "---", ret) 
   }
 
   getTransactions({ time, limit, remove }) {
     if (!remove) remove = []
-    const sql = `select txid,bytes,txTime from txs where txTime >= ? AND txTime!=${DEF.TX_INVALIDTX} ORDER BY txTime,txid ASC limit ?`
+    const sql = `select txid,bytes,txTime from txs where txTime >= ? ORDER BY txTime,txid ASC limit ?`
     let ret = this.txdb.prepare(sql).all(time, limit + remove.length)
     if (remove.length > 0) {
       ret = ret.filter(item => {
@@ -509,7 +517,7 @@ class Database {
       if (!dirty) return false
       const sql = 'Update txs set sigs = ? where txid=?'
       this.txdb.prepare(sql).run(JSON.stringify(existing_sigs), txid)
-      console.log("Added tx sigs txid:", txid, existing_sigs)
+      //console.log("Added tx sigs txid:", txid, existing_sigs)
       return true
     } catch (e) {
     }
@@ -548,7 +556,7 @@ class Database {
   }
   async getUnresolvedTX(count) {
     try {
-      const sql = `SELECT * FROM txs WHERE txTime !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
 
       return list;
@@ -605,7 +613,7 @@ class Database {
     return res
   }
   getDataCount() {
-    let sql = `select (select count(*) from txs where txTime!=1) as txs`
+    let sql = `select (select count(*) from txs) as txs`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
@@ -833,24 +841,29 @@ class Database {
   }
 
   async queryTX(fromTime, toTime, limit = -1) {
-    if (toTime == -1) toTime = 9999999999
-    let sql = `SELECT * from txs where (txTime > ? AND txTime < ? AND txTime!=1) OR (time > ? AND time < ? AND txTime<1000) `
-    if (limit != -1) sql += "limit " + limit
-    //console.log(sql,fromTime,toTime)
-    const ret = this.txdb.prepare(sql).all(fromTime, toTime, fromTime, toTime)
-    //console.log(ret)
-    for (const item of ret) {
-      const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
-      item.rawtx = rawtx
-      if (rawtx) {
-        const attrib = await (Parser.getAttrib({ rawtx, chain: item.chain }));
-        if (attrib && attrib.hash) {
-          item.oDataRecord = this.readData(attrib.hash)
+    try {
+      if (toTime == -1) toTime = 9999999999
+      let sql = `SELECT * from txs where (txTime > ? AND txTime < ? ) `
+      if (limit != -1) sql += "limit " + limit
+      //console.log(sql,fromTime,toTime)
+      const ret = this.txdb.prepare(sql).all(fromTime, toTime)
+      //console.log(ret)
+      for (const item of ret) {
+        const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+        item.rawtx = rawtx
+        if (rawtx) {
+          const attrib = await (Parser.getAttrib({ rawtx, chain: item.chain }));
+          if (attrib && attrib.hash) {
+            item.oDataRecord = this.readData(attrib.hash)
+          }
         }
+        delete item.bytes
       }
-      delete item.bytes
+      return ret
+    } catch (e) {
+      console.error("queryTX:", e.message)
     }
-    return ret
+    return []
   }
   //--------------------------------data service---------------------------
   writeToDisk(hash, buf, option) {
@@ -932,21 +945,13 @@ class Database {
     }
   }
   async verifyAllTXs() {
-    const { Nodes } = this.indexers
-    let sql = 'select txid,chain from txs where txTime > 10 AND sigs IS NULL'
+    let sql = 'select txid,chain from txs'
     const txs = this.txdb.prepare(sql).all()
-    const step = 1000
-    for (let i = 0; i < txs.length; i += step) {
-      const txs1 = txs.slice(i, i + step)
-      const ret = []//await Util.verifyTX(txs1)
-      for (const tx of txs1) {
-        if (ret && ret.indexOf(tx.txid) != -1) {
-          console.log("found fake txid:", tx.txid)
-          continue
-        }
-        const sig = await Util.bitcoinSign(CONFIG.key, tx.txid)
-        this.addTransactionSigs(tx.txid, { key: Nodes.thisNode.key, sig })
-        console.log("Signed:", tx.txid)
+    for (let tx of txs) {
+      const full = this.getFullTx({ txid: tx.txid }).tx
+      if (!await Util.verifyRaw({ expectedId: full.txid, rawtx: full.rawtx, chain: full.chain })) {
+        console.error("rawtx verify error:", tx.txid)
+        this.deleteTransaction(tx.txid)
       }
     }
   }
@@ -1004,7 +1009,8 @@ class Database {
         sql += "?,"
       }
       sql = sql.slice(0, sql.length - 1) + ")"
-      this.txdb.prepare(sql).run(txids)
+      const ret = this.txdb.prepare(sql).run(txids)
+      return ret
     } catch (e) {
       return false
     }
@@ -1032,17 +1038,17 @@ class Database {
       const statusHash = block.height == 0 ? null : this.readConfig('txdb', 'statusHash')
       const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
 
-      this.tx_transaction(() => {
-        this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
-        //set height of the tx
-        const txs = block.txs
-        for (const tx of txs) {
-          //console.log("set txid:", tx.txid, " height:", block.height)
-          this.setTransactionHeight(tx.txid, block.height)
-        }
-        this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
-        this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
-      })
+      //this.tx_transaction(() => {
+      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
+      //set height of the tx
+      const txs = block.txs
+      for (const tx of txs) {
+        //console.log("set txid:", tx.txid, " height:", block.height)
+        this.setTransactionHeight(tx.txid, block.height)
+      }
+      this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
+      this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
+      //})
     } catch (e) {
       console.error("saveBlock:", e.message)
     }

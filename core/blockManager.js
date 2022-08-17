@@ -16,7 +16,7 @@ class BlockMgr {
         this.db = indexers.db
         this._canResolve = true
         this.removeTX = new Set()
-        //this.indexers.resolver.addController(this)
+        this.indexers.resolver.addController(this)
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
@@ -26,7 +26,7 @@ class BlockMgr {
             if (b) {
                 preBlock = b && JSON.parse(b.body)
                 preBlock.hash = b.hash
-            }
+            } else return null
         }
         if (preBlock) {
             const lastTx = preBlock.txs[preBlock.txs.length - 1]
