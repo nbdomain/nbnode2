@@ -660,7 +660,8 @@ class Database {
     const txHash = this.readConfig('txdb', 'statusHash')
     const dmHash = this.readConfig('dmdb', 'domainHash')
     const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
-    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx }
+    const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
+    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx, maxResolvedTxTime }
   }
   queryKeys({ v, num, tags, from }) {
     let sql = "select id,key,value,tags from keys ";
