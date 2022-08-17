@@ -559,24 +559,27 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
-  async markResolvedTX() {
+  markResolvedTX() {
     const resolvedTX = this.readConfig("dmdb", "lastResolvedTx")
     let found = false
     if (resolvedTX) {
       while (true) {
-        const arr = await this.getUnresolvedTX(100)
+        const arr = this.getUnresolvedTX(100, false)
         if (arr.length === 0) return
         for (const tx of arr) {
-          if (tx.txid === resolvedTX) found = true
-          this.setTransactionResolved(tx.txid)
-          if (found) return
+          if (tx.txid === resolvedTX)
+            found = true
+          this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(tx.txid)
+          if (found)
+            return
         }
       }
     }
   }
-  async getUnresolvedTX(count) {
+  getUnresolvedTX(count, mark = true) {
     try {
-      //await this.markResolvedTX()
+      if (mark)
+        this.markResolvedTX()
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
       const list = this.txdb.prepare(sql).raw(false).all(count);
 
@@ -970,11 +973,8 @@ class Database {
     const txs = this.txdb.prepare(sql).all()
     for (let tx of txs) {
       const full = this.getFullTx({ txid: tx.txid }).tx
-      let status = 0
-      if (full.txTime === 1) {
-        status = 1
-        this.setTxTime(tx.txid, full.status)
-        this.setTxStatus(tx.txid, status)
+      if (full.status !== 1) {
+        this.setTxStatus(tx.txid, 0)
       }
     }
   }

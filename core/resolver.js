@@ -178,7 +178,7 @@ class Resolver {
                 return
             }
         }
-        const rtxArray = await this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+        const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
         //console.log("rtxArray:", rtxArray.length)
         const nidObjMap = MemDomains.getMap()
         try {
