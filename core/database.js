@@ -430,6 +430,7 @@ class Database {
     const maxResolvedTx = this.readConfig("dmdb", "maxResolvedTx")
     console.log(maxTime, ":::", time)
     if (maxTime < time || (maxTime === time && maxResolvedTx > txid) || isNaN(maxTime)) {
+      console.log("here")
       this.writeConfig("dmdb", "maxResolvedTxTime", time.toString())
       this.writeConfig("dmdb", "maxResolvedTx", txid)
     }
