@@ -952,7 +952,8 @@ class Database {
       if (dbName === 'dmdb') db = this.dmdb
       if (dbName === 'dtdb') db = this.dtdb
       const sql = 'insert or replace into config (key,value) values(?,?)'
-      db.prepare(sql).run(key, value)
+      const ret = db.prepare(sql).run(key, value)
+      console.log(ret)
     } catch (e) {
       console.log(e.message)
     }
