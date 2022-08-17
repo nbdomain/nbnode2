@@ -473,7 +473,7 @@ class Database {
 
   getTransactions({ time, limit, remove }) {
     if (!remove) remove = []
-    const sql = `select txid,bytes,txTime from txs where txTime >= ? ORDER BY txTime,txid ASC limit ?`
+    const sql = `select txid,bytes,txTime from txs where txTime >= ? AND status!=1 ORDER BY txTime,txid ASC limit ?`
     let ret = this.txdb.prepare(sql).all(time, limit + remove.length)
     if (remove.length > 0) {
       ret = ret.filter(item => {
