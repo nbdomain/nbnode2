@@ -53,10 +53,11 @@ class CMD_NFT_Create {
         return output
     }
     static _addLog(nidObj, rtx) {
-        const symbol = rtx.output.symbol
+        return
+        /*const symbol = rtx.output.symbol
         if (!nidObj.nft_log) nidObj.nft_log = {}
         if (!nidObj.nft_log[symbol]) nidObj.nft_log[symbol] = ""
-        nidObj.nft_log[symbol] += `${[rtx.command]}: ${rtx.txid}, time: ${+Date.now() / 1000} \n`
+        nidObj.nft_log[symbol] += `${[rtx.command]}: ${rtx.txid}, time: ${+Date.now() / 1000} \n`*/
     }
     static fillObj(nidObj, rtx) {
         if (nidObj.owner_key == null || nidObj.owner_key != rtx.publicKey) return null
@@ -73,7 +74,7 @@ class CMD_NFT_Create {
         bsvdb.nftCreate(rtx.output) //create or update the NFT
         if (!nidObj.nfts) nidObj.nfts = {};
         nidObj.nfts[symbol] = { "0": { amount: rtx.output.attributes.supply } }
-        CMD_NFT_Create._addLog(nidObj, rtx)
+        //CMD_NFT_Create._addLog(nidObj, rtx) //don't add log as it will be different time on different node
         return nidObj
     }
 }
