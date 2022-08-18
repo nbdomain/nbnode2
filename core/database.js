@@ -174,6 +174,7 @@ class Database {
       this.writeConfig("dmdb", "domainHash", null)
       this.writeConfig("dmdb", "maxResolvedTx", null)
       this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
+      this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
 
       let sql = "DELETE from nidobj"
       this.dmdb.prepare(sql).run()
@@ -581,7 +582,26 @@ class Database {
       }
     }
   }
-  getUnresolvedTX(count, mark = true) {
+  getUnresolvedTX(mark = true) {
+    try {
+      //if (mark)
+      //  this.markResolvedTX()
+      let height = this.readConfig('dmdb', 'resolvingHeight')
+      if (!height) height = 0
+      height = +height
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
+      const list = this.txdb.prepare(sql).raw(false).all();
+      if (list.length != 0) {
+        height++
+        this.writeConfig('dmdb', 'resolvingHeight', height + '')
+      }
+      return list;
+    } catch (e) {
+      console.error(e)
+      return []
+    }
+  }
+  getUnresolvedTX1(count, mark = true) {
     try {
       //if (mark)
       //  this.markResolvedTX()

@@ -7,6 +7,7 @@ const { Util } = require('./util')
 
 const MAX_RESOLVE_COUNT = 500
 
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 /**
    * Filter out private keys from object.
    * @param {object} data The object to filter.
@@ -173,101 +174,104 @@ class Resolver {
     }
     async resolveNextBatch() {
         if (!this.started) return
-        for (const controller of this.controllers) {
-            if (!controller.canResolve()) {
-                this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
-                return
-            }
-        }
-        const { logger } = this.indexers
-        const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
-        //console.log("rtxArray:", rtxArray.length)
-        const nidObjMap = MemDomains.getMap()
-        try {
-            if (rtxArray == null || rtxArray.length == 0) {
-                if (!this.resolveFinish) {
-                    console.warn(`--$----Handled All current TX from DB-------`)
-                    this.resolveFinish = true
-                    MemDomains.clearObj(); //release memory
-                    const resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
-                    if (resolvedHeight < this.resolvedHeight) {
-                        this.db.writeConfig('dmdb', 'resolvedHeight', this.resolvedHeight.toString())
-                        if (this.resolvedHeight % 9 == 0) {
-                            this.db.backupDB()
-                        }
-                    }
+        while (true) {
+
+
+            for (const controller of this.controllers) {
+                if (!controller.canResolve()) {
+                    this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
+                    return
                 }
-
-            } else {
-                console.log("get ", rtxArray.length, " txs from DB")
-                this.resolveFinish = false
-                for (const item of rtxArray) {
-                    try {
-                        const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
-                        delete item.bytes
-                        if (!rawtx) {
-                            console.log("found")
-                            continue
-                        }
-                        if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
-                            console.log("found")
-                        }
-                        this.db.setTransactionResolved(item.txid, item.txTime)
-                        if (item.height > this.resolvedHeight) {
-                            this.resolvedHeight = item.height
-                            this.db.resolvedHeight = item.height
-                        }
-
-                        const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
-                        if (!res) continue
-                        const rtx = { ...item, ...res.rtx }
-                        if (!rtx.output || rtx.output?.err) {
-                            //console.error(item.txid, " parse error:", rtx.output?.err)
-                            continue
-                        }
-
-                        let domain = rtx.output.domain
-
-                        if (!(domain in nidObjMap)) {
-                            let onDiskNid = this.db.loadDomain(domain, true)
-                            if (!onDiskNid) {
-                                nidObjMap[domain] = new NIDObject(domain)
-                            } else {
-                                nidObjMap[domain] = onDiskNid
+            }
+            const { logger } = this.indexers
+            const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+            //console.log("rtxArray:", rtxArray.length)
+            const nidObjMap = MemDomains.getMap()
+            try {
+                if (rtxArray == null || rtxArray.length == 0) {
+                    if (!this.resolveFinish) {
+                        console.warn(`--$----Handled All current TX from DB-------`)
+                        this.resolveFinish = true
+                        MemDomains.clearObj(); //release memory
+                        const resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
+                        if (resolvedHeight < this.resolvedHeight) {
+                            this.db.writeConfig('dmdb', 'resolvedHeight', this.resolvedHeight.toString())
+                            if (this.resolvedHeight % 9 == 0) {
+                                this.db.backupDB()
                             }
                         }
-                        const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
-                        if (obj) {
-                            //logger.logFile("processed:", item.txid)
-                            nidObjMap[domain] = obj
-                            nidObjMap[domain].dirty = true
-                        }
-                    } catch (e) {
-                        console.error(e);
                     }
-                }
-                const sortedObj = []
-                for (const domain in nidObjMap) {
-                    sortedObj.push(nidObjMap[domain])
-                }
-                sortedObj.sort((x, y) => {
-                    if (x.domain < y.domain) { return -1; }
-                    if (x.domain > y.domain) { return 1; }
-                    return 0;
-                })
-                for (const item of sortedObj) {
-                    if (item.owner_key != null && item.dirty === true) {
-                        console.log("saving:", item.domain)
-                        delete item.dirty
-                        await this.db.saveDomainObj(item)
-                    }
-                }
-            }
+                } else {
+                    console.log("get ", rtxArray.length, " txs from DB")
+                    this.resolveFinish = false
+                    for (const item of rtxArray) {
+                        try {
+                            const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+                            delete item.bytes
+                            if (!rawtx) {
+                                console.log("found")
+                                continue
+                            }
+                            if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
+                                console.log("found")
+                            }
+                            this.db.setTransactionResolved(item.txid, item.txTime)
+                            if (item.height > this.resolvedHeight) {
+                                this.resolvedHeight = item.height
+                                this.db.resolvedHeight = item.height
+                            }
 
-        } catch (err) {
-            console.log(err)
+                            const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
+                            if (!res) continue
+                            const rtx = { ...item, ...res.rtx }
+                            if (!rtx.output || rtx.output?.err) {
+                                //console.error(item.txid, " parse error:", rtx.output?.err)
+                                continue
+                            }
+
+                            let domain = rtx.output.domain
+
+                            if (!(domain in nidObjMap)) {
+                                let onDiskNid = this.db.loadDomain(domain, true)
+                                if (!onDiskNid) {
+                                    nidObjMap[domain] = new NIDObject(domain)
+                                } else {
+                                    nidObjMap[domain] = onDiskNid
+                                }
+                            }
+                            const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
+                            if (obj) {
+                                //logger.logFile("processed:", item.txid)
+                                nidObjMap[domain] = obj
+                                nidObjMap[domain].dirty = true
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    const sortedObj = []
+                    for (const domain in nidObjMap) {
+                        sortedObj.push(nidObjMap[domain])
+                    }
+                    sortedObj.sort((x, y) => {
+                        if (x.domain < y.domain) { return -1; }
+                        if (x.domain > y.domain) { return 1; }
+                        return 0;
+                    })
+                    for (const item of sortedObj) {
+                        if (item.owner_key != null && item.dirty === true) {
+                            console.log("saving:", item.domain)
+                            delete item.dirty
+                            await this.db.saveDomainObj(item)
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log(err)
+            }
+            const waitTime = rtxArray.length == 0 ? 3000 : 500
+            await wait(waitTime)
         }
-        this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
     }
 }
 // ------------------------------------------------------------------------------------------------
