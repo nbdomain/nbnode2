@@ -111,13 +111,6 @@ class LocalServer {
     });
     app.use('/files/', express.static(__dirname + '/public'))
 
-    //app.get('/nblink/add/', this.addNBlink.bind(this))
-    //app.get('/*', this.getAll.bind(this))
-
-    /*app.post("/*", async (req, res, next) => {
-      console.log("got post");
-      next();
-    });*/
     setInterval(() => {
       //console.log("clear domainMap cache");
       domainMap = []; //clear domainMap cache

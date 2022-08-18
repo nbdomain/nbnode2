@@ -20,11 +20,40 @@ const BlockMgr = require('./blockManager')
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
+const today = new Date();
+var dd = String(today.getMonth() + 1 + "-" + today.getDate());
+const logFolder = __dirname + "/logg"
+if (!fs.existsSync(logFolder)) {
+  fs.mkdirSync(logFolder);
+}
+var logStream = fs.createWriteStream(logFolder + "/log_" + dd + ".txt", { flags: "a" });
+class loggerPlus {
+  static logFile(...args) {
+    const da = new Date()
+    let time = da.getHours() + ":" + da.getMinutes();
+    let str = `[${time}] `;
+    for (let key of args) {
+      if (typeof key === "object" && key !== null) {
+        str += JSON.stringify(key) + " ";
+      } else str += key + " ";
+    }
+    logStream.write(str + "\n");
+  }
+  static log(...args) {
+    console.log(...args);
+  }
+  static info(...args) {
+    console.log(...args);
+  }
+  static error(...args) {
+    console.error(...args);
+  }
+}
 
-const logger = console
-logger.info("PLANARIA_TOKEN:", CONSTS.PLANARIA_TOKEN);
+
+const logger = loggerPlus
+
 var myArgs = process.argv.slice(2);
-let REORG = 0;
 if (myArgs) {
   var argv = parseArgs(myArgs, opts = {})
   logger.info("cmd:", argv);

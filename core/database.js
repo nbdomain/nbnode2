@@ -861,6 +861,7 @@ class Database {
         this.dmdb.prepare(sql).run()
 
         this.writeConfig("dmdb", "domainHash", domainHash)
+        this.logger.logFile(obj.domain, ":::", domainHash)
 
       })
       this.tickerAll.broadcast("key_update", obj)
