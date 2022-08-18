@@ -861,10 +861,14 @@ class Database {
       let domainHash = this.readConfig("dmdb", "domainHash")
       if (!domainHash) domainHash = ""
       const strObj = JSON.stringify(obj)
-      domainHash = await Util.dataHash(strObj + domainHash)
-      if (obj.domain === "xiaodao.test") {
-        console.log(strObj)
+      if (obj.domain === "10200.test") {
+        this.logger.logFile("before::::::::", strObj + domainHash)
       }
+      domainHash = await Util.dataHash(strObj + domainHash)
+      if (obj.domain === "10200.test") {
+        this.logger.logFile("after::::::::", domainHash)
+      }
+
       this.dm_transaction(() => {
         this.saveKeys(obj);
         this.saveTags(obj);
