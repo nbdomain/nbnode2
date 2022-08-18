@@ -861,13 +861,7 @@ class Database {
       let domainHash = this.readConfig("dmdb", "domainHash")
       if (!domainHash) domainHash = ""
       const strObj = JSON.stringify(obj)
-      if (obj.domain === "10200.test") {
-        this.logger.logFile("before::::::::", strObj + domainHash)
-      }
       domainHash = await Util.dataHash(strObj + domainHash)
-      if (obj.domain === "10200.test") {
-        this.logger.logFile("after::::::::", domainHash)
-      }
 
       this.dm_transaction(() => {
         this.saveKeys(obj);
@@ -888,7 +882,7 @@ class Database {
         this.dmdb.prepare(sql).run()
 
         this.writeConfig("dmdb", "domainHash", domainHash)
-        this.logger.logFile(obj.domain, ":::", domainHash)
+        //this.logger.logFile(obj.domain, ":::", domainHash)
 
       })
       this.tickerAll.broadcast("key_update", obj)
