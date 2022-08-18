@@ -67,11 +67,22 @@ class BlockMgr {
         return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
-        const { Nodes } = this.indexers
-        const { block, sigs } = uBlock
+        const { Nodes, db } = this.indexers
+        const { block, sigs, dmVerify, dmSigs } = uBlock
         if (block.version != DEF.BLOCK_VER) return
         //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
+
+        const _dmVerify = db.getDomainVerifyCode()
+        if (_dmVerify === dmVerify && dmSigs && dmSigs[nodeKey]) {
+            const sigSender = dmSigs[nodeKey]
+            if (await Util.bitcoinVerify(nodeKey, dmVerify, sigSender) == false) return
+            if (this.dmVerify != dmVerify) { //add my domain sig
+                const sig = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                dmSigs[Nodes.thisNode.key] = sig
+                this.dmVerify = dmVerify
+            }
+        }
 
         if (!this.uBlock) {
             this.nodePool[nodeKey].uBlock = uBlock
@@ -98,6 +109,7 @@ class BlockMgr {
                 }
             }
         }
+
         this.nodePool[nodeKey].uBlock = uBlock
         // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
@@ -154,7 +166,7 @@ class BlockMgr {
     }
     async run() {
         while (true) {
-            const { Nodes } = this.indexers
+            const { Nodes, db } = this.indexers
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
@@ -195,7 +207,16 @@ class BlockMgr {
                     if (bcBlock) bcBlock.confirmed = true
                 }
                 if (bcBlock) {
-                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs))
+                    const dmVerify = db.getDomainVerifyCode()
+                    if (this.dmVerify != dmVerify) { //update my domain sig
+                        this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                        this.dmVerify = dmVerify
+                    }
+                    if (!bcBlock.dmSigs) bcBlock.dmSigs = {}
+                    bcBlock.dmSigs[Nodes.thisNode.key] = this.dmSig
+                    bcBlock.dmVerify = dmVerify
+
+                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(bcBlock.dmSigs))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             }

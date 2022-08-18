@@ -891,7 +891,9 @@ class Database {
       this.logger.error(e)
     }
   }
-
+  getDomainVerifyCode() {
+    return this.readConfig("dmdb", "domainHash")
+  }
   async queryTX(fromTime, toTime, limit = -1) {
     try {
       if (toTime == -1) toTime = 9999999999
