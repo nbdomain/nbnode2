@@ -238,7 +238,7 @@ class Resolver {
                         }
                         const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
                         if (obj) {
-                            logger.logFile("processed:", item.txid)
+                            //logger.logFile("processed:", item.txid)
                             nidObjMap[domain] = obj
                             nidObjMap[domain].dirty = true
                         }
@@ -246,13 +246,20 @@ class Resolver {
                         console.error(e);
                     }
                 }
-
-                for (let domain in nidObjMap) {
-                    if (nidObjMap[domain].owner_key != null && nidObjMap[domain].dirty === true) {
-                        console.log("saving:", domain)
-                        delete nidObjMap[domain].dirty
-                        await this.db.saveDomainObj(nidObjMap[domain])
-
+                const sortedObj = []
+                for (const domain in nidObjMap) {
+                    sortedObj.push(nidObjMap[domain])
+                }
+                sortedObj.sort((x, y) => {
+                    if (x.domain < y.domain) { return -1; }
+                    if (x.domain > y.domain) { return 1; }
+                    return 0;
+                })
+                for (const item of sortedObj) {
+                    if (item.owner_key != null && item.dirty === true) {
+                        console.log("saving:", item.domain)
+                        delete item.dirty
+                        await this.db.saveDomainObj(item)
                     }
                 }
             }
