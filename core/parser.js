@@ -66,9 +66,7 @@ class Parser {
     }
     static async fillObj(nidObj, rtx, objMap) {
         let retObj = null
-        nidObj.last_txid = rtx.txid
-        nidObj.last_ts = rtx.ts ? rtx.ts : rtx.time
-        nidObj.last_cmd = rtx.command
+
 
         if (rtx.output.err) {
             return null
@@ -83,6 +81,9 @@ class Parser {
             console.error("Skipped one tx:", "msg:", rtx.output.err, rtx.command, " txid:", rtx.txid)
             return null
         }
+        nidObj.last_txid = rtx.txid
+        nidObj.last_ts = rtx.ts ? rtx.ts : rtx.time
+        nidObj.last_cmd = rtx.command
         console.log("applying cmd", rtx.command, " to:", nidObj.domain)
         if (rtx.command === CMD.REGISTER) {
             nidObj.reg_ts = nidObj.last_ts

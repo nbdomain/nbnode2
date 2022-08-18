@@ -209,7 +209,7 @@ class Resolver {
                             console.log("found")
                             continue
                         }
-                        if (item.txid == "7661b057d372fb247ff5f86f17f66ab804c7b17bc41e837b98ff699396c4ba32") {
+                        if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
                             console.log("found")
                         }
                         this.db.setTransactionResolved(item.txid, item.txTime)
