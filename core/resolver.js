@@ -227,9 +227,7 @@ class Resolver {
                         }
 
                         let domain = rtx.output.domain
-                        if (domain == "xiaodao.test") {
-                            logger.logFile("xiaodao.test:", item.txid)
-                        }
+
                         if (!(domain in nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain, true)
                             if (!onDiskNid) {
@@ -240,6 +238,7 @@ class Resolver {
                         }
                         const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
                         if (obj) {
+                            logger.logFile("processed:", item.txid)
                             nidObjMap[domain] = obj
                             nidObjMap[domain].dirty = true
                         }

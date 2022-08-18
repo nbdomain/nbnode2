@@ -57,6 +57,7 @@ var myArgs = process.argv.slice(2);
 if (myArgs) {
   var argv = parseArgs(myArgs, opts = {})
   logger.info("cmd:", argv);
+  logger.logFile("----------------------Node Started----------------------------")
   if (argv.reorg) {
     REORG = argv.reorg
     fs.unlinkSync(__dirname + "/db/" + CONSTS.DMDB)
