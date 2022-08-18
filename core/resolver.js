@@ -35,9 +35,10 @@ function reduceKeys_(data, includeKeyUser) {
 
 
 class Resolver {
-    constructor(database) {
+    constructor(database, indexers) {
 
         this.db = database
+        this.indexers = indexers
         this.resolveNextBatchInterval = 2000
         this.resolveNextBatchTimerId = 0
         this.resolvedHeight = -1
@@ -178,6 +179,7 @@ class Resolver {
                 return
             }
         }
+        const { logger } = this.indexers
         const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
         //console.log("rtxArray:", rtxArray.length)
         const nidObjMap = MemDomains.getMap()
@@ -225,8 +227,8 @@ class Resolver {
                         }
 
                         let domain = rtx.output.domain
-                        if (domain == "nbinfo.b") {
-                            console.log("found")
+                        if (domain == "xiaodao.test") {
+                            logger.logFile("xiaodao.test:", item.txid)
                         }
                         if (!(domain in nidObjMap)) {
                             let onDiskNid = this.db.loadDomain(domain, true)

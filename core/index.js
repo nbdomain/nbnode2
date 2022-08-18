@@ -99,6 +99,7 @@ class Indexers {
 
     if (!await this.checkEnv()) return false
     this.initDB()
+    this.logger = logger
     this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
     this.Parser = Parser

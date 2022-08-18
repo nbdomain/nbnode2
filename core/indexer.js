@@ -38,7 +38,7 @@ class Indexer {
 
 
     this.database = db;
-    this.resolver = new Resolver(this.database)
+    this.resolver = new Resolver(this.database, indexers)
     //this.resolver.addController(Nodes)
     Parser.init(this.database)
 
