@@ -74,7 +74,7 @@ class BlockMgr {
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
 
-        if (this.dmVerify === dmVerify) {
+        if (dmVerify && this.dmVerify === dmVerify) {
             if (this.dmSigs && !this.dmSigs[nodeKey]) { //add my domain sig
                 if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
                 this.dmSigs[nodeKey] = dmSig

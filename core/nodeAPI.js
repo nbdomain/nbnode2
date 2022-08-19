@@ -161,7 +161,7 @@ class NodeClient {
     }
     async _setup() {
         const self = this
-        this.socket.on('notify', (arg) => {
+        this.socket.on('notify', async (arg) => {
             //console.log('got notify:', arg)
             if (arg.cmd === "newtx") {
                 const para = JSON.parse(arg.data)
@@ -171,7 +171,7 @@ class NodeClient {
                 self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
             }
             if (arg.cmd === "newBlock") {
-                self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
+                await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
             }
         })
         this.socket.on('call', (arg1, arg2, cb) => {
