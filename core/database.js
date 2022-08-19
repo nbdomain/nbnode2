@@ -44,7 +44,7 @@ class Database {
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
-    this.resolvedHeight = -1
+
     this.indexers = indexers
   }
   open() {
@@ -192,7 +192,7 @@ class Database {
       fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       const states = fs.statSync(this.dmpath + "." + VER_DMDB)
       TXRESOLVED_FLAG = states.birthtimeMs
-      this.resolvedHeight = -1
+
     }
     if (this.onResetDB) {
       this.onResetDB(type)
@@ -882,7 +882,7 @@ class Database {
         this.dmdb.prepare(sql).run()
 
         this.writeConfig("dmdb", "domainHash", domainHash)
-        //this.logger.logFile(obj.domain, ":::", domainHash)
+        this.logger.logFile(obj.domain, ":::", domainHash)
 
       })
       this.tickerAll.broadcast("key_update", obj)

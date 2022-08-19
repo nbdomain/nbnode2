@@ -42,7 +42,6 @@ class Resolver {
         this.indexers = indexers
         this.resolveNextBatchInterval = 2000
         this.resolveNextBatchTimerId = 0
-        this.resolvedHeight = -1
         this.controllers = [] //control resolve switch
         this.db.onResetDB = this.onResetDB;
 
@@ -50,11 +49,7 @@ class Resolver {
     start() {
         if (this.started) return
         this.started = true
-        this.resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
-        if (isNaN(this.resolvedHeight)) {
-            this.db.writeConfig('dmdb', 'resolvedHeight', '-1')
-            this.resolvedHeight = -1
-        }
+       
         this.resolveNextBatch()
     }
     stop() {
@@ -64,7 +59,7 @@ class Resolver {
     }
     onResetDB(type) {
         if (type == "domain") {
-            this.resolvedHeight = -1
+           
         }
     }
     findDomain(k, v) {
@@ -193,13 +188,7 @@ class Resolver {
                         console.warn(`--$----Handled All current TX from DB-------`)
                         this.resolveFinish = true
                         MemDomains.clearObj(); //release memory
-                        const resolvedHeight = +this.db.readConfig('dmdb', "resolvedHeight")
-                        if (resolvedHeight < this.resolvedHeight) {
-                            this.db.writeConfig('dmdb', 'resolvedHeight', this.resolvedHeight.toString())
-                            if (this.resolvedHeight % 9 == 0) {
-                                this.db.backupDB()
-                            }
-                        }
+                        
                     }
                 } else {
                     console.log("get ", rtxArray.length, " txs from DB")
@@ -216,10 +205,7 @@ class Resolver {
                                 console.log("found")
                             }
                             this.db.setTransactionResolved(item.txid, item.txTime)
-                            if (item.height > this.resolvedHeight) {
-                                this.resolvedHeight = item.height
-                                this.db.resolvedHeight = item.height
-                            }
+                            
 
                             const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
                             if (!res) continue
