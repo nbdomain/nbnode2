@@ -73,15 +73,14 @@ class BlockMgr {
         //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
-        /*this.dmVerify = db.getDomainVerifyCode()
-         if (this.dmVerify === dmVerify && dmSigs && dmSigs[nodeKey]) {
-             const sigSender = dmSigs[nodeKey]
-             if (!dmSigs[Nodes.thisNode.key]) { //add my domain sig
-                 if (await Util.bitcoinVerify(nodeKey, dmVerify, sigSender) == false) return
-                 const sig = await Util.bitcoinSign(CONFIG.key, dmVerify)
-                 dmSigs[Nodes.thisNode.key] = sig
-             }
-         }*/
+
+        if (this.dmVerify === dmVerify && dmSigs && dmSigs[nodeKey]) {
+            const sigSender = dmSigs[nodeKey]
+            if (!dmSigs[Nodes.thisNode.key]) { //add my domain sig
+                if (await Util.bitcoinVerify(nodeKey, dmVerify, sigSender) == false) return
+                dmSigs[Nodes.thisNode.key] = this.dmSig
+            }
+        }
 
         if (!this.uBlock) {
             this.nodePool[nodeKey].uBlock = uBlock
