@@ -883,6 +883,9 @@ class Database {
 
         this.writeConfig("dmdb", "domainHash", domainHash)
         this.logger.logFile(obj.domain, ":::", domainHash)
+        if (obj.domain === "108114.b") {
+          this.logger.logFile(strObj)
+        }
 
       })
       this.tickerAll.broadcast("key_update", obj)
