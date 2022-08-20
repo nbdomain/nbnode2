@@ -18,7 +18,7 @@ class NodeServer {
         const io = new Server()
         io.attach(CONFIG.server.socketPort || 31415)
         io.on("connection", (socket) => {
-            console.log(socket.handshake.auth); //
+            console.log("socket id:", socket.id, socket.handshake.auth); //
             socket.on("hello", async (obj, ret) => {
                 if (obj.v != cmd.hello.v) {
                     ret({ v: cmd.hello.rv, sig: null })
@@ -64,6 +64,7 @@ class NodeServer {
         })
         socket.on("disconnect", (reason) => {
             console.error("server disconnected:", reason, " :", socket.handshake.auth.serverUrl)
+            socket.removeAllListeners()
         })
         socket.onAny((event, ...args) => {
             console.log(`server got ${event}`);
@@ -72,8 +73,10 @@ class NodeServer {
     notify(para) {
         if (!this.io) return false
         para.v = 1
-        console.log("notify to clients:", this.io.sockets.sockets.size)
-        this.io.emit("notify", para)
+        this.io.allSockets().then(ids => {
+            console.log("notify to clients:", ids)
+        })
+        this.io.volatile.emit("notify", para)
         return true
     }
     close() {
@@ -182,7 +185,7 @@ class NodeClient {
     async getConfirmations(txids) {
         return new Promise(resolve => {
             const para = { txids }
-            this.socket.emit("getConfirmations", para, (res) => {
+            this.socket.volatile.emit("getConfirmations", para, (res) => {
                 resolve(res)
             })
         })
@@ -195,7 +198,7 @@ class NodeClient {
             para = { afterHeight: height }
         }
         para.v = 1
-        this.socket.emit("pullNewTx", para, async (res) => {
+        this.socket.volatile.emit("pullNewTx", para, async (res) => {
             console.log("get reply from pullNewTx:")
             if (!res) return
             for (const tx of res) {
@@ -206,7 +209,7 @@ class NodeClient {
     async sendNewTx(obj) {
         return new Promise(resolve => {
             obj.v = 1
-            this.socket.emit("sendNewTx", obj, (res) => {
+            this.socket.volatile.emit("sendNewTx", obj, (res) => {
                 resolve(res)
             })
         })
@@ -249,7 +252,7 @@ class rpcHandler {
                 }
 
             }
-            socket.emit("getTx", para, async (data) => {
+            socket.volatile.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { delete this.handlingMap[para.txid]; return }
                 mySig = await Util.bitcoinSign(CONFIG.key, tx.txid)
