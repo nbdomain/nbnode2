@@ -49,7 +49,7 @@ class Resolver {
     start() {
         if (this.started) return
         this.started = true
-       
+
         this.resolveNextBatch()
     }
     stop() {
@@ -59,7 +59,7 @@ class Resolver {
     }
     onResetDB(type) {
         if (type == "domain") {
-           
+
         }
     }
     findDomain(k, v) {
@@ -188,7 +188,7 @@ class Resolver {
                         console.warn(`--$----Handled All current TX from DB-------`)
                         this.resolveFinish = true
                         MemDomains.clearObj(); //release memory
-                        
+
                     }
                 } else {
                     console.log("get ", rtxArray.length, " txs from DB")
@@ -205,7 +205,7 @@ class Resolver {
                                 console.log("found")
                             }
                             this.db.setTransactionResolved(item.txid, item.txTime)
-                            
+
 
                             const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
                             if (!res) continue

@@ -73,6 +73,10 @@ class CMD_USER {
         return output
     }
     static async fillObj(nidObj, rtx) {
+        if (!nidObj.owner_key) {
+            rtx.output.err = nidObj.domain + ": not registered"
+            return null
+        }
         const output = rtx.output
         if (!nidObj.users) nidObj.users = {}
         const name = output.extra.name
@@ -217,26 +221,6 @@ class CMD_BUY {
                 return output
             }
             output.sell_txid = extra.sell_txid;
-
-            const pay1 = rtx.out[2].e
-            const pay2 = rtx.out[3].e
-            //TODO: move to fillobj
-            let ret = this.parser.db.loadDomain(output.sellDomain)
-            if (ret && ret.sell_info) {
-                const delta = Math.abs(ret.sell_info.price - pay1.v)
-                if (delta > 10) {
-                    output.err = "not enough payment for:" + output.sellDomain
-                    return output
-                }
-                const paymentAddress = Util.getPaymentAddr({ tld: output.sellDomain.split('.')[1] })
-                if (paymentAddress != pay2.a) {
-                    output.err = "wrong fee payment address:" + output.sellDomain
-                    return output
-                }
-            } else {
-                output.err = output.sellDomain + "is not onsale"
-                return output
-            }
             //output.owner_key = rtx.publicKey;
         } catch (err) {
             output.err = "Invalid format for BuyOutput class."
@@ -254,6 +238,20 @@ class CMD_BUY {
         if (!obj || !obj.sell_info) {
             console.error(sellDomain + " is not onsale")
             return null
+        } else {
+            const pay1 = rtx.out[2].e
+            const pay2 = rtx.out[3].e
+            const delta = Math.abs(obj.sell_info.price - pay1.v)
+            if (delta > 10) {
+                console.error("not enough payment for:" + sellDomain)
+                return null
+            }
+            const paymentAddress = Util.getPaymentAddr({ tld: sellDomain.split('.')[1] })
+            if (paymentAddress != pay2.a) {
+                console.error("wrong fee payment address:" + sellDomain)
+                return null
+            }
+
         }
         await Util.resetNid(obj, rtx.output.newOwner ? rtx.output.newOwner : nidObj.owner_key, rtx.txid, DEF.STATUS_VALID, obj.sell_info.clear_data, rtx.chain);
         objMap[sellDomain] = obj
