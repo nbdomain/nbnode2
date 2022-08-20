@@ -72,6 +72,7 @@ class NodeServer {
     notify(para) {
         if (!this.io) return false
         para.v = 1
+        console.log("notify to clients:", this.io.sockets.sockets.size)
         this.io.emit("notify", para)
         return true
     }
@@ -162,7 +163,7 @@ class NodeClient {
     async _setup() {
         const self = this
         this.socket.on('notify', async (arg) => {
-            console.log('got notify from:', this.node.pkey, " arg:", arg)
+            //console.log('got notify from:', this.node.pkey, " arg:", arg)
             if (arg.cmd === "newtx") {
                 const para = JSON.parse(arg.data)
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
