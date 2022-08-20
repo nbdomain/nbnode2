@@ -162,7 +162,7 @@ class NodeClient {
     async _setup() {
         const self = this
         this.socket.on('notify', async (arg) => {
-            //console.log('got notify:', arg)
+            console.log('got notify from:', this.node.pkey, " arg:", arg)
             if (arg.cmd === "newtx") {
                 const para = JSON.parse(arg.data)
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })

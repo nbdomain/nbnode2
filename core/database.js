@@ -883,7 +883,7 @@ class Database {
 
         this.writeConfig("dmdb", "domainHash", domainHash)
         this.logger.logFile(obj.domain, ":::", domainHash)
-        if (obj.domain === "108114.b") {
+        if (obj.domain === "10200.test") {
           this.logger.logFile(strObj)
         }
 

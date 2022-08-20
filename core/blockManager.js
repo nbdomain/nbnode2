@@ -10,6 +10,7 @@ class BlockMgr {
         this.indexers = indexers
         this.nodePool = {}
         this.blockPool = {}
+        this.dmSigs = {}
         this.height = 0
         this.signedBlock = -1
         this.uBlock = null //next unconfirmed block
@@ -73,7 +74,7 @@ class BlockMgr {
         //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
-
+        console.log("receive:", nodeKey)
         if (dmVerify && this.dmVerify === dmVerify) {
             if (this.dmSigs && !this.dmSigs[nodeKey]) { //add my domain sig
                 if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
@@ -206,7 +207,6 @@ class BlockMgr {
                 if (bcBlock) {
                     const dmVerify = db.getDomainVerifyCode()
                     if (this.dmVerify != dmVerify) { //update my domain sig
-                        this.dmSigs = {}
                         this.dmSigs[Nodes.thisNode.key] = await Util.bitcoinSign(CONFIG.key, dmVerify)
                         this.dmVerify = dmVerify
                     }
