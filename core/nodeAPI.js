@@ -100,18 +100,12 @@ class NodeClient {
         const Util = this.indexers.Util
         this.node = node
         let socketUrl = null, url = node.id
-        try {
-            const res = await axios.get(url + "/api/nodeinfo")
-            if (res.data && res.data.pkey) {
-                const pUrl = URL.parse(url)
-                socketUrl = "ws://" + pUrl.hostname + ":" + (res.data.socketPort || 31415)
-                if (res.data.socketServer) {
-                    socketUrl = "ws://" + res.data.socketServer + ":" + (res.data.socketPort || 31415)
-                }
-            }
-        } catch (e) {
-            return false
+        const pUrl = URL.parse(url)
+        socketUrl = "ws://" + pUrl.hostname + ":" + (node.info.socketPort || 31415)
+        if (node.info.socketServer) {
+            socketUrl = "ws://" + node.info.socketServer + ":" + (node.info.socketPort || 31415)
         }
+
         if (!socketUrl) return false
         const self = this
         return new Promise(resolve => {
@@ -126,7 +120,6 @@ class NodeClient {
                     console.log("manager connected")
                 }
             });
-            socket.removeAllListeners()
             socket.connect()
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
@@ -144,7 +137,6 @@ class NodeClient {
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
                             self.setConnected(true)
-
                             self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
@@ -161,9 +153,6 @@ class NodeClient {
                 self.setConnected(false)
                 console.log('Disconnected to:', socketUrl)
             })
-            socket.onAny((event, ...args) => {
-                //console.log(`got ${event}`);
-            });
         })
     }
     async _setup() {

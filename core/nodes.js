@@ -114,7 +114,7 @@ class Nodes {
         console.log(5)
         if (!info) return false
         console.log("adding node:", url)
-        const node = { id: url, pkey: info.pkey, weight: 50 }
+        const node = { id: url, pkey: info.pkey, weight: 50,info:info }
         this.pnodes.push(node)
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
