@@ -126,6 +126,7 @@ class NodeClient {
                     console.log("manager connected")
                 }
             });
+            socket.removeAllListeners()
             socket.connect()
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
