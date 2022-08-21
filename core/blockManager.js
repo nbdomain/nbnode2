@@ -74,11 +74,14 @@ class BlockMgr {
         //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
-        console.log("receive:", nodeKey)
+        //console.log("receive:", nodeKey)
         if (dmVerify && this.dmVerify === dmVerify) {
             if (this.dmSigs && !this.dmSigs[nodeKey]) { //add my domain sig
                 if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
                 this.dmSigs[nodeKey] = dmSig
+                db.saveDomainSigs(JSON.stringify(this.dmSigs))
+                if (objLen(this.dmSigs) >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1))
+                    await db.backupDB()
             }
         }
 

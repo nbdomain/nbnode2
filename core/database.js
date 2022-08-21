@@ -882,10 +882,10 @@ class Database {
         this.dmdb.prepare(sql).run()
 
         this.writeConfig("dmdb", "domainHash", domainHash)
-        this.logger.logFile(obj.domain, ":::", domainHash)
-        if (obj.domain === "10200.test") {
-          this.logger.logFile(strObj)
-        }
+        //this.logger.logFile(obj.domain, ":::", domainHash)
+        //if (obj.domain === "10200.test") {
+        //  this.logger.logFile(strObj)
+        //}
 
       })
       this.tickerAll.broadcast("key_update", obj)
@@ -896,6 +896,9 @@ class Database {
   }
   getDomainVerifyCode() {
     return this.readConfig("dmdb", "domainHash")
+  }
+  saveDomainSigs(sigs) {
+    this.writeConfig("dmdb", "domainSigs", sigs)
   }
   async queryTX(fromTime, toTime, limit = -1) {
     try {
