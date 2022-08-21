@@ -100,32 +100,32 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
-        console.log(1, url)
+        //console.log(1, url)
         if (this.hasNode(url)) {
-            console.log(2, url)
+            //console.log(2, url)
             return false
         }
-        console.log(3, url)
+        //console.log(3, url)
         if (url.indexOf(this.endpoint) != -1) {
-            console.log(4, url)
+            //console.log(4, url)
             return false
         }
         const info = await this.validatNode(url)
-        console.log(5, url)
+        //console.log(5, url)
         if (!info) return false
-        console.log("adding node:", url)
+        //console.log("adding node:", url)
         const node = { id: url, pkey: info.pkey, weight: 50, info: info }
         this.pnodes.push(node)
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
-            console.log("node added:", url)
+            //console.log("node added:", url)
             if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) {
                 await this.connectOneNode(node)
-                console.log("noded connected---", url)
+                //console.log("noded connected---", url)
             }
         }
-        console.log("returned from addNode", url)
+        //console.log("returned from addNode", url)
         return true
     }
     async loadNodes() {
