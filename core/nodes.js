@@ -100,11 +100,18 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
+        console.log(1)
         if (this.hasNode(url)) {
+            console.log(2)
             return false
         }
-        if (url.indexOf(this.endpoint) != -1) return false
+        console.log(3)
+        if (url.indexOf(this.endpoint) != -1) {
+            console.log(4)
+            return false
+        }
         const info = await this.validatNode(url)
+        console.log(5)
         if (!info) return false
         console.log("adding node:", url)
         const node = { id: url, pkey: info.pkey, weight: 50 }
