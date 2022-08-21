@@ -110,7 +110,7 @@ class Nodes {
         const node = { id: url, pkey: info.pkey, weight: 50 }
         this.pnodes.push(node)
         if (isPublic) {
-            this.notifyPeers({ cmd: "newNode", data: { url } })
+            //this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
             console.log("node added:", url)
             if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) {
