@@ -106,6 +106,7 @@ class Nodes {
         if (url.indexOf(this.endpoint) != -1) return false
         const info = await this.validatNode(url)
         if (!info) return false
+        console.log("adding node:", url)
         const node = { id: url, pkey: info.pkey, weight: 50 }
         this.pnodes.push(node)
         if (isPublic) {

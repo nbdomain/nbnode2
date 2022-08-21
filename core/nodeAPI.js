@@ -26,7 +26,7 @@ class NodeServer {
                 }
                 console.log("got hello data:", obj)
                 if (obj.server) {
-                    indexers.Nodes.addNode({ url: obj.server })
+                    await indexers.Nodes.addNode({ url: obj.server })
                 }
                 const sig = await indexers.Util.bitcoinSign(CONFIG.key, obj.data)
                 ret({ v: cmd.hello.rv, sig })
@@ -73,9 +73,10 @@ class NodeServer {
     notify(para) {
         if (!this.io) return false
         para.v = 1
-        this.io.allSockets().then(ids => {
-            console.log("notify to clients:", ids)
-        })
+        // for (const socket of this.io.sockets.sockets) {
+        //     console.log("send notify to:", socket[1].handshake.auth)
+        // }
+
         this.io.volatile.emit("notify", para)
         return true
     }
@@ -142,8 +143,7 @@ class NodeClient {
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(r => {
                         if (r) {
                             self.setConnected(true)
-                            self.socket = socket
-                            self._setup()
+
                             self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
@@ -153,6 +153,8 @@ class NodeClient {
                     })
                 })
             });
+            this.socket = socket
+            this._setup()
             socket.on('disconnect', function () {
                 //self.indexers.Nodes.onNodeDisconnect(self.node)
                 self.setConnected(false)
@@ -165,6 +167,10 @@ class NodeClient {
     }
     async _setup() {
         const self = this
+        console.log("setup for:", this.node)
+        if (this.node.id == "https://tnode.nbdomain.com") {
+            console.log("found")
+        }
         this.socket.on('notify', async (arg) => {
             //console.log('got notify from:', this.node.pkey, " arg:", arg)
             if (arg.cmd === "newtx") {
@@ -172,7 +178,7 @@ class NodeClient {
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
-                self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
+                await self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
             }
             if (arg.cmd === "newBlock") {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
