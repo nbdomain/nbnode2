@@ -157,7 +157,7 @@ class NodeClient {
     }
     async _setup() {
         const self = this
-        console.log("setup for:", this.node)
+        console.log("setup for:", this.node.id)
         if (this.node.id == "https://tnode.nbdomain.com") {
             console.log("found")
         }
