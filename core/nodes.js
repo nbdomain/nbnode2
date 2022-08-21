@@ -100,7 +100,7 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
-        console.log(1)
+        console.log(1, url)
         if (this.hasNode(url)) {
             console.log(2)
             return false
