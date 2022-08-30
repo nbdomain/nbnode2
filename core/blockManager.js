@@ -80,8 +80,10 @@ class BlockMgr {
                 if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
                 this.dmSigs[nodeKey] = dmSig
                 db.saveDomainSigs(JSON.stringify(this.dmSigs))
-                if (objLen(this.dmSigs) >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1))
+                if (objLen(this.dmSigs) >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastBackupVerify != dmVerify) {
+                    this.lastBackupVerify = dmVerify
                     await db.backupDB()
+                }
             }
         }
 

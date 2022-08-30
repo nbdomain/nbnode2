@@ -161,6 +161,9 @@ class Resolver {
         } else {
             res = this.db.readUser(account)
         }
+        if (!res.chain) {
+            res.chain = Util.getchain(dd[1])
+        }
         if (!res) return { code: 1 }
         if (!res.attributes.uid) {
             res.attributes.uid = await Util.dataHash(res.account + res.address)
