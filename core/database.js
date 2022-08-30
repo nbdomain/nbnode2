@@ -167,7 +167,6 @@ class Database {
     // Synchronizes WAL at checkpoints
     this.dtdb.pragma('synchronous = NORMAL')
     this.preDealData()
-    this.backupDB()
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
