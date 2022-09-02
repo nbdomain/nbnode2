@@ -355,7 +355,6 @@ app.get('/admin', async (req, res) => {
                 if (result !== "Already up to date.\n") {
                     setTimeout(() => indexers.shutdown(), 2000)
                 }
-
                 return
             } catch (e) {
                 console.error(e.message)
