@@ -351,6 +351,10 @@ app.get('/admin', async (req, res) => {
                 const command = "git pull"
                 let result = childProcess.execSync(command).toString();
                 console.log("git pull:", result)
+                res.end(result)
+                if (result !== "Already up to date.\n")
+                    indexers.shutdown()
+                return
             } catch (e) {
                 console.error(e.message)
             }
