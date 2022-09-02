@@ -70,7 +70,7 @@ if (myArgs) {
 // ------------------------------------------------------------------------------------------------
 
 async function shutdown() {
-  server.stop()
+  server && server.stop()
   await Indexers.stop()
   process.exit(0)
 }

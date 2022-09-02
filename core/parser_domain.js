@@ -128,17 +128,17 @@ class CMD_REGISTER {
             }
             if (rtx.out[0].s5 == 'v2') {
                 output.owner_key = rtx.publicKey
-                if (rtx.ts && rtx.ts > 2653635945) { //enforce price check after this time
+                if (rtx.ts && +rtx.ts > 1662005320) { //enforce price check after this time
                     const payment = +rtx.out[2].e.v
                     const resp = await DomainTool.fetchDomainPrice(domain, this.parser.db, newTx)
-                    if (resp.code != 0 || !resp.price) {
-                        output.err = domain + " cannot be registered"
-                        return output
-                    }
-                    if (+resp.price > payment) {
-                        output.err = `More than ${resp.price} needs to be paid to purchase the domain.`;
-                        return output;
-                    }
+                    /* if (resp.code != 0 || !resp.price) {
+                         output.err = domain + " cannot be registered"
+                         return output
+                     }
+                     if (+resp.price > payment) {
+                         output.err = `More than ${resp.price} needs to be paid to purchase the domain.`;
+                         return output;
+                     }*/
                 }
                 let attrib = Util.parseJson(rtx.out[0].s6)
                 if (attrib && attrib.toKey) {

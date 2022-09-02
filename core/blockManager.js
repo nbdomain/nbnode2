@@ -4,13 +4,14 @@ var stringify = require('json-stable-stringify');
 const { default: axios } = require('axios');
 const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-let objLen = obj => Object.keys(obj).length
+let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 class BlockMgr {
     constructor(indexers) {
         this.indexers = indexers
         this.nodePool = {}
         this.blockPool = {}
         this.dmSigs = {}
+        this.dmVerifyMap = {}
         this.height = 0
         this.signedBlock = -1
         this.uBlock = null //next unconfirmed block
@@ -75,17 +76,39 @@ class BlockMgr {
         if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
         //console.log("receive:", nodeKey)
-        if (dmVerify && this.dmVerify === dmVerify) {
+        if (dmVerify) {
+            if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
+            if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
+                if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig))
+                    this.dmVerifyMap[dmVerify][nodeKey] = dmSig
+            }
+            let maxVerify = null, maxLen = 0
+            for (const verify in this.dmVerifyMap) { //find the most aggreed verify
+                if (objLen(this.dmVerifyMap[verify]) > maxLen) {
+                    maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
+                }
+            }
+            if (maxVerify === this.dmVerify) maxLen++ //add my vote
+            if (maxLen >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify) {//reach consense
+                this.lastVerify = maxVerify
+                if (maxVerify === this.dmVerify) { //I win, backup the good domain db
+                    await db.backupDB()
+                } else { //I lost, restore last good domain db
+                    console.error("found inconsistent domain db, restore last db")
+                    db.restoreLastGoodDomainDB()
+                }
+            }
+        }
+        /*if (dmVerify && this.dmVerify === dmVerify) {
             if (this.dmSigs && !this.dmSigs[nodeKey]) { //add my domain sig
                 if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
                 this.dmSigs[nodeKey] = dmSig
                 db.saveDomainSigs(JSON.stringify(this.dmSigs))
                 if (objLen(this.dmSigs) >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastBackupVerify != dmVerify) {
-                    this.lastBackupVerify = dmVerify
-                    await db.backupDB()
+                    
                 }
             }
-        }
+        }*/
 
         if (!this.uBlock) {
             this.nodePool[nodeKey].uBlock = uBlock
@@ -218,7 +241,7 @@ class BlockMgr {
                     bcBlock.dmSig = this.dmSigs[Nodes.thisNode.key]
                     bcBlock.dmVerify = dmVerify
 
-                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmSigs))
+                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             }

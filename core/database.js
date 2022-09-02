@@ -47,8 +47,83 @@ class Database {
 
     this.indexers = indexers
   }
+  initdb(dbname) {
+    if (dbname === 'txdb') {
+      //--------------------------------------------------------//
+      //  Transaction DB
+      //-------------------------------------------------------//
+      if (!this.txdb) {
+        this.txdb = new Sqlite3Database(this.path)
+        // 100MB cache
+        this.txdb.pragma('cache_size = 6400')
+        this.txdb.pragma('page_size = 16384')
+
+        // WAL mode allows simultaneous readers
+        this.txdb.pragma('journal_mode = WAL')
+
+        // Synchronizes WAL at checkpoints
+        this.txdb.pragma('synchronous = NORMAL')
+      }
+    }
+    if (dbname === 'dmdb') {
+      //--------------------------------------------------------//
+      //  Domains DB
+      //-------------------------------------------------------//
+      if (!this.dmdb) {
+        this.dmdb = new Sqlite3Database(this.dmpath)
+        // 100MB cache
+        this.dmdb.pragma('cache_size = 6400')
+        this.dmdb.pragma('page_size = 16384')
+
+        // WAL mode allows simultaneous readers
+        this.dmdb.pragma('journal_mode = WAL')
+
+        // Synchronizes WAL at checkpoints
+        this.dmdb.pragma('synchronous = NORMAL')
+      }
+      const saveKeysSql = `
+    INSERT INTO "keys" 
+                (key, value,tags,ts) 
+                VALUES ( ?, ?, ?,?)
+                ON CONFLICT( key ) DO UPDATE
+                SET value=?,tags=?,ts=?`
+      this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
+      this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
+      this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
+      this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
+      this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
+      //-------------------------------NFT-------------------------------------------
+      this.getNFTStmt = this.dmdb.prepare('SELECT * from nfts where symbol=?')
+      const addNFTsql = `
+    INSERT INTO "nfts" 
+                (symbol,attributes,data,log) 
+                VALUES ( ?,?,?,'')
+                ON CONFLICT( symbol ) DO UPDATE
+                SET attributes=?,data=?`
+      this.addNFTStmt = this.dmdb.prepare(addNFTsql)
+      this.deleteNFTStmt = this.dmdb.prepare("DELETE FROM nfts where symbol = ?")
+      this.NFTappendLogStmt = this.dmdb.prepare("UPDATE nfts SET log = log || ?  where symbol = ?")
+      this.NFTgetLogStmt = this.dmdb.prepare("SELECT log from nfts where symbol = ?")
+
+      TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
+      if (!TXRESOLVED_FLAG) {
+        TXRESOLVED_FLAG = Date.now()
+        this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
+      }
+    }
+    if (dbname === 'dtdb') {
+      //----------------------------DATA DB----------------------------------
+      this.dtdb = new Sqlite3Database(this.dtpath)
+      // 100MB cache
+      this.dtdb.pragma('cache_size = 6400')
+      this.dtdb.pragma('page_size = 16384')
+      // WAL mode allows simultaneous readers
+      this.dtdb.pragma('journal_mode = WAL')
+      // Synchronizes WAL at checkpoints
+      this.dtdb.pragma('synchronous = NORMAL')
+    }
+  }
   open() {
-    let noTxdb = false;
     if (!this.txdb) {
       if (!fs.existsSync(this.path + "." + VER_TXDB)) {
         if (fs.existsSync(this.path)) {
@@ -60,18 +135,13 @@ class Database {
       if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
         if (fs.existsSync(this.dmpath)) {
           fs.unlinkSync(this.dmpath)
-          //fs.unlinkSync(this.dmpath + "-shm")
-          //fs.unlinkSync(this.dmpath + "-wal")
         }
         fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       }
 
       if (!fs.existsSync(this.path)) {
-        //const result = Util.downloadFile(`https://tnode.nbdomain.com/files/txs.db`, this.path)
-        //console.log(result)
         if (!fs.existsSync(this.path))
           fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.path);
-        // noTxdb = true;
       }
       if (!fs.existsSync(this.dmpath)) {
         fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
@@ -79,119 +149,35 @@ class Database {
       if (!fs.existsSync(this.dtpath)) {
         fs.copyFileSync(__dirname + "/db/template/odata.db.tpl.db", this.dtpath);
       }
-      const states = fs.statSync(this.dmpath + "." + VER_DMDB)
-      TXRESOLVED_FLAG = states.birthtimeMs
-    }
-    //--------------------------------------------------------//
-    //  Domains DB
-    //-------------------------------------------------------//
-    if (!this.dmdb) {
-      this.dmdb = new Sqlite3Database(this.dmpath)
-      // 100MB cache
-      this.dmdb.pragma('cache_size = 6400')
-      this.dmdb.pragma('page_size = 16384')
-
-      // WAL mode allows simultaneous readers
-      this.dmdb.pragma('journal_mode = WAL')
-
-      // Synchronizes WAL at checkpoints
-      this.dmdb.pragma('synchronous = NORMAL')
+      //const states = fs.statSync(this.dmpath + "." + VER_DMDB)
+      //TXRESOLVED_FLAG = states.birthtimeMs
+      this.initdb('txdb')
+      this.initdb('dmdb')
+      this.initdb('dtdb')
     }
 
-
-    const saveKeysSql = `
-    INSERT INTO "keys" 
-                (key, value,tags,ts) 
-                VALUES ( ?, ?, ?,?)
-                ON CONFLICT( key ) DO UPDATE
-                SET value=?,tags=?,ts=?`
-    this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
-    this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
-    this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
-    this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
-    //this.getLastResolvedIdStmt = this.dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedId\'')
-    //this.getLastResolvedCursorStmt = this.dmdb.prepare('SELECT value FROM config WHERE key = \'lastResolvedCursor\'')
-    //this.setLastResolvedIdStmt = this.dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedId\'')
-    //this.setLastResolvedCursorStmt = this.dmdb.prepare('UPDATE config SET value = ? WHERE key = \'lastResolvedCursor\'')
-    this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
-
-
-    //-------------------------------NFT-------------------------------------------
-    this.getNFTStmt = this.dmdb.prepare('SELECT * from nfts where symbol=?')
-    const addNFTsql = `
-    INSERT INTO "nfts" 
-                (symbol,attributes,data,log) 
-                VALUES ( ?,?,?,'')
-                ON CONFLICT( symbol ) DO UPDATE
-                SET attributes=?,data=?`
-    this.addNFTStmt = this.dmdb.prepare(addNFTsql)
-    this.deleteNFTStmt = this.dmdb.prepare("DELETE FROM nfts where symbol = ?")
-    this.NFTappendLogStmt = this.dmdb.prepare("UPDATE nfts SET log = log || ?  where symbol = ?")
-    this.NFTgetLogStmt = this.dmdb.prepare("SELECT log from nfts where symbol = ?")
-
-    //--------------------------------------------------------//
-    //  Transaction DB
-    //-------------------------------------------------------//
-    if (!this.txdb) {
-
-
-      this.txdb = new Sqlite3Database(this.path)
-      // 100MB cache
-      this.txdb.pragma('cache_size = 6400')
-      this.txdb.pragma('page_size = 16384')
-
-      // WAL mode allows simultaneous readers
-      this.txdb.pragma('journal_mode = WAL')
-
-      // Synchronizes WAL at checkpoints
-      this.txdb.pragma('synchronous = NORMAL')
-    }
-
-    //this.get = this.txdb.prepare(`SELECT hash FROM ${this.chain}_config WHERE role = \'tip\'`)
-    //this.setHeightAndHashStmt = this.txdb.prepare(`UPDATE ${this.chain}_config SET height = ?, hash = ? WHERE role = \'tip\'`)
-
-    //this.getPayTxStmt = this.txdb.prepare('SELECT * from paytx where domain = ? AND type = ?')
-    //this.setPayTxStmt = this.txdb.prepare('INSERT INTO paytx (domain,payment_txid, tld, protocol, publicKey, raw_tx, ts, type) VALUES (?,?,?,?,?,?,?,?)')
-
-    if (noTxdb) {
-      this.saveLastResolvedId(0)
-    }
-
-    //----------------------------DATA DB----------------------------------
-    this.dtdb = new Sqlite3Database(this.dtpath)
-    // 100MB cache
-    this.dtdb.pragma('cache_size = 6400')
-    this.dtdb.pragma('page_size = 16384')
-    // WAL mode allows simultaneous readers
-    this.dtdb.pragma('journal_mode = WAL')
-    // Synchronizes WAL at checkpoints
-    this.dtdb.pragma('synchronous = NORMAL')
     this.preDealData()
+
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
-      this.writeConfig("dmdb", "domainHash", null)
-      this.writeConfig("dmdb", "maxResolvedTx", null)
-      this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
-      this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
-
-      let sql = "DELETE from nidobj"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from keys"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from users"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from tags"
-      this.dmdb.prepare(sql).run()
-      sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
-      this.dmdb.prepare(sql).run()
-      MemDomains.clearObj()
-
-      fs.unlinkSync(this.dmpath + "." + VER_DMDB)
-      fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
-      const states = fs.statSync(this.dmpath + "." + VER_DMDB)
-      TXRESOLVED_FLAG = states.birthtimeMs
-
+      /* this.writeConfig("dmdb", "domainHash", null)
+       this.writeConfig("dmdb", "maxResolvedTx", null)
+       this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
+       this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
+ 
+       let sql = "DELETE from nidobj"
+       this.dmdb.prepare(sql).run()
+       sql = "DELETE from keys"
+       this.dmdb.prepare(sql).run()
+       sql = "DELETE from users"
+       this.dmdb.prepare(sql).run()
+       sql = "DELETE from tags"
+       this.dmdb.prepare(sql).run()
+       sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
+       this.dmdb.prepare(sql).run()
+       MemDomains.clearObj() */
+      this.restoreLastGoodDomainDB()
     }
     if (this.onResetDB) {
       this.onResetDB(type)
@@ -320,6 +306,20 @@ class Database {
     );    
     `
     this.txdb.prepare(sql).run();
+  }
+  restoreLastGoodDomainDB() {
+    this.dmdb.close()
+    fs.unlinkSync(this.dmpath)
+    fs.unlinkSync(this.dmpath + '-shm')
+    fs.unlinkSync(this.dmpath + '-wal')
+    if (fs.existsSync(__dirname + `/db/bkDomains.db`)) {
+      fs.copyFileSync(__dirname + `/db/bkDomains.db`, this.dmpath)
+    } else {
+      fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
+    }
+    this.dmdb = null
+    MemDomains.clearObj()
+    this.initdb('dmdb')
   }
   async backupDB() {
     //const { createGzip } = require('zlib');
