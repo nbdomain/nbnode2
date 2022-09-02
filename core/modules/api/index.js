@@ -352,7 +352,7 @@ app.get('/admin', async (req, res) => {
                 let result = childProcess.execSync(command).toString();
                 console.log("git pull:", result)
                 res.end(result)
-                if (result !== "Already up to date.\n") {
+                if (result.slice(0, 7) !== "Already") {
                     setTimeout(() => indexers.shutdown(), 2000)
                 }
                 return
