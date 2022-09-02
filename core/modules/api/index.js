@@ -4,6 +4,7 @@
 var url = require('url');
 const { CONFIG } = require('../../config')
 const CONSTS = require('../../const')
+const childProcess = require('child_process');
 var express = require('express');
 var bodyParser = require("body-parser");
 var cors = require('cors');
@@ -17,7 +18,8 @@ const Parser = require('../../parser')
 const { Nodes } = require('../../nodes')
 var app = express();
 const { createSession } = require("better-sse");
-const coinfly = require("coinfly")
+const coinfly = require("coinfly");
+const { resourceUsage } = require('process');
 
 
 app.use(cors());
@@ -328,30 +330,13 @@ app.get('/getBlocks', async (req, res) => {
     res.json(ret)
 })
 
-app.get('/test', async (req, res) => {
-    /*    let sql = "select * from ar_tx"
-        const ret = indexers.db.txdb.prepare(sql).all()
-        console.log(ret)
-        console.log("count:",ret.length)
-        res.end("ok")*/
-    //res.json(indexers.db.getAllPaytx('register'))
-    //const { rpcHandler } = require('../../nodeAPI')
-    //const para = { txid: "c1dc64ef85841f0f3ad74576bbaa2b5b639a17ac9dd1dda1979ef4b64b525e8d" }
-    //await rpcHandler.handleNewTx({ indexers, para, from: "https://tnode.nbdomain.com", force: true })
-    //indexers.bsv.add("3c46dd05ac372382d44e5e0a430b59a97c1f4224ccf98032a7b46e1b56fca7f9")
-    //res.json(indexers.db.getDataCount())
-    //await indexers.db.verifyTxDB('bsv')
-    //await indexers.db.verifyTxDB('ar')
-    //indexers.ar.reCrawlAll()
-    //console.log(indexers.db.findDomains({ time: { from: (Date.now() / 1000) - 60 * 60 * 24 } }))
-    //indexers.db.resetDB()
-    //Nodes.pullNewTxs()
-    //const ntx = +req.query['ntx']
-    //const block = await indexers.blockMgr.createBlock(0, ntx)
-    //indexers.db.dropTable('blocks')
-    //indexers.db.deleteBlock(req.query['height'])
+app.get('/admin', async (req, res) => {
     const db = indexers.db
     const cmd = req.query['cmd']
+    if (!CONFIG.adminKey || CONFIG.adminKey != req.query['key']) {
+        res.end('no access')
+        return
+    }
     switch (cmd) {
         case 'resetdb': db.resetDB(); break;
         case 'resetblocks': {
@@ -361,6 +346,16 @@ app.get('/test', async (req, res) => {
         }
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
+        case 'update': {
+            try {
+                const command = "git pull"
+                let result = childProcess.execSync(command).toString();
+                console.log("git pull:", result)
+            } catch (e) {
+                console.error(e.message)
+            }
+            break;
+        }
     }
     //Nodes.sendNewTx({})
     res.end("ok")

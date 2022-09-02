@@ -10,7 +10,6 @@ class BlockMgr {
         this.indexers = indexers
         this.nodePool = {}
         this.blockPool = {}
-        this.dmSigs = {}
         this.dmVerifyMap = {}
         this.height = 0
         this.signedBlock = -1
@@ -235,10 +234,10 @@ class BlockMgr {
                 if (bcBlock) {
                     const dmVerify = db.getDomainVerifyCode()
                     if (this.dmVerify != dmVerify) { //update my domain sig
-                        this.dmSigs[Nodes.thisNode.key] = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                        this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
                         this.dmVerify = dmVerify
                     }
-                    bcBlock.dmSig = this.dmSigs[Nodes.thisNode.key]
+                    bcBlock.dmSig = this.dmSig
                     bcBlock.dmVerify = dmVerify
 
                     console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
