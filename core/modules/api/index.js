@@ -161,7 +161,7 @@ app.post('/sendTx', async function (req, res) {
 });
 async function handleNewTx({ txid, force = false }) {
     let db = indexers.db
-    if (!db.isTransactionParsed(txid, false) || force) {
+    if (!db.hasTransaction(txid) || force) {
         const data = await Nodes.getTx(txid)
         if (data) {
             console.log("handleNewTx:", txid)

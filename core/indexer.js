@@ -93,7 +93,7 @@ class Indexer {
         console.log("found")
       }
       const { Nodes } = this.indexers
-      if (!force && this.database.isTransactionParsed(txid, false) && !replace) {
+      if (!force && this.database.hasTransaction(txid) && !replace) {
         console.log("Skipping:", txid)
         if (sigs) {
           this.database.addTransactionSigs(txid, sigs)

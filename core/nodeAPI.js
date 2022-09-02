@@ -228,7 +228,7 @@ class rpcHandler {
         }
         this.handlingMap[para.txid] = true
         let mySig = null
-        if (!db.isTransactionParsed(para.txid, false) || force) {
+        if (!db.hasTransaction(para.txid) || force) {
             para.v = 1
             const tx = para
             if (Nodes.isProducer()) { //verify tx
