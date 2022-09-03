@@ -25,7 +25,6 @@ class NodeServer {
                     return
                 }
                 console.log("got hello data:", obj)
-                obj.hide && console.log(obj.server," is hide from list")
                 if (obj.server && !obj.hide) {
                     await indexers.Nodes.addNode({ url: obj.server })
                 }

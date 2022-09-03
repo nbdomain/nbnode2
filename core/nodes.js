@@ -140,8 +140,8 @@ class Nodes {
             await _addFromArray(config.pnodes)
         }
         if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
-           // const p = await this._fromDNS()
-           // await _addFromArray(p)
+            // const p = await this._fromDNS()
+            // await _addFromArray(p)
         }
         //setTimeout(this.refreshPeers.bind(this), 60000)
     }
@@ -170,6 +170,13 @@ class Nodes {
     }
     getNodes() {
         return this.pnodes
+    }
+    async listAllNodes() {
+        if (this.isProducer()) {
+            return this.getNodes()
+        }
+        const res = await axios.get(this.pnodes[0].id + "/api/nodes")
+        return res.data ? res.data : []
     }
 
     async notifyPeers({ cmd, data }) {
