@@ -243,6 +243,8 @@ class BlockMgr {
                     console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
+            }else{
+                console.log("dmVerify:",db.getDomainVerifyCode())
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
