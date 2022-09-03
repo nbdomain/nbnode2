@@ -110,6 +110,7 @@ class Indexers {
     return true
   }
   static async start() {
+    console.log(33)
     const seedNode = await Nodes.init(this)
     await this.indexer.start()
     this.blockMgr.run()
