@@ -213,8 +213,6 @@ class LocalServer {
       //peer server
       const peerServer = ExpressPeerServer(this.listener, { debug: true });
       app.use('/peerjs', peerServer);
-      // Nodes.startNodeServer(http)
-
     }
   }
 
@@ -251,6 +249,7 @@ class LocalServer {
 
 
   async getAll(req, res, next) {
+    console.log("getall")
     try {
       const host = req.get("host");
       //console.log(host);
