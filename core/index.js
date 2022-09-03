@@ -110,11 +110,8 @@ class Indexers {
     return true
   }
   static async start() {
-    console.log(33)
     const seedNode = await Nodes.init(this)
-    console.log(44)
     await this.indexer.start()
-    console.log(55)
     this.blockMgr.run()
   }
   static async stop() {
@@ -130,12 +127,8 @@ async function main() {
     process.exit(-1)
   }
   server = new LocalServer(Indexers, logger)
-  console.log(11)
   await server.start()
-  console.log(22)
   await Indexers.start()
-  
-
 }
 
 // ------------------------------------------------------------------------------------------------
