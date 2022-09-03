@@ -41,7 +41,7 @@ class Nodes {
     }
     async init(indexers) {
         const lib = await coinfly.create('bsv')
-        const pkey = await lib.getPublicKey(config.key)
+        const pkey = config.key ? await lib.getPublicKey(config.key) : "$nodeKey"
         this.thisNode = { key: pkey }
         this._isProducer = this.isProducer(pkey)
         this.indexers = indexers
