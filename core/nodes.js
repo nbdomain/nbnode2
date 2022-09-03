@@ -41,7 +41,7 @@ class Nodes {
     }
     async init(indexers) {
         const lib = await coinfly.create('bsv')
-        const pkey = config.key ? await lib.getPublicKey(config.key) : "$nodeKey"
+        const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
         this.thisNode = { key: pkey }
         this._isProducer = this.isProducer(pkey)
         this.indexers = indexers
@@ -175,10 +175,14 @@ class Nodes {
         if (this.isProducer()) {
             return this.getNodes()
         }
+        try{
         const url = this.pnodes[0].id + "/api/nodes"
-        console.log(url)
         const res = await axios.get(url)
         return res.data ? res.data : []
+        }catch(e){
+            console.log(e)
+        }
+        return []
     }
 
     async notifyPeers({ cmd, data }) {
