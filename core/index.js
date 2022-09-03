@@ -128,10 +128,11 @@ async function main() {
     process.exit(-1)
   }
   server = new LocalServer(Indexers, logger)
-  server.start()
   console.log(11)
-  await Indexers.start()
+  await server.start()
   console.log(22)
+  await Indexers.start()
+  
 
 }
 

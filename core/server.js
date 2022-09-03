@@ -96,7 +96,7 @@ class LocalServer {
     this.onListening = null
   }
 
-  start() {
+async start() {
     const app = express()
 
     if (this.logger) app.use(morgan('tiny'))
@@ -116,7 +116,7 @@ class LocalServer {
       domainMap = []; //clear domainMap cache
     }, 60 * 1000);
 
-    this.startProxyServer(app);
+    await this.startProxyServer(app);
 
     this.startSSLServer();
   }
@@ -164,56 +164,59 @@ class LocalServer {
       green.serve(appSSL);
     }
   }
-  startProxyServer(app) {
-    const self = this;
-    this.listener = app.listen(CONFIG.server.port, async function () {
-      console.log(`NBnode server started on port ${CONFIG.server.port}...`);
+  async startProxyServer(app) {
+    return new Promise(resolve => {
+      const self = this;
+      this.listener = app.listen(CONFIG.server.port, async function () {
+        console.log(`NBnode server started on port ${CONFIG.server.port}...`);
 
-      var proxyPassConfig = CONSTS.proxy_map;
+        var proxyPassConfig = CONSTS.proxy_map;
 
-      for (let uri in proxyPassConfig) {
-        uri = uri.trim().toLowerCase();
-        console.log("uri", uri);
-        let env = CONFIG;
-        env.indexers = self.indexers;
-        let service_folder = proxyPassConfig[uri];
-        let port = 0;
-        try {
-          const service = require("./modules/" + service_folder + "/index.js");
-          port = await service(env);
-        } catch (e) {
-          console.error("Error loading service from: " + service_folder)
-          continue
+        for (let uri in proxyPassConfig) {
+          uri = uri.trim().toLowerCase();
+          console.log("uri", uri);
+          let env = CONFIG;
+          env.indexers = self.indexers;
+          let service_folder = proxyPassConfig[uri];
+          let port = 0;
+          try {
+            const service = require("./modules/" + service_folder + "/index.js");
+            port = await service(env);
+          } catch (e) {
+            console.error("Error loading service from: " + service_folder)
+            continue
+          }
+          const localAddr = "http://localhost:" + port;
+          const pa = "^" + uri;
+          if (uri === "/web/") localWebGateway = localAddr + "/";
+          if (uri === "/api/") localAPIGateway = localAddr + "/";
+          app.use(
+            uri,
+            createProxyMiddleware({
+              target: localAddr,
+              changeOrigin: true,
+              pathRewrite: { [pa]: "" },
+            })
+          );
         }
-        const localAddr = "http://localhost:" + port;
-        const pa = "^" + uri;
-        if (uri === "/web/") localWebGateway = localAddr + "/";
-        if (uri === "/api/") localAPIGateway = localAddr + "/";
-        app.use(
-          uri,
-          createProxyMiddleware({
-            target: localAddr,
-            changeOrigin: true,
-            pathRewrite: { [pa]: "" },
-          })
-        );
-      }
-      console.log(localWebGateway, localAPIGateway);
-      app.use(cors());
+        console.log(localWebGateway, localAPIGateway);
+        app.use(cors());
 
-      app.use(bodyParser.json({ limit: '50mb' }));
-      app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-      app.use((err, req, res, next) => {
-        if (this.logger) this.logger.error(err.stack)
-        res.status(500).send('Something broke!')
+        app.use(bodyParser.json({ limit: '50mb' }));
+        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
+        app.use((err, req, res, next) => {
+          if (this.logger) this.logger.error(err.stack)
+          res.status(500).send('Something broke!')
+        })
+        resolve(true)
       })
+      if (true) {
+        console.log("Start PeerServer")
+        //peer server
+        const peerServer = ExpressPeerServer(this.listener, { debug: true });
+        app.use('/peerjs', peerServer);
+      }
     })
-    if (true) {
-      console.log("Start PeerServer")
-      //peer server
-      const peerServer = ExpressPeerServer(this.listener, { debug: true });
-      app.use('/peerjs', peerServer);
-    }
   }
 
   stop() {
