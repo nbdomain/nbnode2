@@ -227,7 +227,7 @@ app.get('/nodes', async (_, res) => {
     const pkey = CONFIG.key ? await lib.getPublicKey(CONFIG.key) : "$NodeKey"
     const s = CONFIG.server
     const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
-    const nodes = Nodes.listAllNodes()
+    const nodes = await Nodes.listAllNodes()
     console.log(nodes)
     res.json(serverUrl ? nodes.concat([{ id: serverUrl, pkey, weight: 50 }]) : nodes)
 })
