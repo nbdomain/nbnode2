@@ -8,7 +8,7 @@ const { DEF } = require('./def');
 const CONSTS = require('./const')
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
+let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 let g_node = null
 class Nodes {
     constructor() {
@@ -119,13 +119,10 @@ class Nodes {
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
-            //console.log("node added:", url)
-            if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) {
+            if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) {
                 await this.connectOneNode(node)
-                //console.log("noded connected---", url)
             }
         }
-        //console.log("returned from addNode", url)
         return true
     }
     async loadNodes() {
@@ -139,10 +136,10 @@ class Nodes {
         }
         const nodes = this.indexers.db.loadNodes(true) //load from db
         await _addFromArray(nodes)
-        if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) { //load from local config
+        if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from local config
             await _addFromArray(config.pnodes)
         }
-        if (Object.keys(this.nodeClients).length < DEF.CONSENSUE_COUNT) { //load from DNS
+        if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
             const p = await this._fromDNS()
             await _addFromArray(p)
         }
