@@ -128,6 +128,7 @@ async function main() {
   }
   server = new LocalServer(Indexers, logger)
   server.start()
+  console.log(11)
   await Indexers.start()
 
 }
