@@ -224,7 +224,7 @@ app.post('/relay/notify', async (req, res) => {
 })
 app.get('/nodes', async (_, res) => {
     const lib = await coinfly.create('bsv')
-    const pkey = await lib.getPublicKey(CONFIG.key)
+    const pkey = CONFIG.key ? await lib.getPublicKey(CONFIG.key) : "$NodeKey"
     const s = CONFIG.server
     const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
     const nodes = Nodes.listAllNodes()

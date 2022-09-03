@@ -175,7 +175,9 @@ class Nodes {
         if (this.isProducer()) {
             return this.getNodes()
         }
-        const res = await axios.get(this.pnodes[0].id + "/api/nodes")
+        const url = this.pnodes[0].id + "/api/nodes"
+        console.log(url)
+        const res = await axios.get(url)
         return res.data ? res.data : []
     }
 
