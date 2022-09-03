@@ -25,7 +25,7 @@ class NodeServer {
                     return
                 }
                 console.log("got hello data:", obj)
-                if (obj.server) {
+                if (obj.server && !obj.hide) {
                     await indexers.Nodes.addNode({ url: obj.server })
                 }
                 const sig = await indexers.Util.bitcoinSign(CONFIG.key, obj.data)
@@ -128,6 +128,7 @@ class NodeClient {
                 const serverUrl = s.publicUrl
                 let helloPara = { data: datav, v: cmd.hello.v }
                 if (s.publicUrl) helloPara.server = serverUrl
+                if (s.hideFromList) helloPara.hide = true
                 socket.emit("hello", helloPara, (res) => {
                     console.log("reply from hello:", res)
                     if (!res.sig) {
