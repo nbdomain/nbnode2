@@ -211,6 +211,7 @@ class LocalServer {
     if (true) {
       console.log("Start PeerServer")
       //peer server
+      console.log(this.listener)
       const peerServer = ExpressPeerServer(this.listener, { debug: true });
       app.use('/peerjs', peerServer);
       // Nodes.startNodeServer(http)
