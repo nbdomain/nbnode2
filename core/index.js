@@ -130,6 +130,7 @@ async function main() {
   server.start()
   console.log(11)
   await Indexers.start()
+  console.log(22)
 
 }
 
