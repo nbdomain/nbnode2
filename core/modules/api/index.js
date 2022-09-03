@@ -228,6 +228,7 @@ app.get('/nodes', async (_, res) => {
     const s = CONFIG.server
     const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
     const nodes = Nodes.listAllNodes()
+    console.log(nodes)
     res.json(serverUrl ? nodes.concat([{ id: serverUrl, pkey, weight: 50 }]) : nodes)
 })
 app.get('/sub/:domain/', async (req, res) => {
