@@ -134,16 +134,15 @@ class Nodes {
                 if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }
-        //const nodes = this.indexers.db.loadNodes(true) //load from db
-        //await _addFromArray(nodes)
+        const nodes = this.indexers.db.loadNodes(true) //load from db
+        await _addFromArray(nodes)
         if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from local config
             await _addFromArray(config.pnodes)
         }
         if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
-            // const p = await this._fromDNS()
-            // await _addFromArray(p)
+            const p = await this._fromDNS()
+            await _addFromArray(p)
         }
-        //setTimeout(this.refreshPeers.bind(this), 60000)
     }
     isProducer(pkey) {
         if (!pkey) return this._isProducer
@@ -175,11 +174,11 @@ class Nodes {
         if (this.isProducer()) {
             return this.getNodes()
         }
-        try{
-        const url = this.pnodes[0].id + "/api/nodes"
-        const res = await axios.get(url)
-        return res.data ? res.data : []
-        }catch(e){
+        try {
+            const url = this.pnodes[0].id + "/api/nodes"
+            const res = await axios.get(url)
+            return res.data ? res.data : []
+        } catch (e) {
             console.log(e)
         }
         return []
