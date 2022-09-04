@@ -306,6 +306,9 @@ class Database {
     );    
     `
     this.txdb.prepare(sql).run();
+
+    sql = 'update txs set height = NULL'
+    this.txdb.prepare(sql).run();
   }
   restoreLastGoodDomainDB() {
     this.dmdb.close()
@@ -480,7 +483,7 @@ class Database {
 
   getTransactions({ time, limit, remove }) {
     if (!remove) remove = []
-    const sql = `select txid,bytes,txTime from txs where txTime >= ? AND status!=1 ORDER BY txTime,txid ASC limit ?`
+    const sql = `select txid,bytes,txTime from txs where txTime >= ? AND status!=1 AND height IS NULL ORDER BY txTime,txid ASC limit ?`
     let ret = this.txdb.prepare(sql).all(time, limit + remove.length)
     if (remove.length > 0) {
       ret = ret.filter(item => {
