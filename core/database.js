@@ -161,22 +161,27 @@ class Database {
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
-      /* this.writeConfig("dmdb", "domainHash", null)
-       this.writeConfig("dmdb", "maxResolvedTx", null)
-       this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
-       this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
- 
-       let sql = "DELETE from nidobj"
-       this.dmdb.prepare(sql).run()
-       sql = "DELETE from keys"
-       this.dmdb.prepare(sql).run()
-       sql = "DELETE from users"
-       this.dmdb.prepare(sql).run()
-       sql = "DELETE from tags"
-       this.dmdb.prepare(sql).run()
-       sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
-       this.dmdb.prepare(sql).run()
-       MemDomains.clearObj() */
+      /*this.writeConfig("dmdb", "domainHash", null)
+      this.writeConfig("dmdb", "maxResolvedTx", null)
+      this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
+      this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
+      this.writeConfig('dmdb', 'TXRESOLVED_FLAG', null)
+
+      let sql = "DELETE from nidobj"
+      this.dmdb.prepare(sql).run()
+      sql = "DELETE from keys"
+      this.dmdb.prepare(sql).run()
+      sql = "DELETE from users"
+      this.dmdb.prepare(sql).run()
+      sql = "DELETE from tags"
+      this.dmdb.prepare(sql).run()
+      sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
+      this.dmdb.prepare(sql).run()
+      MemDomains.clearObj()
+      this.dmdb.close()
+      this.dmdb = null
+      this.initdb('dmdb') */
+      fs.unlinkSync(__dirname + `/db/bkDomains.db`)
       this.restoreLastGoodDomainDB()
     }
     if (this.onResetDB) {
@@ -311,10 +316,19 @@ class Database {
     this.txdb.prepare(sql).run();
   }
   restoreLastGoodDomainDB() {
+
     this.dmdb.close()
-    fs.unlinkSync(this.dmpath)
-    fs.unlinkSync(this.dmpath + '-shm')
-    fs.unlinkSync(this.dmpath + '-wal')
+
+    try {
+      fs.unlinkSync(this.dmpath + '-shm')
+    } catch (e) { }
+    try {
+      fs.unlinkSync(this.dmpath + '-wal')
+    } catch (e) { }
+    try {
+      fs.unlinkSync(this.dmpath)
+    } catch (e) { }
+
     if (fs.existsSync(__dirname + `/db/bkDomains.db`)) {
       fs.copyFileSync(__dirname + `/db/bkDomains.db`, this.dmpath)
     } else {
