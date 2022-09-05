@@ -5,7 +5,7 @@ const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
-const CONSTS = require('./const')
+const CONSTS = require('./const');
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
@@ -147,6 +147,7 @@ class Nodes {
     }
     isProducer(pkey) {
         if (!pkey) return this._isProducer
+        if (config.disableProducer) return false
         return CONSTS.producers.indexOf(pkey) != -1
     }
     onNodeDisconnect(node) {

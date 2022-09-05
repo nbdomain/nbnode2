@@ -180,16 +180,10 @@ class BlockMgr {
                                 await this.indexers.shutdown()
                                 return false
                             }
-                            if (merkel)
-                                resetDB = true //reset domain db if there are conflicts
                         }
                     }
                     this.db.saveBlock({ sigs, block })
                     ret = true
-                }
-                if (resetDB) {
-                    console.log("will call resetDB ")
-                    //this.db.resetDB("domain")
                 }
             }
         } catch (e) {
