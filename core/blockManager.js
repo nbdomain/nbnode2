@@ -176,7 +176,9 @@ class BlockMgr {
                             }
                             tempBlock = await this.createBlock(block.height)
                             if (tempBlock && (tempBlock.merkel != block.merkel)) {
-                                console.log("found")
+                                console.error("Block:", block.height, " sync error,shuting down")
+                                await this.indexers.shutdown()
+                                return false
                             }
                             if (merkel)
                                 resetDB = true //reset domain db if there are conflicts
