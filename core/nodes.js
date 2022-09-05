@@ -157,7 +157,7 @@ class Nodes {
         if (this.nodeClients[node.id]) {
             //disconnect lastone
         }
-        if (!this.isProducer(node.pkey)) {
+        if (!this.isProducer(node.pkey)&&objLen(this.nodeClients)>0) {
             return false
         }
         const client = new NodeClient(this.indexers, config.server.publicUrl);
