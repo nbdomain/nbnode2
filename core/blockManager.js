@@ -140,7 +140,7 @@ class BlockMgr {
     }
     async downloadBlocks(from, to, url) {
         let ret = false, resetDB = false
-        const { db, indexer } = this.indexers
+        const { db, indexer, Nodes } = this.indexers
         this._canResolve = false
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
@@ -160,6 +160,19 @@ class BlockMgr {
                             tempBlock && this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
                                 await indexer.addTxFull({ txid: ftx.txid, sigs: ftx.sigs, rawtx: ftx.rawtx, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
+                                const txItem = block.txs.find(item => item.txid === ftx.txid)
+                                if (txItem) txItem.done = true
+                            }
+                            for (const txItem of block.txs) {
+                                if (!txItem.done) { //found missed tx
+                                    console.log("Found missed tx:", txItem.txid)
+                                    const data = await Nodes.getTx(txItem.txid)
+                                    if (data) {
+                                        await indexer.addTxFull({ txid: txid, sigs: data.tx.sigs, rawtx: data.tx.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain, replace: true })
+                                    } else {
+                                        console.error("Missed tx can't be fetched. txid:", txItem.txid)
+                                    }
+                                }
                             }
                             tempBlock = await this.createBlock(block.height)
                             if (tempBlock && (tempBlock.merkel != block.merkel)) {
@@ -243,8 +256,8 @@ class BlockMgr {
                     console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
-            }else{
-                console.log("dmVerify:",db.getDomainVerifyCode())
+            } else {
+                console.log("dmVerify:", db.getDomainVerifyCode())
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
