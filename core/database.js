@@ -181,7 +181,8 @@ class Database {
       this.dmdb.close()
       this.dmdb = null
       this.initdb('dmdb') */
-      fs.unlinkSync(__dirname + `/db/bkDomains.db`)
+      if (fs.existsSync(__dirname + `/db/bkDomains.db`))
+        fs.unlinkSync(__dirname + `/db/bkDomains.db`)
       this.restoreLastGoodDomainDB()
     }
     if (this.onResetDB) {
