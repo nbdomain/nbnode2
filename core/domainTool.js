@@ -20,7 +20,9 @@ class DomainTool {
             const otherNode = Nodes.get({})
             if (otherNode) {
                 try {
-                    let res = await axios.get(otherNode + "/api/?nid=" + key + ".nbinfo.b")
+                    const url = otherNode + "/api/?nid=" + key + ".nbinfo.b"
+                    console.log("getting price from:", url)
+                    let res = await axios.get(url)
                     if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
                 } catch (e) { }
             }
