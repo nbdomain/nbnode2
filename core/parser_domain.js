@@ -195,9 +195,6 @@ class CMD_BUY {
     static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            if (output.domain == "100019.b") {
-                console.log("found")
-            }
             let extra = null;
             if (rtx.out[0].s5 == "v2") {
                 extra = Util.parseJson(rtx.out[0].s6);
@@ -213,6 +210,8 @@ class CMD_BUY {
                 output.v = 1
                 output.newOwner = rtx.out[0].s5
                 output.sellDomain = output.domain
+                output.pay1 = rtx.out[2]&&rtx.out[2].e
+                output.pay2 = rtx.out[3]&&rtx.out[3].e
                 //no need to verify since it's verified by admin
                 /*let ret = this.parser.db.loadDomain(output.sellDomain)
                 if (!ret || !ret.sell_info) {
@@ -239,8 +238,8 @@ class CMD_BUY {
             console.error(sellDomain + " is not onsale")
             return null
         } else {
-            const pay1 = rtx.out[2].e
-            const pay2 = rtx.out[3].e
+            const pay1 = rtx.output.pay1
+            const pay2 = rtx.output.pay2
             const delta = Math.abs(obj.sell_info.price - pay1.v)
             if (delta > 10) {
                 console.error("not enough payment for:" + sellDomain)
