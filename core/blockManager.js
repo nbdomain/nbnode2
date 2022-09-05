@@ -256,7 +256,7 @@ class BlockMgr {
                 console.log("dmVerify:", db.getDomainVerifyCode())
             }
             //check other node
-            console.log(JSON.stringify(this.nodePool))
+            //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
