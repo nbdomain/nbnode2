@@ -98,17 +98,6 @@ class BlockMgr {
                 }
             }
         }
-        /*if (dmVerify && this.dmVerify === dmVerify) {
-            if (this.dmSigs && !this.dmSigs[nodeKey]) { //add my domain sig
-                if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig) == false) return
-                this.dmSigs[nodeKey] = dmSig
-                db.saveDomainSigs(JSON.stringify(this.dmSigs))
-                if (objLen(this.dmSigs) >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastBackupVerify != dmVerify) {
-                    
-                }
-            }
-        }*/
-
         if (!this.uBlock) {
             this.nodePool[nodeKey].uBlock = uBlock
             return
@@ -256,7 +245,7 @@ class BlockMgr {
                 console.log("dmVerify:", db.getDomainVerifyCode())
             }
             //check other node
-            //console.log(JSON.stringify(this.nodePool))
+            console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
