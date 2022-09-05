@@ -134,14 +134,15 @@ class Nodes {
                 if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }
-        const nodes = this.indexers.db.loadNodes(true) //load from db
-        await _addFromArray(nodes)
-        if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from local config
+        if (config.pnodes) {
             await _addFromArray(config.pnodes)
-        }
-        if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
-            const p = await this._fromDNS()
-            await _addFromArray(p)
+        } else {
+            const nodes = this.indexers.db.loadNodes(true) //load from db
+            await _addFromArray(nodes)
+            if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
+                const p = await this._fromDNS()
+                await _addFromArray(p)
+            }
         }
     }
     isProducer(pkey) {
