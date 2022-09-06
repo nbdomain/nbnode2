@@ -165,8 +165,8 @@ class BlockMgr {
                             }
                             tempBlock = await this.createBlock(block.height)
                             if (tempBlock && (tempBlock.merkel != block.merkel)) {
-                                console.log(tempBlock)
-                                console.log(block)
+                                console.log("temp:",tempBlock)
+                                console.log("block:",block)
                                 console.error("Block:", block.height, " sync error,shuting down")
                                 await this.indexers.shutdown()
                                 return false
