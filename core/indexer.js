@@ -89,7 +89,7 @@ class Indexer {
 
   async addTxFull({ txid, sigs, rawtx, txTime, oDataRecord, force = false, chain, replace = false }) {
     try {
-      if (txid == "363ee6a3d2354ac856ec273edba5f53b7035fb304d7bb5983bf68d4460f14894") {
+      if (txid == "4a31ecc323b4d2b4c0e492e7a007fc2707e05f6c548a4306d47964b50e3a6beb") {
         console.log("found")
       }
       const { Nodes } = this.indexers
