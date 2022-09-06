@@ -88,8 +88,9 @@ class BlockMgr {
                 }
             }
             if (maxVerify === this.dmVerify) maxLen++ //add my vote
-            if (maxLen >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify&&this.canResolve()) {//reach consense
+            if (maxLen >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
                 this.lastVerify = maxVerify
+                this.dmVerifyMap = {}
                 if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                     await db.backupDB()
                 } else { //I lost, restore last good domain db
@@ -165,8 +166,8 @@ class BlockMgr {
                             }
                             const tempBlock1 = await this.createBlock(block.height)
                             if (tempBlock1 && (tempBlock1.merkel != block.merkel)) {
-                                console.log("------block:------",block)
-                                console.log("temp:",tempBlock1)
+                                console.log("------block:------", block)
+                                console.log("temp:", tempBlock1)
                                 console.error("Block:", block.height, " sync error,shuting down")
                                 await this.indexers.shutdown()
                                 return false
