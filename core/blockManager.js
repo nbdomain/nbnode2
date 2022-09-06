@@ -163,17 +163,17 @@ class BlockMgr {
                                     }
                                 }
                             }
-                            tempBlock = await this.createBlock(block.height)
-                            if (tempBlock && (tempBlock.merkel != block.merkel)) {
+                            const tempBlock1 = await this.createBlock(block.height)
+                            if (tempBlock1 && (tempBlock1.merkel != block.merkel)) {
                                 console.log("------block:------",block)
-                                console.log("temp:",tempBlock)
+                                console.log("temp:",tempBlock1)
                                 console.error("Block:", block.height, " sync error,shuting down")
                                 await this.indexers.shutdown()
                                 return false
                             }
                         }
                     }
-                    this.db.saveBlock({ sigs, block })
+                    await this.db.saveBlock({ sigs, block })
                     ret = true
                 }
             }
