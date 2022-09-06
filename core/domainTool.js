@@ -12,7 +12,7 @@ class DomainTool {
         try {
             await Util.initNBLib()
             const key = domain + ".prices"
-            const obj = await db.loadDomain("nbinfo.b")
+            const obj = await db.loadDomain("priceinfo.a")
             if (obj && obj.keys[key]) {
                 return { code: 0, price: obj.keys[key].value.price }
             }
@@ -20,7 +20,7 @@ class DomainTool {
             const otherNode = Nodes.get({})
             if (otherNode) {
                 try {
-                    const url = otherNode + "/api/?nid=" + key + ".nbinfo.b"
+                    const url = otherNode + "/api/?nid=" + key + ".priceinfo.a"
                     console.log("getting price from:", url)
                     let res = await axios.get(url)
                     if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
