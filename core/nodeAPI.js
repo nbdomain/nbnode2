@@ -16,7 +16,14 @@ class NodeServer {
         this.indexers = indexers
         const self = this
         const io = new Server()
-        io.attach(CONFIG.server.socketPort || 31415)
+        io.attach(CONFIG.server.socketPort || 31415, {
+            cors: {
+                "origin": "*",
+                "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+                "preflightContinue": false,
+                "optionsSuccessStatus": 204
+            }
+        })
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
             socket.on("hello", async (obj, ret) => {
