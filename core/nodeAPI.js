@@ -41,9 +41,7 @@ class NodeServer {
             self._setup(socket, indexers)
         });
         this.io = io
-    }
-    async _setup(socket, indexers) {
-        const nbp = this.io.of("/nbpeer")
+        const nbp = io.of("/nbpeer")
         nbp.on("connection", socket => {
             console.log("someone connected id:", socket.id);
             socket.on("nbpeer", async (para, ret) => {
@@ -51,6 +49,9 @@ class NodeServer {
                 ret("thanks")
             })
         });
+    }
+    async _setup(socket, indexers) {
+       
 
         socket.on("getTx", async (para, ret) => {
             console.log("getTx:", para)
