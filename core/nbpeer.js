@@ -18,13 +18,13 @@ class NBPeer {
         peers[id1].pairPeer = id2
         peers[id2].pairPeer = id1
     }
-    relayEmit(id, name, para, ret) {
+    relayEmit(id, para, ret) {
         const peer = this.peer
         if (!peer[id]) {
             console.error('peer:', id, " is not found")
         }
         const id1 = peer[id].pairPeer
-        peer[id1].socket.emit("receive",name, para, ret1 => {
+        peer[id1].socket.emit("receive", para, ret1 => {
             console.log("got result from:",id1, ret1)
             ret(ret1)
         })

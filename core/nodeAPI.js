@@ -55,7 +55,7 @@ class NodeServer {
                 const res = this.nbpeer.connectPeer(para.id1,para.id2)
             })
             socket.on("send", (para,ret)=>{
-                this.nbpeer.relayEmit(para.id,para.fucName,para.para,ret)
+                this.nbpeer.relayEmit(socket.id,para,ret)
             })
         });
     }
