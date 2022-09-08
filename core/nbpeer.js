@@ -11,7 +11,7 @@ class NBPeer {
         return peer.id
     }
     connectPeer(id1, id2) {
-        const peer = this.peer
+        const peers = this.peers
         if (!peers[id1] || !peers[id2]) {
             console.error('peer:', id1, id2, "is not registered")
         }
