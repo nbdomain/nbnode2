@@ -1,5 +1,6 @@
 const { Server } = require('socket.io')
 const axios = require('axios')
+const NBPeer = require('./nbpeer')
 const CONFIG = require('./config').CONFIG
 
 const cmd = {
@@ -14,6 +15,7 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
+        this.nbpeer = new NBPeer()
         const self = this
         const io = new Server()
         io.attach(CONFIG.server.socketPort || 31415, {
@@ -44,15 +46,20 @@ class NodeServer {
         const nbp = io.of("/nbpeer")
         nbp.on("connection", socket => {
             console.log("someone connected id:", socket.id);
-            socket.on("nbpeer", async (para, ret) => {
+            socket.on("register", async (para, ret) => {
                 console.log("got nbpeer call:", para)
-                ret("thanks")
+                const peer = this.nbpeer.addPeer(para,socket)
+                ret({id:peer.id,msg:"success"})
+            })
+            socket.on("connectPeer",(para,ret)=>{
+                const res = this.nbpeer.connectPeer(para.id1,para.id2)
+            })
+            socket.on("send", (para,ret)=>{
+                this.nbpeer.relayEmit(para.id,para.fucName,para.para,ret)
             })
         });
     }
     async _setup(socket, indexers) {
-       
-
         socket.on("getTx", async (para, ret) => {
             console.log("getTx:", para)
             const { db } = indexers
