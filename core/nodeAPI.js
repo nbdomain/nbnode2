@@ -48,8 +48,8 @@ class NodeServer {
             console.log("someone connected id:", socket.id);
             socket.on("register", async (para, ret) => {
                 console.log("got nbpeer call:", para)
-                const peer = this.nbpeer.addPeer(para,socket)
-                ret({id:peer.id,msg:"success"})
+                const peerid = this.nbpeer.addPeer(para,socket)
+                ret({id:peerid,msg:"success"})
             })
             socket.on("connectPeer",(para,ret)=>{
                 const res = this.nbpeer.connectPeer(para.id1,para.id2)
