@@ -43,6 +43,10 @@ class NodeServer {
         this.io = io
     }
     async _setup(socket, indexers) {
+        socket.on("nbpeer", async(para,ret)=>{
+            console.log("got nbpeer call:",para)
+            ret("thanks")
+        })
         socket.on("getTx", async (para, ret) => {
             console.log("getTx:", para)
             const { db } = indexers
