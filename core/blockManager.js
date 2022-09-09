@@ -87,8 +87,10 @@ class BlockMgr {
                     maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
                 }
             }
-            if (maxVerify === this.dmVerify) maxLen++ //add my vote
-            if (maxLen >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
+            if (maxVerify === this.dmVerify) {
+                maxLen++ //add my vote
+            }
+            if (maxLen >= (DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
                 this.lastVerify = maxVerify
                 this.dmVerifyMap = {}
                 if (maxVerify === this.dmVerify) { //I win, backup the good domain db

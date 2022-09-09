@@ -53,8 +53,9 @@ class NodeServer {
             })
             socket.on("connectPeer",(para,ret)=>{
                 const res = this.nbpeer.connectPeer(para.id1,para.id2)
+                ret(res)
             })
-            socket.on("send", (para,ret)=>{
+            socket.on("data", (para,ret)=>{
                 this.nbpeer.relayEmit(socket.id,para,ret)
             })
         });
@@ -183,9 +184,6 @@ class NodeClient {
     async _setup() {
         const self = this
         console.log("setup for:", this.node.id)
-        if (this.node.id == "https://tnode.nbdomain.com") {
-            console.log("found")
-        }
         this.socket.on('notify', async (arg) => {
             //console.log('got notify from:', this.node.pkey, " arg:", arg)
             if (arg.cmd === "newtx") {
@@ -193,7 +191,7 @@ class NodeClient {
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
-                await self.indexers.Nodes.addNode({ url: arg.data.url, isSuper: false })
+                await self.indexers.Nodes.addNode({ url: arg.data.url })
             }
             if (arg.cmd === "newBlock") {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)

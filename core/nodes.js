@@ -119,9 +119,7 @@ class Nodes {
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
-            if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) {
-                await this.connectOneNode(node)
-            }
+            await this.connectAsClient(node)
         }
         return true
     }
@@ -134,16 +132,19 @@ class Nodes {
                 if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }
+        const requiredNode = this.isProducer() ? DEF.CONSENSUE_COUNT : 1
         if (config.pnodes) {
             await _addFromArray(config.pnodes)
-        } else {
+        }
+        if (objLen(this.nodeClients) < requiredNode) {
             const nodes = this.indexers.db.loadNodes(true) //load from db
             await _addFromArray(nodes)
-            if (objLen(this.nodeClients) < DEF.CONSENSUE_COUNT) { //load from DNS
-                const p = await this._fromDNS()
-                await _addFromArray(p)
-            }
         }
+        if (objLen(this.nodeClients) < requiredNode) { //load from DNS
+            const p = await this._fromDNS()
+            await _addFromArray(p)
+        }
+
     }
     isProducer(pkey) {
         if (!pkey) return this._isProducer
@@ -153,11 +154,12 @@ class Nodes {
     onNodeDisconnect(node) {
         this.removeNode(node.id)
     }
-    async connectOneNode(node) {
+    async connectAsClient(node) {
         if (this.nodeClients[node.id]) {
-            //disconnect lastone
+            console.log("already connected, ignore:", node.id)
+            return false
         }
-        if (!this.isProducer(node.pkey)&&objLen(this.nodeClients)>0) {
+        if (!this.isProducer(node.pkey) && objLen(this.nodeClients) > 0) {
             return false
         }
         const client = new NodeClient(this.indexers, config.server.publicUrl);

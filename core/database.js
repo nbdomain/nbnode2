@@ -44,7 +44,7 @@ class Database {
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
-
+    this.bkDBFile = __dirname + `/public/bk_domains.db`
     this.indexers = indexers
   }
   initdb(dbname) {
@@ -181,8 +181,8 @@ class Database {
       this.dmdb.close()
       this.dmdb = null
       this.initdb('dmdb') */
-      if (fs.existsSync(__dirname + `/db/bkDomains.db`))
-        fs.unlinkSync(__dirname + `/db/bkDomains.db`)
+      if (fs.existsSync(this.bkDBFile))
+        fs.unlinkSync(this.bkDBFile)
       this.restoreLastGoodDomainDB()
     }
     if (this.onResetDB) {
@@ -317,7 +317,6 @@ class Database {
     this.txdb.prepare(sql).run();
   }
   restoreLastGoodDomainDB() {
-
     this.dmdb.close()
 
     try {
@@ -330,21 +329,23 @@ class Database {
       fs.unlinkSync(this.dmpath)
     } catch (e) { }
 
-    if (fs.existsSync(__dirname + `/db/bkDomains.db`)) {
-      fs.copyFileSync(__dirname + `/db/bkDomains.db`, this.dmpath)
+    if (fs.existsSync(this.bkDBFile)) {
+      fs.copyFileSync(this.bkDBFile, this.dmpath)
     } else {
       fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
     }
     this.dmdb = null
     MemDomains.clearObj()
     this.initdb('dmdb')
+    TXRESOLVED_FLAG = Date.now()
+    this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
   }
   async backupDB() {
     //const { createGzip } = require('zlib');
     //const { pipeline } = require('stream');
 
     try {
-      const dbname = __dirname + `/db/bkDomains.db`
+      const dbname = this.bkDBFile
       // const gzip = createGzip();
       // const source = fs.createReadStream(dbname);
       // const destination = fs.createWriteStream(dbname + '.gz');
