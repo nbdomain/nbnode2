@@ -46,17 +46,29 @@ class NodeServer {
         const nbp = io.of("/nbpeer")
         nbp.on("connection", socket => {
             console.log("someone connected id:", socket.id);
-            socket.on("register", async (para, ret) => {
+            socket.on("add", async (para, ret) => {
                 console.log("got nbpeer call:", para)
-                const peerid = this.nbpeer.addPeer(para,socket)
-                ret({id:peerid,msg:"success"})
+                if (!para.id) {
+                    console.error("nbpeer:no id specified")
+                    socket.disconnect(true)
+                }
+                else {
+                    const peerid = this.nbpeer.addPeer(para.id, socket)
+                    ret({ id: peerid, msg: "success" })
+                }
+
             })
-            socket.on("connectPeer",(para,ret)=>{
-                const res = this.nbpeer.connectPeer(para.id1,para.id2)
+            socket.on("pair", async (para, ret) => {
+                const res = await this.nbpeer.connectPeer(para)
                 ret(res)
             })
-            socket.on("data", (para,ret)=>{
-                this.nbpeer.relayEmit(socket.id,para,ret)
+            socket.on("data", (id, para, ret) => {
+                this.nbpeer.relayEmit(id, para, ret)
+            })
+            socket.on("disconnect", (reason) => {
+                console.error("server disconnected:", reason, " id:", socket.id)
+                socket.removeAllListeners()
+                this.nbpeer.removePeer(socket.id)
             })
         });
     }
