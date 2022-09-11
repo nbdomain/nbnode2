@@ -104,7 +104,6 @@ class Crawler {
             if (txids.length > 0 && (txids.length == 20 || i >= txs.length)) {
                 const res = await axios.post("https://api.whatsonchain.com/v1/bsv/main/txs/hex", { txids: txids })
                 if (res.data) {
-                    console.log(res.data)
                     for (const item of res.data) {
                         const t = txs.find(tx => tx.txid == item.txid)
                         if (t) t.raw = item.hex
