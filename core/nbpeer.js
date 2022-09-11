@@ -24,7 +24,7 @@ class NBPeer {
         }
         return new Promise(resolve => {
             peers[toID].socket.emit("request_connect", info, (res) => {
-                if (res.code == 0) {
+                if (res && res.code == 0) {
                     peers[fromID].pairPeer = toID
                     peers[toID].pairPeer = fromID
                 }

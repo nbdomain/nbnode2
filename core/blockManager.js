@@ -68,67 +68,73 @@ class BlockMgr {
         return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
-        const { Nodes, db } = this.indexers
-        const { block, sigs, dmVerify, dmSig } = uBlock
-        if (block.version != DEF.BLOCK_VER) return
-        //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
-        if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
+        try {
 
-        //console.log("receive:", nodeKey)
-        if (dmVerify) {
-            if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
-            if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
-                if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig))
-                    this.dmVerifyMap[dmVerify][nodeKey] = dmSig
-            }
-            let maxVerify = null, maxLen = 0
-            for (const verify in this.dmVerifyMap) { //find the most aggreed verify
-                if (objLen(this.dmVerifyMap[verify]) > maxLen) {
-                    maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
+
+            const { Nodes, db } = this.indexers
+            const { block, sigs, dmVerify, dmSig } = uBlock
+            if (block.version != DEF.BLOCK_VER) return
+            //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
+            if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
+
+            //console.log("receive:", nodeKey)
+            if (dmVerify) {
+                if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
+                if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
+                    if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig))
+                        this.dmVerifyMap[dmVerify][nodeKey] = dmSig
+                }
+                let maxVerify = null, maxLen = 0
+                for (const verify in this.dmVerifyMap) { //find the most aggreed verify
+                    if (objLen(this.dmVerifyMap[verify]) > maxLen) {
+                        maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
+                    }
+                }
+                if (maxVerify === this.dmVerify) {
+                    maxLen++ //add my vote
+                }
+                if (maxLen >= (DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
+                    this.lastVerify = maxVerify
+                    this.dmVerifyMap = {}
+                    if (maxVerify === this.dmVerify) { //I win, backup the good domain db
+                        await db.backupDB()
+                    } else { //I lost, restore last good domain db
+                        console.error("found inconsistent domain db, restore last db")
+                        db.restoreLastGoodDomainDB()
+                    }
                 }
             }
-            if (maxVerify === this.dmVerify) {
-                maxLen++ //add my vote
+            if (!this.uBlock) {
+                this.nodePool[nodeKey].uBlock = uBlock
+                return
             }
-            if (maxLen >= (DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
-                this.lastVerify = maxVerify
-                this.dmVerifyMap = {}
-                if (maxVerify === this.dmVerify) { //I win, backup the good domain db
-                    await db.backupDB()
-                } else { //I lost, restore last good domain db
-                    console.error("found inconsistent domain db, restore last db")
-                    db.restoreLastGoodDomainDB()
+            let poolNode = this.nodePool[nodeKey]
+            if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
+                poolNode = this.nodePool[nodeKey]
+                poolNode.sigs = sigs
+                delete block.hash
+                const hash = await Util.dataHash(stringify(block))
+                block.hash = poolNode.hash = hash
+                //check sender's sig
+                const sigSender = sigs[nodeKey]
+                if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
+                if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
+
+                    if (!sigs[Nodes.thisNode.key]) { //add my sig
+                        const sig = await Util.bitcoinSign(CONFIG.key, hash)
+                        sigs[Nodes.thisNode.key] = sig
+                    }
+                    if (objLen(this.uBlock.sigs) < objLen(sigs)) {
+                        this.uBlock = uBlock
+                    }
                 }
             }
-        }
-        if (!this.uBlock) {
+
             this.nodePool[nodeKey].uBlock = uBlock
-            return
+            // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
+        } catch (e) {
+            console.error(e)
         }
-        let poolNode = this.nodePool[nodeKey]
-        if (sigs && block.height === this.height && (JSON.stringify(sigs) !== JSON.stringify(poolNode.sigs))) {
-            poolNode = this.nodePool[nodeKey]
-            poolNode.sigs = sigs
-            delete block.hash
-            const hash = await Util.dataHash(stringify(block))
-            block.hash = poolNode.hash = hash
-            //check sender's sig
-            const sigSender = sigs[nodeKey]
-            if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
-            if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
-
-                if (!sigs[Nodes.thisNode.key]) { //add my sig
-                    const sig = await Util.bitcoinSign(CONFIG.key, hash)
-                    sigs[Nodes.thisNode.key] = sig
-                }
-                if (objLen(this.uBlock.sigs) < objLen(sigs)) {
-                    this.uBlock = uBlock
-                }
-            }
-        }
-
-        this.nodePool[nodeKey].uBlock = uBlock
-        // block && console.log("got new block:", block.height, block.hash, this.blockPool[block.hash]?.count, "from:", nodeKey)
     }
     async downloadBlocks(from, to, url) {
         let ret = false, resetDB = false
