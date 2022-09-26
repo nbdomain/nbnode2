@@ -2,6 +2,8 @@
 
 const process = require("process");
 const CoinFly = require('coinfly');
+const axios = require('axios')
+const Arweave = require('arweave');
 const fs = require("fs");
 const express = require('express')
 const bodyParser = require('body-parser')
@@ -11,7 +13,7 @@ const PATH_ADDRESS = "/v1/address";
 const PATH_TX_ALL = "/v1/tx/all";
 const PATH_TX_MAIN = "/v1/tx/main";
 
-
+let arLib = null
 //获取访问id
 function getClientIp(req) {
   const IP =
@@ -48,6 +50,7 @@ class mPoints {
   constructor() {
   }
   start(cb) {
+    arLib = Arweave.init({ host: "arweave.net", port: 443, protocol: "https" });
     const app = express()
     const self = this;
     app.use(cors());
@@ -58,6 +61,12 @@ class mPoints {
       console.log("calling:", PATH_ADDRESS, "query:", req.query)
       var data = await mPoints.getAddressInfo(req.query.address, req.query.chain);
       res.json(data);
+    })
+    app.get('/:chain/address/:address/balance', async (req, res) => {
+      const address = req.params['address']
+      const chain = req.params['chain']
+      const ret = await mPoints.getBalance(address, chain)
+      res.json(ret)
     })
     app.get(PATH_TX_ALL, async (req, res) => {
       console.log("calling:", PATH_TX_ALL, "query:", req.query)
@@ -105,7 +114,19 @@ class mPoints {
       cb(port)
     })
   }
-
+  static async getBalance(address, chain) {
+    if (chain === 'bsv') {
+      const url = `https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`;
+      const res = await axios.get(url);
+      const json = res.data;
+      return { code: 0, balance: json.confirmed + json.unconfirmed };
+    }
+    if (chain === 'ar') {
+      const balance = await arLib.wallets.getBalance(add);
+      return { code: 0, balance: Math.floor(+balance / 10000) };
+    }
+    return { code: 1, msg: "not implemented" }
+  }
   static async getAddressInfo(address, chain) {
     if (!chain) chain = 'bsv'
     const lib = await CoinFly.create(chain)

@@ -122,7 +122,7 @@ class WOCAPI {
             if (txids.size == 20 || i >= length) {
                 const res = await axios.post("https://api.whatsonchain.com/v1/bsv/main/txs", { txids: Array.from(txids) })
                 if (res.data) {
-                    console.log(res.data)
+                    //console.log(res.data)
                     for (const item of res.data) {
                         const uu = utxos.filter(u => u.txid == item.txid)
                         uu.forEach(u => u.value = Math.round(item.vout[u.pos].value * 1e8))

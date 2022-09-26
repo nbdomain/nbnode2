@@ -80,12 +80,17 @@ class BlockMgr {
             //console.log("receive:", nodeKey)
             if (dmVerify) {
                 if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
+                let hasNewVal = false
                 if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
-                    if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig))
+                    if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig)) {
                         this.dmVerifyMap[dmVerify][nodeKey] = dmSig
+                        hasNewVal = true
+                    }
+
                 }
                 let maxVerify = null, maxLen = 0
                 for (const verify in this.dmVerifyMap) { //find the most aggreed verify
+                    if (hasNewVal&&dmVerify!==verify) delete this.dmVerifyMap[verify][nodeKey]
                     if (objLen(this.dmVerifyMap[verify]) > maxLen) {
                         maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
                     }

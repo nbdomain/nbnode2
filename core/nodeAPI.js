@@ -11,6 +11,7 @@ const cmd = {
         v: 1, rv: 1
     }
 }
+let g_inAddTx = false
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 class NodeServer {
     start(indexers) {
@@ -45,30 +46,21 @@ class NodeServer {
         this.io = io
         const nbp = io.of("/nbpeer")
         nbp.on("connection", socket => {
-            console.log("someone connected id:", socket.id);
-            socket.on("add", async (para, ret) => {
-                console.log("got nbpeer call:", para)
-                if (!para.id) {
-                    console.error("nbpeer:no id specified")
-                    socket.disconnect(true)
-                }
-                else {
-                    const peerid = this.nbpeer.addPeer(para.id, socket)
-                    ret({ id: peerid, msg: "success" })
-                }
+            console.log("someone connected socketid:", socket.id);
+            const info = socket.handshake.auth.info
+            if (!info || !info.id) {
+                socket.disconnect()
+                return
+            }
+            const peerid = this.nbpeer.addPeer(info.id, socket)
 
-            })
-            socket.on("pair", async (para, ret) => {
-                const res = await this.nbpeer.connectPeer(para)
-                ret(res)
-            })
-            socket.on("data", (id, para, ret) => {
-                this.nbpeer.relayEmit(id, para, ret)
+            socket.onAny((event, des_id, args, ret) => {
+                this.nbpeer.relayEmit(des_id, event, args, ret)
             })
             socket.on("disconnect", (reason) => {
                 console.error("server disconnected:", reason, " id:", socket.id)
                 socket.removeAllListeners()
-                this.nbpeer.removePeer(socket.id)
+                this.nbpeer.removePeerBySocket(socket.id)
             })
         });
     }
@@ -114,7 +106,7 @@ class NodeServer {
         //     console.log("send notify to:", socket[1].handshake.auth)
         // }
 
-        this.io.volatile.emit("notify", para)
+        this.io.of('/').volatile.emit("notify", para)
         return true
     }
     close() {
@@ -172,10 +164,10 @@ class NodeClient {
                         resolve(false)
                         return
                     }
-                    Util.bitcoinVerify(node.pkey, datav, res.sig).then(r => {
+                    Util.bitcoinVerify(node.pkey, datav, res.sig).then(async r => {
                         if (r) {
                             self.setConnected(true)
-                            self.pullNewTxs.bind(self)()
+                            await self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()
@@ -229,11 +221,19 @@ class NodeClient {
             para = { afterHeight: height }
         }
         para.v = 1
+        para.from = this.from
+        const self = this
         this.socket.volatile.emit("pullNewTx", para, async (res) => {
-            console.log("get reply from pullNewTx:")
+            console.log("get reply from pullNewTx:", self.from)
             if (!res) return
             for (const tx of res) {
+                if (g_inAddTx) {
+                    console.error("pullNewtx re-entry, continue")
+                    continue
+                }
+                g_inAddTx = true
                 await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
+                g_inAddTx = false
             }
         })
     }

@@ -407,7 +407,7 @@ class Database {
     }
     return ret
   }
-  addFullTx({ txid, rawtx, txTime, oDataRecord, status = 0, chain, replace = false }) {
+  async addFullTx({ txid, rawtx, txTime, oDataRecord, status = 0, chain, replace = false }) {
     try {
 
       if (!txTime) {
@@ -426,7 +426,7 @@ class Database {
       }
 
       if (oDataRecord)
-        this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
+        await this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
     } catch (e) {
       console.error(e.message)
     }

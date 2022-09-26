@@ -16,6 +16,14 @@ class NBPeer {
             delete this.peers[id]
         }
     }
+    removePeerBySocket(socket_id) {
+        for (const id in this.peers) {
+            if (this.peers[id].socket.id === socket_id) {
+                this.peers[id].socket.disconnect(true)
+                delete this.peers[id]
+            }
+        }
+    }
     async connectPeer({ fromID, toID, info }) {
         const peers = this.peers
         if (!peers[fromID] || !peers[toID]) {
@@ -32,16 +40,19 @@ class NBPeer {
             })
         })
     }
-    relayEmit(id, para, ret) {
+    relayEmit(des_id,event,args,ret) {
         const peers = this.peers
-        if (!peers[id]) {
-            console.error('peer:', id, " is not found")
-            return { code: 1, msg: 'peer:' + id + " is not found" }
+        if (!peers[des_id]) {
+            console.error('peer:', des_id, " is not found")
+            const ret = args[args.length - 1]
+            if (typeof ret === 'function') {
+                ret && ret({ code: 1000, msg: 'peer:' + des_id + " is not found" })
+            }
+            return
         }
-        const id1 = peers[id].pairPeer
-        peers[id1].socket.emit("data", para, ret1 => {
-            console.log("got result from:", id1, ret1)
-            ret && ret(ret1)
+        
+        peers[des_id].socket.emit(event,args,(res)=>{
+            ret(res)
         })
     }
 }
