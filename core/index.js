@@ -78,8 +78,8 @@ async function shutdown() {
 // ------------------------------------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------------------------------------
-let indexers = null, server = null;
-let apiAR = null, apiBSV = null;
+let server = null;
+
 class Indexers {
   static initDB() {
     this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger, this)
@@ -115,8 +115,8 @@ class Indexers {
     this.blockMgr.run()
   }
   static async stop() {
-    await this.indexer.stop();
-    this.db.close();
+    this.indexer && await this.indexer.stop();
+    this.db && this.db.close();
   }
   static async shutdown() {
     await shutdown()
