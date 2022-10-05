@@ -346,6 +346,7 @@ app.get('/admin', async (req, res) => {
         }
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
+        case 'restoredm': db.restoreLastGoodDomainDB(); break;
         case 'update': {
             try {
                 const command = "git pull"
