@@ -6,6 +6,7 @@ var dns = require("dns");
 const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
 const CONSTS = require('./const');
+const { Util } = require('./util');
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
@@ -214,6 +215,18 @@ class Nodes {
         }
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
+    }
+    downloadAndUseDomainDB(from) {
+        const url = from + "/files/bk_domains.db"
+        try {
+            const filename = __dirname + "/db/test.db"
+            const res = Util.downloadFile(url, filename)
+            this.indexers.db.restoreDomainDB(filename)
+        } catch (e) {
+            console.error(e.message)
+            return false
+        }
+        return true
     }
     async verifySigs({ txTime, txid, sigs }) {
         const { Util } = this.indexers

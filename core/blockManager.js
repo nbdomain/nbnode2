@@ -88,24 +88,27 @@ class BlockMgr {
                     }
 
                 }
-                let maxVerify = null, maxLen = 0
+                let maxVerify = null, maxLen = 0, maxNodeKey = null
                 for (const verify in this.dmVerifyMap) { //find the most aggreed verify
-                    if (hasNewVal&&dmVerify!==verify) delete this.dmVerifyMap[verify][nodeKey]
+                    if (hasNewVal && dmVerify !== verify) delete this.dmVerifyMap[verify][nodeKey]
                     if (objLen(this.dmVerifyMap[verify]) > maxLen) {
                         maxVerify = verify, maxLen = objLen(this.dmVerifyMap[verify])
+                        maxNodeKey = Object.keys(this.dmVerifyMap[verify])[0]
                     }
                 }
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
-                if (maxLen >= (DEF.CONSENSUE_COUNT / 2 + 1) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
+                if (maxLen >= (DEF.CONSENSUE_COUNT / 2) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
                     this.lastVerify = maxVerify
                     this.dmVerifyMap = {}
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         await db.backupDB()
                     } else { //I lost, restore last good domain db
                         console.error("found inconsistent domain db, restore last db")
-                        db.restoreLastGoodDomainDB()
+                        //db.restoreLastGoodDomainDB()
+                        const node = this.db.getNode(maxNodeKey)
+                        Nodes.downloadAndUseDomainDB(node.url)
                     }
                 }
             }
@@ -140,6 +143,9 @@ class BlockMgr {
         } catch (e) {
             console.error(e)
         }
+    }
+    async downloadDomainDB(pkey) {
+        const n = this.db.getNode(pkey)
     }
     async downloadBlocks(from, to, url) {
         let ret = false, resetDB = false

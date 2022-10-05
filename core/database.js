@@ -316,7 +316,7 @@ class Database {
     sql = 'update txs set height = NULL'
     this.txdb.prepare(sql).run();
   }
-  restoreLastGoodDomainDB() {
+  restoreDomainDB(filename){
     this.dmdb.close()
 
     try {
@@ -329,8 +329,8 @@ class Database {
       fs.unlinkSync(this.dmpath)
     } catch (e) { }
 
-    if (fs.existsSync(this.bkDBFile)) {
-      fs.copyFileSync(this.bkDBFile, this.dmpath)
+    if (fs.existsSync(filename)) {
+      fs.copyFileSync(filename, this.dmpath)
     } else {
       fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
     }
@@ -339,6 +339,9 @@ class Database {
     this.initdb('dmdb')
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
+  }
+  restoreLastGoodDomainDB() {
+    this.restoreDomainDB(this.bkDBFile)
   }
   async backupDB() {
     //const { createGzip } = require('zlib');
@@ -614,7 +617,7 @@ class Database {
       //if (mark)
       //  this.markResolvedTX()
       let height = this.readConfig('dmdb', 'resolvingHeight')
-      //console.log('resolving height:', height)
+      console.log('resolving height:', height)
       if (!height) height = 0
       height = +height
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`

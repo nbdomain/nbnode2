@@ -169,13 +169,9 @@ class Util {
     static downloadFile(uri, filename) {
         console.log("downloading file from:", uri)
         let command = `curl -f -o ${filename}  '${uri}'`;
-        try {
-            let result = cp.execSync(command, { stdio: 'inherit' });
-            return result
-        } catch (e) {
-            console.error(e.message)
-            return false
-        }
+
+        cp.execSync(command, { stdio: 'inherit' });
+
     }
     /**
      * Reset NidObject to initial state.
