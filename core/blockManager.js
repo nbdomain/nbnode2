@@ -105,10 +105,13 @@ class BlockMgr {
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         await db.backupDB()
                     } else { //I lost, restore last good domain db
-                        console.error("found inconsistent domain db, restore last db")
+                        console.error("found inconsistent domain db, downloading good db")
                         //db.restoreLastGoodDomainDB()
                         const node = this.db.getNode(maxNodeKey)
-                        Nodes.downloadAndUseDomainDB(node.url)
+                        if(Nodes.downloadAndUseDomainDB(node.url)==false){
+                            console.error("failed to download good db")
+                            db.restoreLastGoodDomainDB()
+                        }
                     }
                 }
             }

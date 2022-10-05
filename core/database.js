@@ -617,7 +617,7 @@ class Database {
       //if (mark)
       //  this.markResolvedTX()
       let height = this.readConfig('dmdb', 'resolvingHeight')
-      console.log('resolving height:', height)
+      //console.log('resolving height:', height)
       if (!height) height = 0
       height = +height
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
