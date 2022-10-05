@@ -407,6 +407,13 @@ class Database {
     }
     return ret
   }
+  async updateTxHash({ txid, rawtx, txTime, oDataRecord }) {
+    const stxPrint = JSON.stringify({ txid, rawtx, txTime, oDataRecord })
+    const hash = await Util.dataHash(stxPrint)
+    const txPrintHash = this.readConfig('txdb', 'txHash')
+    const newHash = txPrintHash ? await Util.dataHash(txPrintHash.value + hash) : hash
+    this.writeConfig('txdb', 'txHash', newHash)
+  }
   async addFullTx({ txid, rawtx, txTime, oDataRecord, status = 0, chain, replace = false }) {
     try {
 
@@ -425,8 +432,10 @@ class Database {
         ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain)
       }
 
+
       if (oDataRecord)
         await this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
+      await this.updateTxHash({ txid, rawtx, txTime, oDataRecord })
     } catch (e) {
       console.error(e.message)
     }
@@ -605,7 +614,7 @@ class Database {
       //if (mark)
       //  this.markResolvedTX()
       let height = this.readConfig('dmdb', 'resolvingHeight')
-      console.log('resolving height:',height)
+      //console.log('resolving height:', height)
       if (!height) height = 0
       height = +height
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
@@ -681,7 +690,7 @@ class Database {
     return res
   }
   getDataCount() {
-    let sql = `select (select count(*) from txs) as txs`
+    let sql = `select (select count(*) from txs where status!=1) as txs`
     const ret = this.txdb.prepare(sql).get()
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     const ret1 = this.dmdb.prepare(sql).get()
@@ -1024,19 +1033,23 @@ class Database {
       return null
     }
   }
-  async verifyAllTXs() {
-    let sql = 'select txid,chain from txs'
+  async updaetAllTxHashes() {
+    console.log("calculating all tx hashes...")
+    this.writeConfig('txdb', 'txHash', null)
+    let sql = 'select txid from txs'
     const txs = this.txdb.prepare(sql).all()
     for (let tx of txs) {
-      const full = this.getFullTx({ txid: tx.txid }).tx
-      if (full.status !== 1) {
-        this.setTxStatus(tx.txid, 0)
+      const full = this.getFullTx({ txid: tx.txid })
+      if (full.tx.status !== 1) {
+        await this.updateTxHash({ txid: full.tx.txid, rawtx: full.tx.rawtx, txTime: full.tx.txTime, oDataRecord: full.oDataRecord })
       }
     }
+    console.log("finish calculating. txHash:", this.readConfig('txdb', 'txHash'))
   }
+
   async verifyTxDB() {
     console.log("verifying...")
-    await this.verifyAllTXs()
+    await this.updaetAllTxHashes()
     console.log("verify finish")
   }
   async pullNewTx(afterHeight) {

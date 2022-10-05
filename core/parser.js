@@ -78,7 +78,7 @@ class Parser {
             console.error(rtx.command, ":No handler found")
         }
         if (retObj == null) {
-            console.error("Skipped one tx:", "msg:", rtx.output.err, rtx.command, " txid:", rtx.txid)
+            console.error("Skipped one tx:", "msg:", rtx.output.err, " command:",rtx.command, " txid:", rtx.txid)
             return null
         }
         nidObj.last_txid = rtx.txid

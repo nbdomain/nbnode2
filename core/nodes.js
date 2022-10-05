@@ -221,12 +221,14 @@ class Nodes {
             if (!sigs) return false
             if (typeof sigs === 'string')
                 sigs = Util.parseJson(sigs)
+            let agrees = 0
             for (const key in sigs) {
-                if (!this.isProducer(key) || await Util.bitcoinVerify(key, txid, sigs[key]) == false) {
-                    console.error("sig verify failed:", sigs)
-                    return false
+                if (this.isProducer(key) && await Util.bitcoinVerify(key, txid, sigs[key])) {
+                    agrees++
+                    if (agrees > DEF.CONSENSUE_COUNT / 2) return true
                 }
             }
+            return false
         }
         return true
     }
