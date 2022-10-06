@@ -220,7 +220,9 @@ class Nodes {
         const url = from + "/files/bk_domains.db"
         try {
             const filename = __dirname + "/db/test.db"
+            console.log("Downloading from:", url)
             const res = Util.downloadFile(url, filename)
+            console.log("Download successful")
             this.indexers.db.restoreDomainDB(filename)
         } catch (e) {
             console.error(e.message)

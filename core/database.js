@@ -316,7 +316,8 @@ class Database {
     sql = 'update txs set height = NULL'
     this.txdb.prepare(sql).run();
   }
-  restoreDomainDB(filename){
+  restoreDomainDB(filename) {
+    console.log("Restoring domain DB from:", filename)
     this.dmdb.close()
 
     try {

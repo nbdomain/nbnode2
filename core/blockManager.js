@@ -69,8 +69,6 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         try {
-
-
             const { Nodes, db } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (block.version != DEF.BLOCK_VER) return

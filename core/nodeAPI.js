@@ -167,6 +167,7 @@ class NodeClient {
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(async r => {
                         if (r) {
                             self.setConnected(true)
+                            await self.syncDomainDB.bind(self)()
                             await self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
@@ -201,9 +202,6 @@ class NodeClient {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
             }
         })
-        this.socket.on('call', (arg1, arg2, cb) => {
-
-        })
     }
     async getConfirmations(txids) {
         return new Promise(resolve => {
@@ -213,6 +211,24 @@ class NodeClient {
             })
         })
 
+    }
+    async syncDomainDB() {
+        const { db, Nodes } = this.indexers
+        if (Nodes.isProducer()) return
+        if (!Nodes.isProducer(this.node.pkey)) return
+        console.log("Syncing domain db ...")
+        const url = this.node.id
+        const res = await axios.get(url + "/api/datacount")
+        if (res.data && res.data.dmHash) {
+            const verify = db.getDomainVerifyCode()
+            if (verify === res.data.dmHash) {
+                console.log("In sync with:", url)
+                return
+            }
+            if (Nodes.downloadAndUseDomainDB(url) == false) {
+                console.error("failed to download good db")
+            }
+        }
     }
     async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
         const { db, indexer } = this.indexers
