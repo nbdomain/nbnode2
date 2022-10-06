@@ -34,7 +34,7 @@ class Database {
   constructor(txpath, dmpath, logger, indexers) {
     //this.chain = chain
     this.dtpath = __dirname + "/db/odata.db"
-    this.path = txpath
+    this.txpath = txpath
     this.dmpath = dmpath
     this.logger = logger
     this.txdb = null
@@ -53,7 +53,7 @@ class Database {
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = new Sqlite3Database(this.path)
+        this.txdb = new Sqlite3Database(this.txpath)
         // 100MB cache
         this.txdb.pragma('cache_size = 6400')
         this.txdb.pragma('page_size = 16384')
@@ -125,12 +125,12 @@ class Database {
   }
   open() {
     if (!this.txdb) {
-      if (!fs.existsSync(this.path + "." + VER_TXDB)) {
-        if (fs.existsSync(this.path)) {
-          fs.unlinkSync(this.path)
+      if (!fs.existsSync(this.txpath + "." + VER_TXDB)) {
+        if (fs.existsSync(this.txpath)) {
+          fs.unlinkSync(this.txpath)
           fs.unlinkSync(this.dmpath)
         }
-        fs.writeFileSync(this.path + "." + VER_TXDB, "do not delete this file");
+        fs.writeFileSync(this.txpath + "." + VER_TXDB, "do not delete this file");
       }
       if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
         if (fs.existsSync(this.dmpath)) {
@@ -139,9 +139,9 @@ class Database {
         fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
       }
 
-      if (!fs.existsSync(this.path)) {
-        if (!fs.existsSync(this.path))
-          fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.path);
+      if (!fs.existsSync(this.txpath)) {
+        if (!fs.existsSync(this.txpath))
+          fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.txpath);
       }
       if (!fs.existsSync(this.dmpath)) {
         fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
@@ -161,26 +161,7 @@ class Database {
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
-      /*this.writeConfig("dmdb", "domainHash", null)
-      this.writeConfig("dmdb", "maxResolvedTx", null)
-      this.writeConfig("dmdb", "maxResolvedTxTime", 0 + '')
-      this.writeConfig('dmdb', 'resolvingHeight', 0 + '')
-      this.writeConfig('dmdb', 'TXRESOLVED_FLAG', null)
 
-      let sql = "DELETE from nidobj"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from keys"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from users"
-      this.dmdb.prepare(sql).run()
-      sql = "DELETE from tags"
-      this.dmdb.prepare(sql).run()
-      sql = "UPDATE config set value = 0 where key = 'domainUpdates'"
-      this.dmdb.prepare(sql).run()
-      MemDomains.clearObj()
-      this.dmdb.close()
-      this.dmdb = null
-      this.initdb('dmdb') */
       if (fs.existsSync(this.bkDBFile))
         fs.unlinkSync(this.bkDBFile)
       this.restoreLastGoodDomainDB()
@@ -341,6 +322,29 @@ class Database {
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
   }
+  restoreTxDB(filename) {
+    console.log("Restoring tx DB from:", filename)
+    this.txdb.close()
+
+    try {
+      fs.unlinkSync(this.txpath + '-shm')
+    } catch (e) { }
+    try {
+      fs.unlinkSync(this.txpath + '-wal')
+    } catch (e) { }
+    try {
+      fs.unlinkSync(this.txpath)
+    } catch (e) { }
+
+    if (fs.existsSync(filename)) {
+      fs.copyFileSync(filename, this.txpath)
+    } else {
+      fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.txpath);
+    }
+    this.txdb = null
+    this.initdb('txdb')
+
+  }
   restoreLastGoodDomainDB() {
     this.restoreDomainDB(this.bkDBFile)
   }
@@ -349,25 +353,19 @@ class Database {
     //const { pipeline } = require('stream');
 
     try {
-      const dbname = this.bkDBFile
-      // const gzip = createGzip();
-      // const source = fs.createReadStream(dbname);
-      // const destination = fs.createWriteStream(dbname + '.gz');
+      let dbname = __dirname + `/public/bk_domains.db`
 
-      if (fs.existsSync(dbname))
-        fs.unlinkSync(dbname)
-      const sql = "VACUUM main INTO '" + dbname + "'"
+      if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
+      let sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.dmdb.prepare(sql).run()
 
-      //    await this.dmdb.backup(dbname)
-      /* pipeline(source, gzip, destination, (err) => {
-         if (err) {
-           console.error('An error occurred:', err);
-           process.exitCode = 1;
-         }
-         console.log("backup finished")
-       });*/
+      dbname = __dirname + `/public/bk_txs.db`
+      if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
+      sql = "VACUUM main INTO '" + dbname + "'"
+      console.log("backup to:", dbname)
+      this.txdb.prepare(sql).run()
+
     } catch (e) {
       console.error(e.message)
     }

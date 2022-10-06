@@ -217,12 +217,19 @@ class Nodes {
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
     downloadAndUseDomainDB(from) {
-        const url = from + "/files/bk_domains.db"
         try {
-            const filename = __dirname + "/db/test.db"
-            console.log("Downloading from:", url)
-            const res = Util.downloadFile(url, filename)
-            console.log("Download successful")
+            let url = from + "/files/bk_domains.db"
+            let filename = __dirname + "/db/test.db"
+            console.log("Downloading txdb from:", url)
+            Util.downloadFile(url, filename)
+            console.log("Download txdb successful")
+            this.indexers.db.restoreTxDB(filename)
+
+            url = from + "/files/bk_domains.db"
+            filename = __dirname + "/db/test.db"
+            console.log("Downloading domain db from:", url)
+            Util.downloadFile(url, filename)
+            console.log("Download domain db successful")
             this.indexers.db.restoreDomainDB(filename)
         } catch (e) {
             console.error(e.message)
@@ -236,11 +243,10 @@ class Nodes {
             if (!sigs) return false
             if (typeof sigs === 'string')
                 sigs = Util.parseJson(sigs)
-            let agrees = 0
+
             for (const key in sigs) {
                 if (this.isProducer(key) && await Util.bitcoinVerify(key, txid, sigs[key])) {
-                    agrees++
-                    if (agrees > DEF.CONSENSUE_COUNT / 2) return true
+                    return true
                 }
             }
             return false
