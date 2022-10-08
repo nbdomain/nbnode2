@@ -29,6 +29,11 @@ class NodeServer {
         })
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
+            if (io.of('/').sockets.size > 20) {
+                console.error("enough clients, disconnect")
+                socket.disconnect()
+                return
+            }
             socket.on("hello", async (obj, ret) => {
                 if (obj.v != cmd.hello.v) {
                     ret({ v: cmd.hello.rv, sig: null })
@@ -161,6 +166,7 @@ class NodeClient {
                 socket.emit("hello", helloPara, (res) => {
                     console.log("reply from hello:", res)
                     if (!res.sig) {
+                        socket.disconnect()
                         resolve(false)
                         return
                     }
@@ -214,7 +220,7 @@ class NodeClient {
     }
     async syncDomainDB() {
         const { db, Nodes } = this.indexers
-        if (Nodes.isProducer()) return
+        if (Nodes.isProducer()) return //the producer will sync in blockManager.js
         if (!Nodes.isProducer(this.node.pkey)) return
         console.log("Syncing domain db ...")
         const url = this.node.id

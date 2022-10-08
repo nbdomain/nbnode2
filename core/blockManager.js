@@ -13,6 +13,7 @@ class BlockMgr {
         this.dmVerifyMap = {}
         this.height = 0
         this.signedBlock = -1
+        this.waitSyncCount = 0
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this._canResolve = true
@@ -98,19 +99,27 @@ class BlockMgr {
                     maxLen++ //add my vote
                 }
                 if (maxLen >= (DEF.CONSENSUE_COUNT / 2) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
-                    this.lastVerify = maxVerify
                     this.dmVerifyMap = {}
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
+                        this.lastVerify = maxVerify
                         await db.backupDB()
+                        this.waitSyncCount = 0
                     } else { //I lost, restore last good domain db
-                        console.error("found inconsistent domain db, downloading good db")
-                        //db.restoreLastGoodDomainDB()
-                        const node = this.db.getNode(maxNodeKey)
-                        if(Nodes.downloadAndUseDomainDB(node.url)==false){
-                            console.error("failed to download good db")
-                            db.restoreLastGoodDomainDB()
+                        if (this.waitSyncCount < 3) {
+                            this.waitSyncCount++
+                            console.error("found inconsistent domain db, waited:",this.waitSyncCount*10," seconds")
+                            await wait(10000)
+                        } else {
+                            const node = this.db.getNode(maxNodeKey)
+                            if (Nodes.downloadAndUseDomainDB(node.url) == false) {
+                                console.error("failed to download good db")
+                                db.restoreLastGoodDomainDB()
+                            }
                         }
+
                     }
+                }else{
+                    this.waitSyncCount = 0
                 }
             }
             if (!this.uBlock) {
