@@ -110,6 +110,7 @@ class BlockMgr {
                             console.error("found inconsistent domain db, waited:",this.waitSyncCount*10," seconds")
                             await wait(10000)
                         } else {
+                            this.lastVerify = maxVerify
                             const node = this.db.getNode(maxNodeKey)
                             if (Nodes.downloadAndUseDomainDB(node.url) == false) {
                                 console.error("failed to download good db")

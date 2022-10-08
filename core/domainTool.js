@@ -25,7 +25,7 @@ class DomainTool {
                     let res = await axios.get(url)
                     if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
                 } catch (e) {
-                    console.error("fetchDomainPrice:", e)
+                    console.error("fetchDomainPrice:", e.message)
                 }
             }
             let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;

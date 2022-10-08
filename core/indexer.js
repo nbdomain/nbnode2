@@ -89,10 +89,8 @@ class Indexer {
 
   async addTxFull({ txid, sigs, rawtx, txTime, oDataRecord, force = false, chain, replace = false }) {
     try {
-      console.log("adding:", txid)
-      if (txid == "4a31ecc323b4d2b4c0e492e7a007fc2707e05f6c548a4306d47964b50e3a6beb") {
-        console.log("found")
-      }
+      //console.log("adding:", txid)
+      
       const { Nodes } = this.indexers
       if (!force && this.database.hasTransaction(txid) && !replace) {
         console.log("Skipping:", txid)
