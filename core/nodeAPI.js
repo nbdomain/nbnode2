@@ -107,8 +107,8 @@ class NodeServer {
     }
     notify(para) {
         if (!this.io) return false
-        para.v = 1
-        para.id = Date.now().toString(36)
+        if (!para.id)
+            para.id = Date.now().toString(36)
         this.io.of('/').volatile.emit("notify", para)
         return true
     }
@@ -210,7 +210,7 @@ class NodeClient {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
             }
             if (arg.cmd === "publish") {
-                self.indexers.pubsub.publish(arg.data.topic, arg.data.msg)
+                self.indexers.pubsub.publish(arg.data.topic, arg.data.msg, arg.id)
             }
         })
     }

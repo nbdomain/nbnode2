@@ -9,12 +9,12 @@ class PubSub {
         if (!this.tickers[topic]) this.tickers[topic] = createChannel()
         this.tickers[topic].register(session)
     }
-    publish(topic, msg, broadcast = true) {
+    publish(topic, msg, id = null) {
         if (this.tickers[topic]) { //notify subscribers
             this.tickers[topic].broadcast('update', msg)
         }
         if (broadcast) {
-            this.indexers.Nodes.notifyPeers({ cmd: "publish", data: { topic, msg } })
+            this.indexers.Nodes.notifyPeers({ cmd: "publish", id, data: { topic, msg } })
         }
     }
 }

@@ -189,9 +189,9 @@ class Nodes {
         return []
     }
 
-    async notifyPeers({ cmd, data }) {
+    async notifyPeers({ id, cmd, data }) {
         if (this.nodeServer) {
-            this.nodeServer.notify({ cmd, data })
+            this.nodeServer.notify({ id, cmd, data })
         }
     }
     getConnectedClients() {
