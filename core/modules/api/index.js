@@ -252,7 +252,7 @@ app.get('/pubsub/sub/:topic', async (req, res) => {
 app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
     const topic = req.params['topic']
     const msg = req.params['msg']
-    const ret = indexers.pubsub.publish(topic, msg)
+    indexers.pubsub.publish(topic, msg)
     res.json({ code: 0 })
 })
 app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
