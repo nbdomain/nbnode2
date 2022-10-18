@@ -13,9 +13,9 @@ class PubSub {
         if (this.tickers[topic]) { //notify subscribers
             this.tickers[topic].broadcast('update', msg)
         }
-        if (broadcast) {
-            this.indexers.Nodes.notifyPeers({ cmd: "publish", id, data: { topic, msg } })
-        }
+
+        this.indexers.Nodes.notifyPeers({ cmd: "publish", id, data: { topic, msg } })
+
     }
 }
 module.exports = PubSub
