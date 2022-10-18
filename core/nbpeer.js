@@ -40,7 +40,7 @@ class NBPeer {
             })
         })
     }
-    relayEmit(des_id,event,args,ret) {
+    relayEmit(des_id,from_id,event,args,ret) {
         const peers = this.peers
         if (!peers[des_id]) {
             console.error('peer:', des_id, " is not found")
@@ -51,7 +51,7 @@ class NBPeer {
             return
         }
         
-        peers[des_id].socket.emit(event,args,(res)=>{
+        peers[des_id].socket.emit(event,from_id,args,(res)=>{
             ret(res)
         })
     }

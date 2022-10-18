@@ -59,8 +59,8 @@ class NodeServer {
             }
             const peerid = this.nbpeer.addPeer(info.id, socket)
 
-            socket.onAny((event, des_id, args, ret) => {
-                this.nbpeer.relayEmit(des_id, event, args, ret)
+            socket.onAny((event, des_id,from_id, args, ret) => {
+                this.nbpeer.relayEmit(des_id, from_id,event, args, ret)
             })
             socket.on("disconnect", (reason) => {
                 console.error("server disconnected:", reason, " id:", socket.id)

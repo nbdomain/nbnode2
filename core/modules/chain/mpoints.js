@@ -43,6 +43,7 @@ function log(...args) {
 }
 
 const Crawler = require("./crawler");
+const coinflyMin = require("coinfly");
 
 const crawler = new Crawler
 
@@ -81,13 +82,15 @@ class mPoints {
       });
       res.json(data);
     })
-    app.get("/v2/address/:address/prefetch", (req, res) => {
+    app.get("/:chain/address/:address/prefetch", (req, res) => {
       const address = req.params['address']
-      this.preFetchAddress({ address, chain: req.query.chain })
+      const chain = req.params['chain']
+      this.preFetchAddress({ address, chain })
       res.json({ code: 0, msg: "ok" })
     })
-    app.get("/v2/address/:address/history", async (req, res) => {
+    app.get("/:chain/address/:address/history", async (req, res) => {
       const address = req.params['address']
+      const chain = req.params['chain']
       console.log("calling:", req.url, "query:", req.query)
       var data = await this.getAllTX({
         address,
@@ -96,7 +99,7 @@ class mPoints {
         start: Number(req.query.start),
         end: Number(req.query.end),
         skip: Number(req.query.skip),
-        chain: req.query.chain
+        chain: chain
       });
       res.json(data)
     })
@@ -115,15 +118,9 @@ class mPoints {
     })
   }
   static async getBalance(address, chain) {
-    if (chain === 'bsv') {
-      const url = `https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`;
-      const res = await axios.get(url);
-      const json = res.data;
-      return { code: 0, balance: json.confirmed + json.unconfirmed };
-    }
-    if (chain === 'ar') {
-      const balance = await arLib.wallets.getBalance(add);
-      return { code: 0, balance: Math.floor(+balance / 10000) };
+    const lib = await CoinFly.create(chain)
+    if(lib){
+      return await lib.getBalance(address)
     }
     return { code: 1, msg: "not implemented" }
   }
