@@ -240,6 +240,21 @@ app.get('/sub/:domain/', async (req, res) => {
         console.log("one sub closed")
     })
 })
+app.get('/pubsub/sub/:topic', async (req, res) => {
+    const topic = req.params['topic']
+    const session = await createSession(req, res);
+    indexers.pubsub.subscribe(topic, session)
+    req.on("close", () => {
+        res.end()
+        console.log("one sub closed")
+    })
+})
+app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
+    const topic = req.params['topic']
+    const msg = req.params['msg']
+    const ret = indexers.pubsub.publish(topic, msg)
+    res.json({ code: 0 })
+})
 app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     const cmd = req.params['cmd']
     let ret = { code: 0 }

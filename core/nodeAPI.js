@@ -13,6 +13,7 @@ const cmd = {
 }
 let g_inAddTx = false
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
@@ -59,8 +60,8 @@ class NodeServer {
             }
             const peerid = this.nbpeer.addPeer(info.id, socket)
 
-            socket.onAny((event, des_id,from_id, args, ret) => {
-                this.nbpeer.relayEmit(des_id, from_id,event, args, ret)
+            socket.onAny((event, des_id, from_id, args, ret) => {
+                this.nbpeer.relayEmit(des_id, from_id, event, args, ret)
             })
             socket.on("disconnect", (reason) => {
                 console.error("server disconnected:", reason, " id:", socket.id)
@@ -107,10 +108,7 @@ class NodeServer {
     notify(para) {
         if (!this.io) return false
         para.v = 1
-        // for (const socket of this.io.sockets.sockets) {
-        //     console.log("send notify to:", socket[1].handshake.auth)
-        // }
-
+        para.id = Date.now().toString(36)
         this.io.of('/').volatile.emit("notify", para)
         return true
     }
@@ -126,6 +124,7 @@ class NodeClient {
         this.indexers = indexers
         this.from = domain
         this.connected = false
+        this.handlingMap = {}
     }
     setConnected(connected) {
         this.connected = connected
@@ -196,7 +195,10 @@ class NodeClient {
         const self = this
         console.log("setup for:", this.node.id)
         this.socket.on('notify', async (arg) => {
-            //console.log('got notify from:', this.node.pkey, " arg:", arg)
+            if (arg.id && self.handlingMap[arg.id])
+                return
+            if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
+            self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
                 const para = JSON.parse(arg.data)
                 rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
@@ -206,6 +208,9 @@ class NodeClient {
             }
             if (arg.cmd === "newBlock") {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
+            }
+            if (arg.cmd === "publish") {
+                self.indexers.pubsub.publish(arg.data.topic, arg.data.msg)
             }
         })
     }

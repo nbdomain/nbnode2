@@ -15,6 +15,7 @@ const parseArgs = require('minimist')
 const fs = require('fs')
 const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 const BlockMgr = require('./blockManager')
+const PubSub = require('./pubsub')
 
 
 // ------------------------------------------------------------------------------------------------
@@ -107,6 +108,7 @@ class Indexers {
     this.Util = Util
     this.resolver = this.indexer.resolver
     this.blockMgr = new BlockMgr(this)
+    this.pubsub = new PubSub(this)
     return true
   }
   static async start() {
