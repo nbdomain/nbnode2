@@ -14,7 +14,8 @@ class PubSub {
             this.tickers[topic].broadcast('update', msg)
         }
 
-        this.indexers.Nodes.notifyNodes({ cmd: "publish", id, data: { topic, msg } })
+        //this.indexers.Nodes.notifyNodes({ cmd: "publish", id, data: { topic, msg } })
+        this.indexers.Nodes.notifyPeers({ cmd: "publish", id, data: { topic, msg } })
 
     }
 }
