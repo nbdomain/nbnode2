@@ -200,9 +200,9 @@ class Nodes {
             id = Date.now().toString(36)
         for (const node of list) {
             const url = node.id + `/api/notify?id=${id}&cmd=${cmd}&data=${JSON.stringify(data)}`
-            try {
-                axios.get(url)
-            } catch (e) { }
+            axios.get(url).then().catch(err => {
+                console.log(err.message)
+            })
         }
     }
     getConnectedClients() {
