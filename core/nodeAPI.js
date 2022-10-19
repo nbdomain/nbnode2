@@ -42,6 +42,7 @@ class NodeServer {
                 }
                 console.log("got hello data:", obj)
                 if (obj.server) {
+                    console.log("adding:", obj.server)
                     await indexers.Nodes.addNode({ url: obj.server })
                 }
                 const sig = await indexers.Util.bitcoinSign(CONFIG.key, obj.data)

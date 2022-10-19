@@ -103,20 +103,23 @@ class Nodes {
     async addNode({ url, isPublic = true }) {
         //console.log(1, url)
         if (this.hasNode(url)) {
-            //console.log(2, url)
+            console.error(url, "exists")
             return false
         }
         //console.log(3, url)
         if (url.indexOf(this.endpoint) != -1) {
-            //console.log(4, url)
+            console.error(url, "self")
             return false
         }
         const info = await this.validatNode(url)
         //console.log(5, url)
-        if (!info) return false
-        //console.log("adding node:", url)
+        if (!info) {
+            console.error("can't get info from url")
+            return false
+        }
         const node = { id: url, pkey: info.pkey, weight: 50, info: info }
         this.pnodes.push(node)
+        console.log("added node:", url)
         if (isPublic) {
             this.notifyPeers({ cmd: "newNode", data: { url } })
             this.indexers.db.addNode({ url, info })
