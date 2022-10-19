@@ -265,12 +265,12 @@ let handlingMap = {}
 app.use('/notify', apiLimiter)
 app.get('/notify', async function (req, res) {
     const { id, cmd, data } = req.query
-    if (id && handlingMap[arg.id]) {
+    if (id && handlingMap[id]) {
         res.end('done')
         return
     }
     if (objLen(handlingMap) > 1000) self.handlingMap = {}
-    handlingMap[arg.id] = true
+    handlingMap[id] = true
     const para = JSON.parse(data)
     if (cmd === 'publish') {
         indexers.pubsub.publish(para.topic, para.msg)
