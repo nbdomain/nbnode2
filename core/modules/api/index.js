@@ -19,7 +19,7 @@ const { Nodes } = require('../../nodes')
 var app = express();
 const { createSession } = require("better-sse");
 const coinfly = require("coinfly");
-const { resourceUsage } = require('process');
+const rateLimit = require('express-rate-limit')
 
 
 app.use(cors());
@@ -49,7 +49,12 @@ const auth = async (req, res) => {
     return false;*/
     return true;
 }
-
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minutes
+    max: 60, // Limit each IP to 60 requests per `window` (here, per 15 minutes)
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
 //获取访问ip
 function getClientIp(req) {
     const IP =
@@ -249,11 +254,27 @@ app.get('/pubsub/sub/:topic', async (req, res) => {
         console.log("one sub closed")
     })
 })
+app.use('/pubsub/pub/:topic/:msg', apiLimiter)
 app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
     const topic = req.params['topic']
     const msg = req.params['msg']
     indexers.pubsub.publish(topic, msg)
     res.json({ code: 0 })
+})
+let handlingMap = {}
+app.get('/notify', async function (req, res) {
+    const { id, cmd, data } = req.query
+    if (id && handlingMap[arg.id]) {
+        res.end('done')
+        return
+    }
+    if (objLen(handlingMap) > 1000) self.handlingMap = {}
+    handlingMap[arg.id] = true
+    const para = JSON.parse(data)
+    if (cmd === 'publish') {
+        indexers.pubsub.publish(para.topic, para.msg)
+    }
+    res.end('ok')
 })
 app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     const cmd = req.params['cmd']

@@ -194,6 +194,17 @@ class Nodes {
             this.nodeServer.notify({ id, cmd, data })
         }
     }
+    async notifyNodes({ id, cmd, data }) {
+        const list = await this.listAllNodes()
+        if (!id)
+            id = Date.now().toString(36)
+        for (const node of list) {
+            const url = node.id + `/api/notify?id=${id}&cmd=${cmd}&data=${JSON.stringify(data)}`
+            try {
+                axios.get(url)
+            } catch (e) { }
+        }
+    }
     getConnectedClients() {
         let connected_clients = []
         for (const id in this.nodeClients) {
