@@ -101,12 +101,6 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
-        //console.log(1, url)
-        if (this.hasNode(url)) {
-            console.error(url, "exists")
-            return false
-        }
-        //console.log(3, url)
         if (url.indexOf(this.endpoint) != -1) {
             console.error(url, "self")
             return false
@@ -115,6 +109,10 @@ class Nodes {
         //console.log(5, url)
         if (!info) {
             console.error("can't get info from url")
+            return false
+        }
+        if (this.hasNode(url)) {
+            console.error(url, "exists")
             return false
         }
         const node = { id: url, pkey: info.pkey, weight: 50, info: info }
