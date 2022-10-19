@@ -262,6 +262,7 @@ app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
     res.json({ code: 0 })
 })
 let handlingMap = {}
+app.use('/notify', apiLimiter)
 app.get('/notify', async function (req, res) {
     const { id, cmd, data } = req.query
     if (id && handlingMap[arg.id]) {

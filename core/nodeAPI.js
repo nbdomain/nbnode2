@@ -251,7 +251,7 @@ class NodeClient {
         para.from = this.from
         const self = this
         this.socket.volatile.emit("pullNewTx", para, async (res) => {
-            console.log("get reply from pullNewTx:", self.from)
+            console.log("get reply from pullNewTx:", this.node.id)
             if (!res) return
             for (const tx of res) {
                 if (g_inAddTx) {
