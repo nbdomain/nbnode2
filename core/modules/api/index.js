@@ -388,7 +388,7 @@ app.get('/admin', async (req, res) => {
             try {
                 const command = "pnpm update"
                 let result = childProcess.execSync(command).toString();
-                console.log("git pull:", result)
+                console.log("pnpm update:", result)
                 res.end(result)
                 setTimeout(() => indexers.shutdown(), 2000)
                 return
