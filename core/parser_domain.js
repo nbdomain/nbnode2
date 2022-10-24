@@ -210,8 +210,8 @@ class CMD_BUY {
                 output.v = 1
                 output.newOwner = rtx.out[0].s5
                 output.sellDomain = output.domain
-                output.pay1 = rtx.out[2]&&rtx.out[2].e
-                output.pay2 = rtx.out[3]&&rtx.out[3].e
+                output.pay1 = rtx.out[2] && rtx.out[2].e
+                output.pay2 = rtx.out[3] && rtx.out[3].e
                 //no need to verify since it's verified by admin
                 /*let ret = this.parser.db.loadDomain(output.sellDomain)
                 if (!ret || !ret.sell_info) {
@@ -431,10 +431,12 @@ class CMD_KEY {
     }
     static updateKeyAndHistory(obj, key, newValue, output) {
         if (key == "todomain") return false//'todomain' is not a key
-        const oldvalue = obj.keys[key]
-        if (oldvalue) {
-            this.parser.db.saveKeyHistory(obj, key, oldvalue);
-        }
+
+        //Disable save history feature
+        //const oldvalue = obj.keys[key]  
+        //    if (oldvalue) {
+        //        this.parser.db.saveKeyHistory(obj, key, oldvalue);
+        //    }
         let newKey = { value: newValue, txid: output.txid };
         if (output.user) {
             newKey.from = output.user

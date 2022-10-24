@@ -384,6 +384,19 @@ app.get('/admin', async (req, res) => {
         case 'pulltx': db.pullNewTx(100); break;
         case 'vdb': db.verifyTxDB(); break;
         case 'restoredm': db.restoreLastGoodDomainDB(); break;
+        case 'pnpm': {
+            try {
+                const command = "pnpm update"
+                let result = childProcess.execSync(command).toString();
+                console.log("git pull:", result)
+                res.end(result)
+                setTimeout(() => indexers.shutdown(), 2000)
+                return
+            } catch (e) {
+                console.error(e.message)
+            }
+            break;
+        }
         case 'update': {
             try {
                 const command = "git pull"
