@@ -85,11 +85,11 @@ class Nodes {
             return null
         }
     }
-    incCorrect(key) {
-        this.indexers.db.updateNodeScore(key, true)
+    incCorrect(url) {
+        this.indexers.db.updateNodeScore(url, true)
     }
-    incMistake(key) {
-        this.indexers.db.updateNodeScore(key, false)
+    incMistake(url) {
+        this.indexers.db.updateNodeScore(url, false)
     }
     hasNode(url) {
         if (this.pnodes.find(item => item.id == url)) return true
@@ -103,7 +103,7 @@ class Nodes {
     async addNode({ url, isPublic = true }) {
         if (url.indexOf(this.endpoint) != -1) {
             console.error(url, "self")
-            return false
+            return true
         }
         const info = await this.validatNode(url)
         //console.log(5, url)
@@ -113,7 +113,7 @@ class Nodes {
         }
         if (this.hasNode(url)) {
             console.error(url, "exists")
-            return false
+            return true
         }
         const node = { id: url, pkey: info.pkey, weight: 50, info: info }
         this.pnodes.push(node)
@@ -130,7 +130,10 @@ class Nodes {
         const _addFromArray = async function (nodes) {
             if (!Array.isArray(nodes)) return
             for (const node of nodes) {
-                await self.addNode({ url: node.url ? node.url : node })
+                const url = node.url ? node.url : node
+                const result = await self.addNode({ url })
+                if (!result)
+                    self.incMistake(url)
                 if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }

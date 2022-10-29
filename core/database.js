@@ -1165,12 +1165,31 @@ class Database {
       return false
     }
   }
-  updateNodeScore(pkey, correct = true) {
+  getNodeScore(url) {
     try {
-      let sql = correct ? "UPDATE nodes SET correct = correct + 1 where pkey = ?" : "UPDATE nodes SET mistake = mistake + 1 where pkey = ?"
-      this.txdb.prepare(sql).run(pkey)
-      sql = "UPDATE nodes SET score = correct*100/(correct+mistake) where pkey = ?"
-      this.txdb.prepare(sql).run(pkey)
+      let sql = "select correct,mistake,score from nodes where url = ?"
+      return this.txdb.prepare(sql).get(url)
+    } catch (e) {
+    }
+    return {}
+  }
+  removeNode(url) {
+    try {
+      let sql = "delete from nodes where url = ?"
+      this.txdb.prepare(sql).run(url)
+    } catch (e) {
+    }
+  }
+  updateNodeScore(url, correct = true) {
+    try {
+      let sql = correct ? "UPDATE nodes SET correct = correct + 1 where url = ?" : "UPDATE nodes SET mistake = mistake + 1 where url = ?"
+      this.txdb.prepare(sql).run(url)
+      sql = "UPDATE nodes SET score = correct*100/(correct+mistake) where url = ?"
+      this.txdb.prepare(sql).run(url)
+      const score = this.getNodeScore(url)
+      if (score.mistake > 2) {
+        this.removeNode(url)
+      }
     } catch (e) {
       return false
     }
