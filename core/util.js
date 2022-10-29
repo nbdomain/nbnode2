@@ -12,9 +12,7 @@ const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
 const { CONFIG } = require('./config')
 const NBLib = require("nblib2");
-
-const rwc = require("random-weighted-choice");
-const { bsv } = require('nbpay');
+const childProcess = require('child_process');
 const LocalStorage = require('node-localstorage').LocalStorage;
 Storage = new LocalStorage('./storage');
 nbpay.auto_config();
