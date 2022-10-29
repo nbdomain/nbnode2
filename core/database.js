@@ -1187,7 +1187,7 @@ class Database {
       sql = "UPDATE nodes SET score = correct*100/(correct+mistake) where url = ?"
       this.txdb.prepare(sql).run(url)
       const score = this.getNodeScore(url)
-      if (score.mistake > 2) {
+      if (score.mistake > 20) {
         this.removeNode(url)
       }
     } catch (e) {
