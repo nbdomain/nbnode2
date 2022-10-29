@@ -19,7 +19,14 @@ class NodeServer {
         this.indexers = indexers
         this.nbpeer = new NBPeer()
         const self = this
-        const io = new Server(indexers.server.listener)
+        const io = new Server(indexers.server.listener, {
+            cors: {
+                "origin": "*",
+                "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+                "preflightContinue": false,
+                "optionsSuccessStatus": 204
+            }
+        })
         /*io.attach(CONFIG.server.socketPort || 31415, {
             cors: {
                 "origin": "*",
