@@ -368,7 +368,7 @@ app.get('/getBlocks', async (req, res) => {
 })
 
 app.get('/admin', async (req, res) => {
-    const { Util, db } = indexers.db
+    const { Util, db } = indexers
     const cmd = req.query['cmd']
     if (!CONFIG.adminKey || CONFIG.adminKey != req.query['key']) {
         res.end('no access')

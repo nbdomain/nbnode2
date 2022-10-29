@@ -1,5 +1,5 @@
 const { Manager } = require('socket.io-client')
-const socketUrl = "http://localhost:9001/"
+const socketUrl = "https://tnode.nbdomain.com/"
 const manager = new Manager(socketUrl, { autoConnect: false });
 const socket = manager.socket("/");
 socket.auth = { username: "abc", key: "456" }
