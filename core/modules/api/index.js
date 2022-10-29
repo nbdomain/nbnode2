@@ -368,7 +368,7 @@ app.get('/getBlocks', async (req, res) => {
 })
 
 app.get('/admin', async (req, res) => {
-    const db = indexers.db
+    const { Util, db } = indexers.db
     const cmd = req.query['cmd']
     if (!CONFIG.adminKey || CONFIG.adminKey != req.query['key']) {
         res.end('no access')
@@ -385,35 +385,16 @@ app.get('/admin', async (req, res) => {
         case 'vdb': db.verifyTxDB(); break;
         case 'restoredm': db.restoreLastGoodDomainDB(); break;
         case 'pnpm': {
-            try {
-                const command = "pnpm update"
-                let result = childProcess.execSync(command).toString();
-                console.log("pnpm update:", result)
-                res.end(result)
-                setTimeout(() => indexers.shutdown(), 2000)
-                return
-            } catch (e) {
-                console.error(e.message)
-            }
-            break;
+            const result = Util.runNpmUpdate(indexers)
+            res.end(result)
+            return
         }
         case 'update': {
-            try {
-                const command = "git pull"
-                let result = childProcess.execSync(command).toString();
-                console.log("git pull:", result)
-                res.end(result)
-                if (result.slice(0, 7) !== "Already") {
-                    setTimeout(() => indexers.shutdown(), 2000)
-                }
-                return
-            } catch (e) {
-                console.error(e.message)
-            }
-            break;
+            const result = Util.runNodeUpdate(indexers)
+            res.end(result)
+            return;
         }
     }
-    //Nodes.sendNewTx({})
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

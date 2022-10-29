@@ -109,10 +109,12 @@ class Indexers {
     this.resolver = this.indexer.resolver
     this.blockMgr = new BlockMgr(this)
     this.pubsub = new PubSub(this)
+    this.server = new LocalServer(this, logger)
     return true
   }
   static async start() {
-    const seedNode = await Nodes.init(this)
+    await this.server.start()
+    const seedNode = await Nodes.start(this)
     await this.indexer.start()
     this.blockMgr.run()
   }
@@ -128,8 +130,6 @@ async function main() {
   if (!await Indexers.init()) {
     process.exit(-1)
   }
-  server = new LocalServer(Indexers, logger)
-  await server.start()
   await Indexers.start()
 }
 

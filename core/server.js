@@ -211,10 +211,10 @@ async start() {
         resolve(true)
       })
       if (true) {
-        console.log("Start PeerServer")
+        //console.log("Start PeerServer")
         //peer server
-        const peerServer = ExpressPeerServer(this.listener, { debug: true });
-        app.use('/peerjs', peerServer);
+        //const peerServer = ExpressPeerServer(this.listener, { debug: true });
+        //app.use('/peerjs', peerServer);
       }
     })
   }

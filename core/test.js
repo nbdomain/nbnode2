@@ -1,51 +1,14 @@
-const axios = require('axios');
-const Arweave = require('arweave');
-/*
-   
-    const variables = {
-        tags:
-        {
-            name: "protocol",
-            values: ["nbtest"],
-        },
-        block: {
-            min: 0,
-        },
-    }
-    
-    const query = `query Transactions($tags: [TagFilter!], $block: BlockFilter){
-            transactions(tags: $tags, block:$block) {
-              pageInfo {
-                hasNextPage
-              }
-              edges {
-                node {
-                  id
-                  owner { address }
-                  recipient
-                  tags {
-                    name
-                    value
-                  }
-                  block {
-                    height
-                    id
-                    timestamp
-                  }
-                  fee { winston }
-                  quantity { winston }
-                  parent { id }
-                }
-                cursor
-              }
-            }
-          }`;
-    console.log(variables)
-    const response = await arweave.api.post('graphql', {
-        query,variables
-    });
-    console.log(response.data);
-    */
-(async () => {
-  console.log(__dirname)
-})()
+const { Manager } = require('socket.io-client')
+const socketUrl = "http://localhost:9001/"
+const manager = new Manager(socketUrl, { autoConnect: false });
+const socket = manager.socket("/");
+socket.auth = { username: "abc", key: "456" }
+manager.open((err) => {
+  if (err) {
+    console.error(err)
+
+  } else {
+    console.log("manager connected")
+  }
+});
+socket.connect()

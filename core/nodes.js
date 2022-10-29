@@ -40,7 +40,7 @@ class Nodes {
             node.weight++
         }
     }
-    async init(indexers) {
+    async start(indexers) {
         const lib = await coinfly.create('bsv')
         const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
         this.thisNode = { key: pkey }

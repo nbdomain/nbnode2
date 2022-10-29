@@ -169,9 +169,33 @@ class Util {
     static downloadFile(uri, filename) {
         console.log("downloading file from:", uri)
         let command = `curl -f -o ${filename}  '${uri}'`;
-
         cp.execSync(command, { stdio: 'inherit' });
-
+    }
+    static runNpmUpdate(indexers) {
+        try {
+            const command = "pnpm update"
+            let result = childProcess.execSync(command).toString();
+            console.log("pnpm update:", result)
+            setTimeout(() => indexers.shutdown(), 2000)
+            return result
+        } catch (e) {
+            console.error(e.message)
+            return e.message
+        }
+    }
+    static runNodeUpdate(indexers) {
+        try {
+            const command = "git pull"
+            let result = childProcess.execSync(command).toString();
+            console.log("git pull:", result)
+            if (result.slice(0, 7) !== "Already") {
+                setTimeout(() => indexers.shutdown(), 2000)
+            }
+            return result
+        } catch (e) {
+            console.error(e.message)
+            return e.message
+        }
     }
     /**
      * Reset NidObject to initial state.

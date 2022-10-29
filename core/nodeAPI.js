@@ -19,15 +19,15 @@ class NodeServer {
         this.indexers = indexers
         this.nbpeer = new NBPeer()
         const self = this
-        const io = new Server()
-        io.attach(CONFIG.server.socketPort || 31415, {
+        const io = new Server(indexers.server.listener)
+        /*io.attach(CONFIG.server.socketPort || 31415, {
             cors: {
                 "origin": "*",
                 "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
                 "preflightContinue": false,
                 "optionsSuccessStatus": 204
             }
-        })
+        })*/
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
             if (io.of('/').sockets.size > 20) {
@@ -134,12 +134,12 @@ class NodeClient {
         const Util = this.indexers.Util
         this.node = node
         let socketUrl = null, url = node.id
-        const pUrl = URL.parse(url)
+        /*const pUrl = URL.parse(url)
         socketUrl = "ws://" + pUrl.hostname + ":" + (node.info.socketPort || 31415)
         if (node.info.socketServer) {
             socketUrl = "ws://" + node.info.socketServer + ":" + (node.info.socketPort || 31415)
-        }
-
+        }*/
+        socketUrl = url
         if (!socketUrl) return false
         const self = this
         return new Promise(resolve => {
@@ -211,6 +211,9 @@ class NodeClient {
                 await self.indexers.blockMgr.onReceiveBlock(this.node.pkey, arg.data)
             }
             if (arg.cmd === "publish") {
+                self.indexers.pubsub.publish(arg.data.topic, arg.data.msg, arg.id)
+            }
+            if (arg.cmd === "update") {
                 self.indexers.pubsub.publish(arg.data.topic, arg.data.msg, arg.id)
             }
         })
