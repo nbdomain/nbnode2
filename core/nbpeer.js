@@ -44,7 +44,6 @@ class NBPeer {
         const peers = this.peers
         if (!peers[des_id]) {
             console.error('peer:', des_id, " is not found")
-            const ret = args[args.length - 1]
             if (typeof ret === 'function') {
                 ret && ret({ code: 1000, msg: 'peer:' + des_id + " is not found" })
             }
