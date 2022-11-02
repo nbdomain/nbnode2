@@ -83,6 +83,9 @@ app.get('/', async function (req, res, next) {
             throw "unsupported domain:" + domain
         }
         const ret = await resolver.readDomain({ fullDomain: domain, forceFull: f, price });
+        if (ret.code === 0) {
+            ret.chain = Util.getchain(domain)
+        }
         res.json(ret);
     } catch (err) {
         console.error(err);
@@ -125,6 +128,9 @@ async function getAllItems(para, forceFull = false, from = null, price = true) {
         if (!resolver) continue;
         const result = await resolver.readDomain({ fullDomain: dd[0], forceFull: forceFull, history: dd[1], price })
         if (from && result.obj.ts <= from) continue
+        if (result.code === 0) {
+            result.chain = Util.getchain(dd[0])
+        }
         ret.push(result)
     }
     return ret
