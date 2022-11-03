@@ -28,6 +28,7 @@ class Parser {
     static async parseTX({ rawtx, oData, height, time, chain, newTx = false }) {
         const ret = await this.parse({ rawtx, oData, height, time, chain })
         if (ret.code != 0) {
+            console.error("invalid rawtx format.rawtx:", rawtx, "oData:", oData, "ret:", ret)
             return { code: 1, msg: "invalid rawtx format" }
         }
         const rtx = ret.rtx
@@ -78,7 +79,7 @@ class Parser {
             console.error(rtx.command, ":No handler found")
         }
         if (retObj == null) {
-            console.error("Skipped one tx:", "msg:", rtx.output.err, " command:",rtx.command, " txid:", rtx.txid)
+            console.error("Skipped one tx:", "msg:", rtx.output.err, " command:", rtx.command, " txid:", rtx.txid)
             return null
         }
         nidObj.last_txid = rtx.txid
