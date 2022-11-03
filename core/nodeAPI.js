@@ -276,7 +276,7 @@ class NodeClient {
         })
     }
     async sendNewTx(obj) {
-        rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
+        //        rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
         return new Promise(resolve => {
             obj.v = 1
             this.socket.volatile.emit("sendNewTx", obj, (res) => {
