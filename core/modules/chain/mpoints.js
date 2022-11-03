@@ -90,7 +90,7 @@ class mPoints {
     })
     app.get("/:chain/address/:address/history", async (req, res) => {
       const address = req.params['address']
-      const chain = req.params['chain']
+      const chain = req.query['chain']
       console.log("calling:", req.url, "query:", req.query)
       var data = await this.getAllTX({
         address,
@@ -119,7 +119,7 @@ class mPoints {
   }
   static async getBalance(address, chain) {
     const lib = await CoinFly.create(chain)
-    if(lib){
+    if (lib) {
       return await lib.getBalance(address)
     }
     return { code: 1, msg: "not implemented" }
