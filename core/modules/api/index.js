@@ -167,6 +167,7 @@ app.get('/deletetx/:txid', async (req, res) => {
 
 app.post('/sendTx', async function (req, res) {
     const obj = req.body;
+    console.log("sendTx got:", obj)
     const ret = await Nodes.sendNewTx(obj)
     res.json(ret);
 });
