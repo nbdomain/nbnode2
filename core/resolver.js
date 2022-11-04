@@ -82,7 +82,7 @@ class Resolver {
             baseDomain = fullDomain.slice(lastAT + 1);
             subDomain = fullDomain.slice(0, lastAT + 1); //includes @
             const ret = this.db.readUser(fullDomain)
-            return ret ? { code: 0, domain: fullDomain, obj: { ...ret } } : null
+            return ret ? { code: 0, domain: fullDomain, obj: { ...ret } } : { code: 1, msg: 'not found' }
         } else {
             baseDomain = dd[dd.length - 2] + '.' + dd[dd.length - 1];
             dd.pop(); dd.pop();
@@ -207,7 +207,7 @@ class Resolver {
                             if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
                                 console.log("found")
                             }
-                            console.log("resolving:",item.txid)
+                            console.log("resolving:", item.txid)
                             this.db.setTransactionResolved(item.txid, item.txTime)
 
 
