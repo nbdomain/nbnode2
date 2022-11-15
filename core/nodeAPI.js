@@ -276,7 +276,7 @@ class NodeClient {
         })
     }
     async sendNewTx(obj) {
-        console.log("sending to:", node)
+        console.log("sending to:", this.node)
         return new Promise(resolve => {
             obj.v = 1
             this.socket.volatile.emit("sendNewTx", obj, (res) => {
