@@ -107,7 +107,7 @@ class BlockMgr {
                     } else { //I lost, restore last good domain db
                         if (this.waitSyncCount < 3) {
                             this.waitSyncCount++
-                            console.error("found inconsistent domain db, waited:",this.waitSyncCount*10," seconds")
+                            console.error("found inconsistent domain db, waited:", this.waitSyncCount * 10, " seconds")
                             await wait(10000)
                         } else {
                             this.lastVerify = maxVerify
@@ -119,7 +119,7 @@ class BlockMgr {
                         }
 
                     }
-                }else{
+                } else {
                     this.waitSyncCount = 0
                 }
             }
@@ -263,7 +263,7 @@ class BlockMgr {
                     bcBlock.dmSig = this.dmSig
                     bcBlock.dmVerify = dmVerify
 
-                    console.log("broadcast newBlock, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
+                    console.log("broadcast block, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             } else {

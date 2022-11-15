@@ -221,10 +221,12 @@ class Nodes {
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
             const clients = this.getConnectedClients()
             if (clients.length > 0) {
+                console.log(1)
                 const ret = await clients[0].sendNewTx(obj)
                 /*if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
                     clients[1].sendNewTx(obj)
                 }*/
+                console.log(ret)
                 return ret
             }
         }
