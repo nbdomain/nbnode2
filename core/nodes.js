@@ -164,7 +164,7 @@ class Nodes {
             console.log("already connected, ignore:", node.id)
             return false
         }
-        if (!this.isProducer(node.pkey) && objLen(this.nodeClients) > 0) {
+        if (!this.isProducer(node.pkey)) {
             return false
         }
         const client = new NodeClient(this.indexers, config.server.publicUrl);
