@@ -7,7 +7,6 @@ const CONSTS = {
     API: {
         bsv: "planaria", ar: 'arnode'
     },  // 'planaria','mattercloud','urchain','nbnode'
-    PLANARIA_TOKEN: "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiIxQzc5M0RkVjI0Q3NORTJFUDZNbVZmckhqVlNGVmc2dU4iLCJpc3N1ZXIiOiJnZW5lcmljLWJpdGF1dGgifQ.SUJlYUc2TGNGdFlZaGk3amxwa3ZoRGZJUEpFcGhObWhpdVNqNXVBbkxORTdLMWRkaGNESC81SWJmM2J1N0V5SzFuakpKTWFPNXBTcVJlb0ZHRm5uSi9VPQ",
     TXDB: 'txs.db',
     DMDB: 'domains.db',
     WORKERS: 4,
@@ -15,12 +14,13 @@ const CONSTS = {
     START_HEIGHT: {
         bsv: 608410, ar: 858281
     },
-    node_info: {
+    payment: {
         prices: {
             domainHost: { bsv: 1000, ar: 1000 }, //host user's triditional domain and link to a nbdomain
-            keyUpdate: { bsv: 2.0, ar: 4.0, fee: 0.5 },
+            keyUpdate: { bsv: 2, ar: 10, contributeRate: 0.2 },
             sellFee: 0.1,
         },
+        fundAddress: { bsv: "13NbzVaT9EYxRn1i16YCgHbmhvPWsQDhdh", ar: "DCpV0INlvFf3M7ypjjqdsIENHM9P6z08yJfFYqbPDkA" },
     },
     producers: [
         "036260ebdb52056455ad89c0733a52623f350c350b45f37ba974a44b1401ae553d",
