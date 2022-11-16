@@ -341,11 +341,15 @@ class rpcHandler {
             console.error("parseRaw error err:", ret)
             return { code: -1, message: ret.msg }
         }
+        let txids = null, cost = 0
         if (obj.more_rawtx) {
+            txids = []
             for (const raw of obj.more_rawtx) { //if there are more 
                 const rr = await Util.sendRawtx(raw, obj.chain);
                 if (rr.code == 0) {
                     console.log("send more tx successfully. txid:", rr.txid);
+                    txids.push(rr.txid)
+                    cost += rr.cost
                 }
                 else {
                     console.error("send more tx failed:", rr)
@@ -355,6 +359,8 @@ class rpcHandler {
         }
         const ret1 = await Util.sendRawtx(obj.rawtx, obj.chain);
         if (ret1.code == 0) {
+            cost += ret1.cost
+            if (txids) ret1.more_txid = txids
             console.log("send tx successfully. txid:", ret1.txid)
             let oDataRecord = null
             if (ret.rtx && ret.rtx.oHash) {
