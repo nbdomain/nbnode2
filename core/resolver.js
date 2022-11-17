@@ -18,7 +18,7 @@ function reduceKeys_(data, includeKeyUser) {
     let allowed = ['nid', 'owner_key', 'tld', 'owner', 'txid', 'status', 'admins', 'sell_info', 'has_unconfirmed', 'last_txid'];
     if (includeKeyUser) {
         allowed.push('users');
-        allowed.push('keys');
+        //allowed.push('keys');
     }
     if (data.nfts) {
         allowed.push('nfts');

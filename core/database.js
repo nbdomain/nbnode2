@@ -23,7 +23,7 @@ const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1
-const VER_DMDB = 10
+const VER_DMDB = 12
 const VER_TXDB = 5
 
 // ------------------------------------------------------------------------------------------------
@@ -81,16 +81,11 @@ class Database {
         // Synchronizes WAL at checkpoints
         this.dmdb.pragma('synchronous = NORMAL')
       }
-      const saveKeysSql = `
-    INSERT INTO "keys" 
-                (key, value,tags,ts) 
-                VALUES ( ?, ?, ?,?)
-                ON CONFLICT( key ) DO UPDATE
-                SET value=?,tags=?,ts=?`
-      this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
+
+      //this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
       this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
-      this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
-      this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
+      //this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
+      //this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
       this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
       //-------------------------------NFT-------------------------------------------
       this.getNFTStmt = this.dmdb.prepare('SELECT * from nfts where symbol=?')
@@ -155,9 +150,7 @@ class Database {
       this.initdb('dmdb')
       this.initdb('dtdb')
     }
-
     this.preDealData()
-
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
@@ -177,6 +170,11 @@ class Database {
       try {
         sql = "ALTER TABLE txs ADD sigs text"
         this.txdb.prepare(sql).run()
+      } catch (e) { }
+
+      try {
+        sql = "ALTER TABLE keys ADD domain text"
+        this.dmdb.prepare(sql).run()
       } catch (e) { }
 
       try {
@@ -222,47 +220,7 @@ class Database {
     }
 
   }
-  /*combineTXDB() {
-    try {
-      let sql = `
-    CREATE TABLE txs(id INTEGER PRIMARY KEY AUTOINCREMENT DEFAULT (1),
-                                  txid     TEXT    UNIQUE NOT NULL,
-                                  bytes    BLOB,
-                                  height   INTEGER,
-                                  time     INTEGER,
-                                  txTime   INTEGER DEFAULT (0),
-                                  chain    TEXT,
-                                  resolved BOOLEAN DEFAULT (0)  )
-    `
-      this.txdb.prepare(sql).run();
-      sql = 'select * from ar_tx'
-      const artxs = this.txdb.prepare(sql).all()
-      for (const item of artxs) {
-        if (item.txTime === item.time) item.time = 9999999999
-        item.chain = 'ar'
-      }
-      sql = 'select * from bsv_tx'
-      const bsvtxs = this.txdb.prepare(sql).all()
-      for (const item of bsvtxs) {
-        if (item.txTime === 2) item.txTime = item.id + 100
-        if (item.txTime === item.time) item.time = 9999999999
-        item.chain = 'bsv'
-      }
-      const alltxs = bsvtxs.concat(artxs)
-      alltxs.sort((a, b) => {
-        //if (a.txTime === 2 || b.txTime === 2) return 0
-        if (a.txTime === 1 || b.txTime === 1) return 0
-        return a.txTime > b.txTime ? 1 : -1
-      })
-      for (const item of alltxs) {
-        sql = 'insert into txs (txid,bytes,height,time,txTime,chain) values (?,?,?,?,?,?)';
-        this.txdb.prepare(sql).run(item.txid, item.bytes, item.height, item.time, item.txTime, item.chain)
-      }
-      console.log("finish")
-    } catch (e) {
-      console.log(e)
-    }
-  } */
+
   close() {
     if (this.txdb) {
       console.log("closing txdb...")
@@ -829,6 +787,33 @@ class Database {
       this.saveKeysStmt.run(keyName, value, tags, value, tags)
     }*/
   }
+  async saveKey({ key, value, domain, tags, ts }) {
+    const fullKey = key + '.' + domain
+    try {
+      //set key
+      let sql = "Insert or Replace into keys (key,value,domain,ts) values(?,?,?,?)"
+      this.dmdb.prepare(sql).run(fullKey, value, domain, ts)
+      //remove old tags
+      sql = "delete from tags where key = ?"
+      this.dmdb.prepare(sql).run(fullKey)
+      //save tags
+      if (typeof (tags) === 'object') {
+        for (const tagName of tags) {
+          sql = "Insert into tags (tagName,tagValue,key,domain,ts) values (?,?,?,?,?)"
+          this.dmdb.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
+        }
+      }
+      //update hash
+      let domainHash = this.readConfig("dmdb", "domainHash")
+      if (!domainHash) domainHash = ""
+      const strObj = key + value + tags + ts
+      domainHash = await Util.dataHash(strObj + domainHash)
+      this.writeConfig("dmdb", "domainHash", domainHash)
+    } catch (e) {
+      console.error(e)
+    }
+
+  }
   subscribe(domain, session) {
     if (domain == "all") {
       this.tickerAll.register(session)
@@ -894,8 +879,6 @@ class Database {
       domainHash = await Util.dataHash(strObj + domainHash)
 
       this.dm_transaction(() => {
-        this.saveKeys(obj);
-        this.saveTags(obj);
         this.saveUsers(obj);
         //this.saveNFT(obj);
         let sql = `INSERT INTO "nidobj" 

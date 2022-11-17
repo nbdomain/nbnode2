@@ -38,7 +38,7 @@ const DEF = {
     TX_INVALIDTX: 1, //MARK an invalid tx
     TX_FORMAT2: 2,
 
-    BLOCK_VER: 13,       //block format
+    BLOCK_VER: 14,       //block format
     BLOCK_TIME: 5000,   //consense time
     CONSENSUE_COUNT: 3, //number of nodes needed a node connects to
     MAX_BLOCK_LENGTH: 100 //max transaction in a block
@@ -64,7 +64,6 @@ class NIDObject {
         this.admins = [];
         this.admin_update_tx = 0;
         this.nft_log = {};
-        this.udpate
         this.tf_update_tx = 0;
         this.last_txid = 0;
         this.truncated = false;

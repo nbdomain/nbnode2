@@ -111,6 +111,9 @@ class Nodes {
             console.error("can't get info from url")
             return false
         }
+        if (info.pkey === this.thisNode.key) { //self
+            return false
+        }
         if (this.hasNode(url)) {
             console.error(url, "exists")
             return true

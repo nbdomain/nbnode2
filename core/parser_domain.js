@@ -403,9 +403,7 @@ class CMD_KEY {
             output.value = JSON.parse(rtx.out[0].s5);
             const s6 = Util.parseJson(rtx.out[0].s6)
             tags = s6 && s6.tags;
-            if (tags) rtx.command == "key"
-                ? (output.tags = tags)
-                : (output.utags = tags);
+            if (tags) output.tags = tags
 
             output.ts = rtx.ts ? rtx.ts : rtx.time
             output.txid = rtx.txid
@@ -429,14 +427,9 @@ class CMD_KEY {
         }
         return output;
     }
-    static updateKeyAndHistory(obj, key, newValue, output) {
+    /*static updateKey(obj, key, newValue, output) {
         if (key == "todomain") return false//'todomain' is not a key
 
-        //Disable save history feature
-        //const oldvalue = obj.keys[key]  
-        //    if (oldvalue) {
-        //        this.parser.db.saveKeyHistory(obj, key, oldvalue);
-        //    }
         let newKey = { value: newValue, txid: output.txid };
         if (output.user) {
             newKey.from = output.user
@@ -451,14 +444,14 @@ class CMD_KEY {
 
         obj.keys[key] = newKey;
         return true
-    }
+    }*/
     static async fillObj(nidObj, rtx, objMap) {
         if (nidObj.owner_key == null) {
             rtx.output.err = "No owner"
             return null
         }
         if (this.verify(rtx, rtx.output) != 1) return null
-        if (rtx.output?.value?.toDomain) {
+        /*if (rtx.output?.value?.toDomain) { //disable public domain feature
             let obj = objMap[rtx.output.value.toDomain]
             if (!obj) {
                 obj = this.parser.db.loadDomain(rtx.output.value.toDomain)
@@ -468,18 +461,21 @@ class CMD_KEY {
                 for (const key in rtx.output.value) {
                     let newKey = key.toLowerCase()
                     let newValue = rtx.output.value[key]
-                    if (CMD_KEY.updateKeyAndHistory(obj, newKey, newValue, rtx.output))
+                    if (CMD_KEY.updateKey(obj, newKey, newValue, rtx.output))
                         obj.keys[newKey].from = rtx.output.user ? rtx.output.user + "@" + nidObj.domain : nidObj.domain
                 }
                 obj.dirty = true
             }
-        }
+        } */
+        const output = rtx.output
         for (const key in rtx.output.value) {
             let newKey = key.toLowerCase()
-            let newValue = rtx.output.value[key]
-            CMD_KEY.updateKeyAndHistory(nidObj, newKey, newValue, rtx.output)
+            let newValue = { v: output.value[key], id: output.txid }
+            if (output.pay) newValue.pay = output.pay
+            if (output.tags) newValue.tags = output.tags
+            //CMD_KEY.updateKey(nidObj, newKey, newValue, rtx.output)
+            await this.parser.db.saveKey({ key: newKey, value: JSON.stringify(newValue), domain: output.domain, tags: output.tags, ts: output.ts })
         }
-
         return nidObj
     }
 }

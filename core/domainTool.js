@@ -23,7 +23,7 @@ class DomainTool {
                     const url = otherNode + "/api/?nid=" + key + ".priceinfo.a"
                     console.log("getting price from:", url)
                     let res = await axios.get(url)
-                    if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.value.price }
+                    if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.v.price }
                 } catch (e) {
                     console.error("fetchDomainPrice:", e.message)
                 }

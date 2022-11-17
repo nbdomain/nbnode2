@@ -65,13 +65,14 @@ class BlockMgr {
         return lastHash
     }
     canResolve() {
-        const ret = (this.uBlock === null) && this._canResolve
+        const ret = this._canResolve
         return ret
     }
     async onReceiveBlock(nodeKey, uBlock) {
         try {
             const { Nodes, db } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
+            if (Nodes.thisNode.key === nodeKey) return //myself
             if (block.version != DEF.BLOCK_VER) return
             //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
