@@ -130,7 +130,7 @@ class CMD_REGISTER {
                 output.owner_key = rtx.publicKey
                 if (rtx.ts && +rtx.ts > 1662005320) { //enforce price check after this time
                     const payment = +rtx.out[2].e.v
-                    const resp = await DomainTool.fetchDomainPrice(domain, this.parser.db, newTx)
+                    //const resp = await DomainTool.fetchDomainPrice(domain, this.parser.db, newTx)
                     /* if (resp.code != 0 || !resp.price) {
                          output.err = domain + " cannot be registered"
                          return output

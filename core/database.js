@@ -569,21 +569,28 @@ class Database {
       }
     }
   }
-  getUnresolvedTX(mark = true) {
+  getUnresolvedTX() {
     try {
-      //if (mark)
-      //  this.markResolvedTX()
-      let height = this.readConfig('dmdb', 'resolvingHeight')
-      //console.log('resolving height:', height)
-      if (!height) height = 0
-      height = +height
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
-      const list = this.txdb.prepare(sql).raw(false).all();
-      if (list.length != 0) {
-        height++
-        this.writeConfig('dmdb', 'resolvingHeight', height + '')
+      const LEAST = 1000;
+      let listRet = [], got = 0;
+      while (got < LEAST) {
+        let height = this.readConfig('dmdb', 'resolvingHeight')
+        //console.log('resolving height:', height)
+        if (!height) height = 0
+        height = +height
+        const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
+        const list = this.txdb.prepare(sql).raw(false).all();
+        if (list.length != 0) {
+          height++
+          this.writeConfig('dmdb', 'resolvingHeight', height + '')
+        } else {
+          break;
+        }
+        got += list.length
+        listRet = listRet.concat(list)
       }
-      return list;
+
+      return listRet;
     } catch (e) {
       console.error(e)
       return []
