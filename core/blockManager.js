@@ -274,6 +274,7 @@ class BlockMgr {
             //console.log(JSON.stringify(this.nodePool))
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
+                if (!node.uBlock) continue
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
                 if (height >= this.height) { //download missing block
                     const n = this.db.getNode(pkey)
