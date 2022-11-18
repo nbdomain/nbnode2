@@ -625,16 +625,7 @@ class Database {
     let sql = "select DISTINCT tag from tags where tag like ?";
     return this.dmdb.prepare(sql).all(expression);
   }
-  saveTags(nidObj) {
-    for (var item in nidObj.tag_map) {
-      const keyName = item + nidObj.domain;
-      this.deleteTagStmt.run(keyName);
-      const tags = nidObj.tag_map[item].split(";");
-      tags.map(tag => {
-        this.saveTagStmt.run(tag, keyName);
-      })
-    }
-  }
+
   saveUsers(nidObj) {
     for (let name in nidObj.users) {
       const value = nidObj.users[name]
@@ -758,12 +749,6 @@ class Database {
       if (this.tickers[keyName]) //notify subscribers
         this.tickers[keyName].broadcast('key_update', value)
     }
-    /*for (var item in nidObj.users) {
-      const value = JSON.stringify(nidObj.users[item]);
-      const keyName = item + "@" + nidObj.domain;
-      const tags = nidObj.tag_map[item + '@'];
-      this.saveKeysStmt.run(keyName, value, tags, value, tags)
-    }*/
   }
   async saveKey({ key, value, domain, tags, ts }) {
     const fullKey = key + '.' + domain
@@ -776,7 +761,7 @@ class Database {
       this.dmdb.prepare(sql).run(fullKey)
       //save tags
       if (typeof (tags) === 'object') {
-        for (const tagName of tags) {
+        for (const tagName in tags) {
           sql = "Insert into tags (tagName,tagValue,key,domain,ts) values (?,?,?,?,?)"
           this.dmdb.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
         }

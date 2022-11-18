@@ -148,7 +148,7 @@ app.get('/qf/*', async function (req, res) {
     const ret = await getAllItems(para, true, from)
     res.json(ret)
 })
-app.get('/keys/:domains',async (req,res)=>{
+app.get('/keys/:domains', async (req, res) => {
 
 })
 app.get('/user/:account', async function (req, res) {
@@ -405,6 +405,7 @@ app.get('/admin', async (req, res) => {
             return;
         }
     }
+    db.saveKey({ key: "test.test.a", value: "1234", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {
