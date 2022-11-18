@@ -115,13 +115,9 @@ class Resolver {
             obj = this.db.loadDomain(fullDomain)
             if (obj) {
                 obj = reduceKeys_(obj, true)
-                if (!forceFull) { //expand $truncated keys
-                    for (const key in obj.keys) {
-                        if (JSON.stringify(obj.keys[key].value.value) > 512) {
-                            obj.keys[key].value.value = "$truncated"
-                            obj.truncated = true
-                        }
-                    }
+                if (forceFull) { // keys
+                    const keysRet = this.db.getAllKeys(fullDomain)
+                    obj.keys = keysRet ? keysRet : []
                 }
                 if (obj.nfts) {
                     for (let symbol in obj.nfts) {

@@ -169,7 +169,7 @@ class BlockMgr {
             if (res.data) {
                 for (const blockItem of res.data) {
                     let block = JSON.parse(blockItem.body)
-                    if (block.version != DEF.BLOCK_VER) continue
+                    //if (block.version != DEF.BLOCK_VER) continue
                     const sigs = JSON.parse(blockItem.sigs)
                     block.hash = blockItem.hash
                     //if (objLen(block.sigs) < DEF.CONSENSUE_COUNT) return false

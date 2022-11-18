@@ -148,6 +148,9 @@ app.get('/qf/*', async function (req, res) {
     const ret = await getAllItems(para, true, from)
     res.json(ret)
 })
+app.get('/keys/:domains',async (req,res)=>{
+
+})
 app.get('/user/:account', async function (req, res) {
     const account = req.params['account']
     const resolver = indexers.resolver

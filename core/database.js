@@ -717,15 +717,14 @@ class Database {
   }
   readKey(keyName) {
     try {
-      const keyLenName = keyName + "/len";
+      //const keyLenName = keyName + "/len";
       const ret = this.readKeyStmt.get(keyName);
       if (ret) {
-        const lenRet = this.readKeyStmt.get(keyLenName);
+        // const lenRet = this.readKeyStmt.get(keyLenName);
         let value = JSON.parse(ret.value);
-        if (lenRet) {
-          value.hisLen = +lenRet.value;
-        }
-        //if(ret.tags)value.tags = ret.tags;
+        //  if (lenRet) {
+        //    value.hisLen = +lenRet.value;
+        //  }
         return value;
       }
     } catch (e) {
@@ -733,47 +732,19 @@ class Database {
     }
     return null;
   }
-  readKeyHistoryLen(fullName) {
-    let lenRet = this.readKeyStmt.get(fullName + "/len");
-    return lenRet ? +lenRet.value : null
-  }
-  readKeyHistory(fullName, pos) {
-    const hisKey = fullName + "/" + pos;
-    const ret = this.readKeyStmt.get(hisKey);
-    if (ret) {
-      let value = JSON.parse(ret.value);
-      value.hisPos = pos;
-      return value;
+  getAllKeys(domain) {
+    const sql = 'select * from keys where domain= ?'
+    const ret = this.dmdb.prepare(sql).all(domain)
+    if (!ret) return {}
+    let retKeys = {}
+    for (const item of ret) {
+      const k = item.key.split('.')
+      k.pop(), k.pop()
+      const key = k.join('.')
+      retKeys[key] = Util.parseJson(item.value)
+      retKeys[key].ts = item.ts
     }
-    return null;
-  }
-  saveKeyHistory(nidObj, keyName, value) {
-    try {
-      this.dm_transaction(() => {
-        if (nidObj.domain == "10200.test") {
-          console.log("found")
-        }
-
-        const separator = ".";
-        const lenKey = keyName + separator + nidObj.domain + "/len";
-        let lenRet = this.readKeyStmt.get(lenKey);
-        let count = 0;
-        if (lenRet) count = +lenRet.value;
-        count++;
-        const tags = nidObj.keys[keyName].tags;
-        this.saveKeysStmt.run(lenKey, count.toString(), null, 0, count.toString(), null, 0); //save len
-        const hisKey = keyName + separator + nidObj.domain + "/" + count;
-        this.saveKeysStmt.run(hisKey, JSON.stringify(value), tags, value.ts, JSON.stringify(value), tags, value.ts); //save len
-        if (tags) {
-          const tag1 = tags.split(';')
-          tag1.map(tag => {
-            this.saveTagStmt.run(tag, hisKey);
-          })
-        }
-      })
-    } catch (e) {
-      this.logger.error(e)
-    }
+    return retKeys
   }
   saveKeys(nidObj) {
     for (var item in nidObj.keys) {
