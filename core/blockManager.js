@@ -64,6 +64,19 @@ class BlockMgr {
         }
         return lastHash
     }
+    verifyBlock(block) {
+        const { Nodes, db } = this.indexers
+        let preBlock = null
+        if (block.height > 0) {
+            const b = db.getBlock(block.height - 1)
+            if (b) {
+                preBlock = b && JSON.parse(b.body)
+                preBlock.hash = b.hash
+                return block.preHash = preBlock.hash
+            }
+        }
+        return true
+    }
     canResolve() {
         const ret = this._canResolve
         return ret
@@ -73,7 +86,7 @@ class BlockMgr {
             const { Nodes, db } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (Nodes.thisNode.key === nodeKey) return //myself
-            //if (block.version != DEF.BLOCK_VER) return
+            if (block.version != DEF.BLOCK_VER) return
             //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
@@ -197,6 +210,10 @@ class BlockMgr {
                             }
                         }
                     }
+                    if (!this.verifyBlock(block)) {
+                        ret = false
+                        break;
+                    }
                     await this.db.saveBlock({ sigs, block })
                     ret = true
                 }
@@ -272,17 +289,21 @@ class BlockMgr {
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
+            let startHeight = this.height
             for (const pkey in this.nodePool) {
                 const node = this.nodePool[pkey]
                 if (!node.uBlock) continue
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
-                if (height >= this.height) { //download missing block
+                if (height >= startHeight) { //download missing block
                     const n = this.db.getNode(pkey)
-                    if (node && await this.downloadBlocks(this.height, node.uBlock.block.height, n.url)) {
-
+                    const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
+                    if (await this.downloadBlocks(startHeight, node.uBlock.block.height, n.url)) {
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
+                    } else {
+                        startHeight -= 10 //rewind 10 blocks
+                        if (startHeight < 0) startHeight = 0
                     }
                 }
             }
