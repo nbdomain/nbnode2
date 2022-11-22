@@ -6,6 +6,7 @@
 const fs = require('fs')
 const Sqlite3Database = require('better-sqlite3')
 const Parser = require('./parser')
+const mongoToSqlConverter = require("mongo-to-sql-converter")
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
 const { CONFIG } = require('./config')
@@ -671,39 +672,16 @@ class Database {
     const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
     return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx, maxResolvedTxTime }
   }
-  queryKeys({ v, num, tags, from }) {
-    let sql = "select id,key,value,tags from keys ";
-    if (v != "1") {
-      return { code: 1, message: "invalid v" };
-    }
-    if (tags != null) {
-      let hasOr = (tags.indexOf(';') != -1);
-      const hasAnd = (tags.indexOf('+') != -1);
-      if (hasOr && hasAnd) {
-        return { code: 1, message: "Using both ; and + is not supported yet" };
-      }
-      if (!hasAnd && !hasOr) hasOr = true;
-      if (hasOr) {
-        const orTag = tags.split(';').join("','");
-        sql += "where key in (select key from tags where tag in ('" + orTag + "')) ";
-      }
-      if (hasAnd) {
-        const addTag = tags.split('+').join("','");
-        const count = tags.split('+').length;
-        sql += "where key in (select key from tags where tag in ('" + addTag + "') group by key having count(*)>=" + count + ") "
-      }
-      if (from) {
-        sql += `AND ts > ${from} `
-      }
-    }
-    sql += " order by ts";
-    if (num) {
-      sql += " limit " + num;
-    }
-
-    return {
-      code: 0,
-      data: this.dmdb.prepare(sql).all()
+  queryByTags(q) {
+    const MongoDBQuery = `db.tags.find(${q},{key:1})`
+    try {
+      let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
+      SQLQuery = SQLQuery.slice(0, -1)
+      const sql = `select key, value,ts from keys where key in(${SQLQuery})`
+      const ret = this.dmdb.prepare(sql).all()
+      return ret
+    } catch (e) {
+      return { code: 1, msg: e.message }
     }
   }
   readKey(keyName) {

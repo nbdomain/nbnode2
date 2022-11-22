@@ -221,10 +221,15 @@ class Nodes {
         return connected_clients
     }
     async sendNewTx(obj) {
+        const { Parser } = this.indexers
+        let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
+        if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
+            console.error("parseRaw error err:", ret)
+            return { code: -1, message: ret.msg }
+        }
         if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
             const clients = this.getConnectedClients()
             if (clients.length > 0) {
-                console.log(1)
                 const ret = await clients[0].sendNewTx(obj)
                 if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
                     clients[1].sendNewTx(obj)

@@ -26,6 +26,7 @@ class NBPeer {
     }
     async connectPeer({ fromID, toID, info }) {
         const peers = this.peers
+        console("connectPeer: current Peer:", JSON.stringify(peers))
         if (!peers[fromID] || !peers[toID]) {
             console.error('peer:', from, to, "is not registered")
             return false
@@ -40,7 +41,7 @@ class NBPeer {
             })
         })
     }
-    relayEmit(des_id,from_id,event,args,ret) {
+    relayEmit(des_id, from_id, event, args, ret) {
         const peers = this.peers
         if (!peers[des_id]) {
             console.error('peer:', des_id, " is not found")
@@ -49,8 +50,8 @@ class NBPeer {
             }
             return
         }
-        
-        peers[des_id].socket.emit(event,from_id,args,(res)=>{
+
+        peers[des_id].socket.emit(event, from_id, args, (res) => {
             ret(res)
         })
     }

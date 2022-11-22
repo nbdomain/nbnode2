@@ -28,8 +28,9 @@ let greenlock = null;
 let domainMap = {};
 let localWebGateway = null;
 let localAPIGateway = null;
-const verNode = require('../package.json').version;
 let localDomain = ""
+var selfsigned = require('selfsigned');
+
 
 async function proxyRequest(req, res, path, nbdomain) {
   try {
@@ -96,7 +97,8 @@ class LocalServer {
     this.onListening = null
   }
 
-async start() {
+  async start() {
+
     const app = express()
 
     if (this.logger) app.use(morgan('tiny'))
@@ -118,8 +120,22 @@ async start() {
 
     await this.startProxyServer(app);
 
-    this.startSSLServer();
+    this.startSSLServer(app);
   }
+  /*async startSSLServer(app) {
+    var https = require('https');
+    var attrs = [{ name: 'commonName', value: 'contoso.com' }];
+    var pems = selfsigned.generate(attrs, { days: 365 });
+    var credentials = { key: pems.private, cert: pems.cert };
+    var httpsServer = https.createServer(credentials, app);
+    httpsServer.listen(4000);
+    httpsServer.on("request", (req, res) => {
+      const evs = this.listener.listeners("request").slice(0);
+      for (let i = 0; i < evs.length; i++) {
+        evs[i].call(this.listener, req, res);
+      }
+    })
+  }*/
   async startSSLServer() {
     //Start HTTPS server
     if (CONFIG.server.publicUrl && CONFIG.server.autoSSL) {
@@ -135,16 +151,6 @@ async start() {
         maintainerEmail: CONFIG.node_info.contact,
         notify: async function (event, details) {
           if ("error" === event) {
-            // `details` is an error object in this case
-            /*gr console.error("GL Error, subject:", details);
-             console.log("DE:", domainError);
-             !domainError[details.subject] && (domainError[details.subject] = 0);
-             //if (++domainError[details.subject] > 2) {
-             console.log("GL remove, subject:", details.subject);
-             // const res = await greenlock.sites.get({ subject: details.subject });
-             // console.log("get result:",res);
-             greenlock.remove({ subject: details.subject });
-             */
           }
         },
       });

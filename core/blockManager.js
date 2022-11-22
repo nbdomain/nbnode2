@@ -113,11 +113,12 @@ class BlockMgr {
                     maxLen++ //add my vote
                 }
                 if (maxLen >= (DEF.CONSENSUE_COUNT / 2) && this.lastVerify != maxVerify && this.dmVerify && this.canResolve()) {//reach consense
-                    this.dmVerifyMap = {}
+                    
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
                         await db.backupDB()
                         this.waitSyncCount = 0
+                        this.dmVerifyMap = {}
                     } else { //I lost, restore last good domain db
                         if (this.waitSyncCount < 3) {
                             this.waitSyncCount++
@@ -125,6 +126,7 @@ class BlockMgr {
                             await wait(10000)
                         } else {
                             this.lastVerify = maxVerify
+                            this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)
                             if (Nodes.downloadAndUseDomainDB(node.url) == false) {
                                 console.error("failed to download good db")

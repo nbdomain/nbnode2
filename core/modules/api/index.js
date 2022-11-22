@@ -320,24 +320,13 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     res.json(ret)
 })
-app.get('/queryKeys', function (req, res) {
-    const num = req.query['num'] ? req.query['num'] : 50;
-    const tags = req.query['tags'] ? req.query['tags'] : null;
-    const from = req.query['from'] ? req.query['from'] : null;
-    const includeHistory = req.query['includeHistory'] ? req.query['includeHistory'] : 0;
-    const result = indexers.db.queryKeys({ v: 1, num: num, tags: tags, from: from });
-    if (includeHistory == 0) {
-        result.data = result.data.filter(item => item.key.indexOf('/') == -1)
-    }
+app.get('/qt', function (req, res) {
+    const q = req.query['q']
+    const result = indexers.db.queryByTags(q);
     res.json(result);
     return;
 });
-app.get('/queryTags', function (req, res) {
-    const exp = req.query['exp'];
-    const result = indexers.db.queryTags(exp ? exp : null);
-    res.json(result);
-    return;
-});
+
 app.get('/nodeInfo', async (req, res) => {
     let info = { ...CONFIG.server, ...CONFIG.node_info, ...CONSTS.payment };
     info.version = "1.6." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
