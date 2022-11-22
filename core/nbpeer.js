@@ -43,7 +43,7 @@ class NBPeer {
     }
     relayEmit(des_id, from_id, event, args, ret) {
         const peers = this.peers
-        console("relayEmit: current Peer:", JSON.stringify(peers))
+        console("relayEmit: current Peer:", JSON.stringify(Object.keys(peers)))
         if (!peers[des_id]) {
             console.error('peer:', des_id, " is not found")
             if (typeof ret === 'function') {
