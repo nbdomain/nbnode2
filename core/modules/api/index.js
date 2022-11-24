@@ -110,6 +110,7 @@ async function getAllItems(para, forceFull = false, from = null, price = true) {
         const resolver = indexers.resolver
         if (!resolver) continue;
         const result = await resolver.readDomain({ fullDomain: dd[0], forceFull: forceFull, history: dd[1], price })
+        if (!result) continue
         if (from && result.obj.ts <= from) continue
         if (result.code === 0) {
             result.chain = Util.getchain(dd[0])
@@ -301,8 +302,8 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     res.json(ret)
 })
-app.get('/qt', function (req, res) {
-    const q = req.query['q']
+app.get('/qt/:q', function (req, res) {
+    const q = req.params['q']
     const result = indexers.db.queryByTags(q);
     res.json(result);
     return;
