@@ -20,12 +20,6 @@ var app = express();
 const { createSession } = require("better-sse");
 const coinfly = require("coinfly");
 const rateLimit = require('express-rate-limit')
-
-
-app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
-
 let indexers = null;
 const today = new Date();
 
@@ -33,28 +27,19 @@ const day = today.getDate();
 const today_folder = day % 2 == 0 ? "even/" : "odd/";
 const last_folder = day % 2 == 0 ? "odd/" : "even/";
 
-const auth = async (req, res) => {
-    /*try {
-        const token = req.header('Authorization').replace('Bearer ', '').trim()
-        req.token = token
-        let authConfig = JSON.parse(fs.readFileSync(CONFIG.auth_file));
-        if (!(token in authConfig.keys && authConfig.keys[token].enable == 1)) {
-            throw new Error()
-        }
-        return true;
-    } catch (error) {
-        console.log(error)
-        res.status(401).send({ error: 'Please authenticate!' })
-    }
-    return false;*/
-    return true;
-}
 const apiLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minutes
     max: 60, // Limit each IP to 60 requests per `window` (here, per 15 minutes)
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
+
+app.use(cors());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
+app.use('/pubsub/pub/:topic/:msg', apiLimiter)
+app.use('/notify', apiLimiter)
+
 //获取访问ip
 function getClientIp(req) {
     const IP =
@@ -66,9 +51,7 @@ function getClientIp(req) {
 }
 
 app.get('/', async function (req, res, next) {
-    if (!auth(req, res)) {
-        return;
-    }
+
     let domain = req.query['nid'];
     let f = req.query['full'] === 'true';
     const price = req.query['price'] !== 'false';
@@ -264,7 +247,6 @@ app.get('/pubsub/sub/:topic', async (req, res) => {
         console.log("one sub closed")
     })
 })
-app.use('/pubsub/pub/:topic/:msg', apiLimiter)
 app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
     const topic = req.params['topic']
     const msg = req.params['msg']
@@ -272,7 +254,6 @@ app.get('/pubsub/pub/:topic/:msg', async (req, res) => {
     res.json({ code: 0 })
 })
 let handlingMap = {}
-app.use('/notify', apiLimiter)
 app.get('/notify', async function (req, res) {
     const { id, cmd, data } = req.query
     if (id && handlingMap[id]) {
@@ -339,9 +320,7 @@ app.get('/nodeInfo', async (req, res) => {
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
-    if (!auth(req, res)) {
-        return;
-    }
+
     res.json(CONSTS.tld_config);
 });
 app.get('/onSale', (req, res) => {
@@ -394,7 +373,8 @@ app.get('/admin', async (req, res) => {
             return;
         }
     }
-    db.saveKey({ key: "test.test.a", value: "1234", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
+    await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
+    await db.readKey("test.test.a")
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

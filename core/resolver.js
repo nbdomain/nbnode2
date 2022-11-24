@@ -73,7 +73,7 @@ class Resolver {
         });
         return all;
     }
-    readSubdomain(fullDomain, history = null) {
+    async readSubdomain(fullDomain, history = null) {
         let baseDomain, subDomain;
         const dd = fullDomain.split('.');
         if (dd.length < 2) return null;
@@ -94,7 +94,7 @@ class Resolver {
                 const subObj = this.db.readKeyHistory(fullDomain, history)
                 return subObj ? { code: 0, domain: fullDomain, obj: subObj } : null
             } else {
-                const subObj = this.db.readKey(fullDomain)
+                const subObj = await this.db.readKey(fullDomain)
                 if (subObj) {
                     let retObj = { code: 0, domain: fullDomain, obj: subObj }
                     return retObj;
@@ -110,7 +110,7 @@ class Resolver {
         let obj = null
         if (dd.length === 2) {
             if (fullDomain.indexOf('@') != -1) { //an email like address
-                return this.readSubdomain(fullDomain);
+                return await this.readSubdomain(fullDomain);
             }
             obj = this.db.loadDomain(fullDomain)
             if (obj) {
@@ -132,7 +132,7 @@ class Resolver {
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;
         }
-        const ret = this.readSubdomain(fullDomain, history);
+        const ret = await this.readSubdomain(fullDomain, history);
         if (ret) return ret;
         return { code: ERR.KEY_NOTFOUND, message: fullDomain + " not found" }
 

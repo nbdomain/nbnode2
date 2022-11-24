@@ -684,16 +684,19 @@ class Database {
       return { code: 1, msg: e.message }
     }
   }
-  readKey(keyName) {
+  async readKey(keyName) {
     try {
       //const keyLenName = keyName + "/len";
       const ret = this.readKeyStmt.get(keyName);
       if (ret) {
-        // const lenRet = this.readKeyStmt.get(keyLenName);
         let value = JSON.parse(ret.value);
-        //  if (lenRet) {
-        //    value.hisLen = +lenRet.value;
-        //  }
+        if (value.__shash) { //big value saved to data db
+          value = this.readData(value.__shash).raw
+          if (!value) {
+            const d = await this.indexers.Nodes.getData(value.__shash)
+            value = d.raw
+          }
+        }
         return value;
       }
     } catch (e) {
@@ -715,23 +718,17 @@ class Database {
     }
     return retKeys
   }
-  saveKeys(nidObj) {
-    for (var item in nidObj.keys) {
-      const keyName = item + "." + nidObj.domain;
-      const tags = nidObj.keys[item].tags;
-      if (tags) {
-        console.log("tags:", tags)
-      }
-      const value = nidObj.keys[item];
-      this.saveKeysStmt.run(keyName, JSON.stringify(value), tags, value.ts, JSON.stringify(value), tags, value.ts)
-      if (this.tickers[keyName]) //notify subscribers
-        this.tickers[keyName].broadcast('key_update', value)
-    }
-  }
+
   async saveKey({ key, value, domain, tags, ts }) {
     const fullKey = key + '.' + domain
     try {
       //set key
+      if (value.length > DEF.MAX_VALUE_LEN) { //big value saved to data db
+        const hash = await this.saveData({ data: value, owner: key, from: "saveKey" })
+        if (hash) {
+          value = JSON.stringify({ __shash: hash })
+        }
+      }
       let sql = "Insert or Replace into keys (key,value,domain,ts) values(?,?,?,?)"
       this.dmdb.prepare(sql).run(fullKey, value, domain, ts)
       //remove old tags
@@ -903,8 +900,9 @@ class Database {
     } catch (e) {
       console.log("Error Saving Data:", e.message, " hash:", hash)
     }
+    return hash
   }
-  readDataFromDisk(hash, option) {
+  readDataFromDisk(hash, option = { string: true }) {
     const path = CONFIG.dataPath
     if (!fs.existsSync(path)) {
       path = __dirname + "/db/data/"

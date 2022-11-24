@@ -70,10 +70,7 @@ class ARChain {
                     if (!oData) { //read from other peer
                         const { Nodes } = require('./nodes')
                         const d = await Nodes.getData(attrib.hash, { string: true })
-                        if (d.raw) {
-                            oData = d.raw
-                            db.saveData({ data: d.raw, owner: d.owner, time: d.time, from: "chains.js" })
-                        }
+                        oData = d.raw
                     }
                 }
                 if (!oData) {
@@ -227,9 +224,6 @@ class BSVChain {
                         const { Nodes } = require('./nodes')
                         const d = await Nodes.getData(attrib.hash, { string: true })
                         oData = d.raw
-                        if (oData) {
-                            db.saveData({ data: oData, owner: d.owner, time: attrib.ts, from: "chains.js" })
-                        }
                     }
                 }
                 if (!oData) {

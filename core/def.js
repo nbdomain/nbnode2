@@ -34,6 +34,8 @@ const DEF = {
     STATUS_VALID: 0x01,
     STATUS_TRANSFERING: 0x11,  // (code:17)
     STATUS_PUBLIC: 0x10,
+    MAX_VALUE_LEN: 1000, //value length exceed this value will be saved to data db
+
 
     TX_INVALIDTX: 1, //MARK an invalid tx
     TX_FORMAT2: 2,
