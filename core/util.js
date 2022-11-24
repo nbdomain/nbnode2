@@ -171,7 +171,7 @@ class Util {
     }
     static runNpmUpdate(indexers) {
         try {
-            const command = "pnpm update"
+            const command = "pnpm i;pnpm update"
             let result = childProcess.execSync(command).toString();
             console.log("pnpm update:", result)
             setTimeout(() => indexers.shutdown(), 2000)
@@ -183,7 +183,7 @@ class Util {
     }
     static runNodeUpdate(indexers) {
         try {
-            const command = "git pull"
+            const command = "git stash;git stash drop;git pull"
             let result = childProcess.execSync(command).toString();
             console.log("git pull:", result)
             if (result.slice(0, 7) !== "Already") {
