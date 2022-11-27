@@ -6,10 +6,13 @@
 const CONSTS = require('./const');
 const cp = require('child_process');
 const nbpay = require('nbpay')
+const fs = require('fs')
 const arweave = require('arweave')
 const CoinFly = require('coinfly');
 const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
+const stream = require('stream');
+const { promisify } = require('util');
 const { CONFIG } = require('./config')
 const NBLib = require("nblib2");
 const childProcess = require('child_process');
@@ -164,10 +167,24 @@ class Util {
         const lib = chain == "bsv" ? bsvLib : arLib
         return await lib.getTxStatus(txid)
     }
-    static downloadFile(uri, filename) {
+    /*static downloadFile(uri, filename) {
         console.log("downloading file from:", uri)
         let command = `curl -f -o ${filename}  '${uri}'`;
         cp.execSync(command, { stdio: 'inherit' });
+    }*/
+
+    static async downloadFile(fileUrl, outputLocationPath) {
+        console.log("downloading file from:", fileUrl, "to:", outputLocationPath)
+        const finished = promisify(stream.finished);
+        const writer = fs.createWriteStream(outputLocationPath);
+        return axios({
+            method: 'get',
+            url: fileUrl,
+            responseType: 'stream',
+        }).then(response => {
+            response.data.pipe(writer);
+            return finished(writer); //this is a Promise
+        });
     }
     static runNpmUpdate(indexers) {
         try {
