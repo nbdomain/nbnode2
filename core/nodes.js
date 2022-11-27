@@ -24,6 +24,7 @@ class Nodes {
         })
     }
     nodeFromKey(key) {
+        console.log(JSON.stringify(this.pnodes))
         return this.pnodes.find(item => item.pkey === key)
     }
     get({ retUrl = true }) {
