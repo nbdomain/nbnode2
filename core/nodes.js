@@ -62,7 +62,6 @@ class Nodes {
         this.nodeServer.start(this.indexers)
     }
     async _fromDNS() {
-        console.log("loading nodes from DNS")
         return new Promise(resolve => {
             const domain = "nodes.nbdomain.com"
             dns.resolve(domain, "TXT", (err, data) => {
@@ -102,7 +101,8 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
-        if (url.indexOf(this.endpoint) != -1) {
+
+        if (this.endpoint && url.indexOf(this.endpoint) != -1) {
             console.error(url, "self")
             return true
         }
