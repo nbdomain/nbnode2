@@ -300,7 +300,7 @@ class BlockMgr {
                     console.log(pkey)
                     const n = Nodes.nodeFromKey(pkey)
                     const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
-                    if (await this.downloadBlocks(startHeight, node.uBlock.block.height, n.url)) {
+                    if (await this.downloadBlocks(startHeight, node.uBlock.block.height, n.id)) {
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
