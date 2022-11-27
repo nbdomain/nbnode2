@@ -54,7 +54,7 @@ class Database {
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = new Sqlite3Database(this.txpath)
+        this.txdb = new Sqlite3Database(this.txpath, { fileMustExist: true })
         // 100MB cache
         this.txdb.pragma('cache_size = 6400')
         this.txdb.pragma('page_size = 16384')
@@ -71,7 +71,7 @@ class Database {
       //  Domains DB
       //-------------------------------------------------------//
       if (!this.dmdb) {
-        this.dmdb = new Sqlite3Database(this.dmpath)
+        this.dmdb = new Sqlite3Database(this.dmpath, { fileMustExist: true })
         // 100MB cache
         this.dmdb.pragma('cache_size = 6400')
         this.dmdb.pragma('page_size = 16384')
@@ -109,7 +109,7 @@ class Database {
     }
     if (dbname === 'dtdb') {
       //----------------------------DATA DB----------------------------------
-      this.dtdb = new Sqlite3Database(this.dtpath)
+      this.dtdb = new Sqlite3Database(this.dtpath, { fileMustExist: true })
       // 100MB cache
       this.dtdb.pragma('cache_size = 6400')
       this.dtdb.pragma('page_size = 16384')
