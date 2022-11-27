@@ -23,7 +23,9 @@ class Nodes {
             setTimeout(resolve, seconds * 1000);
         })
     }
-
+    nodeFromKey(key) {
+        return this.pnodes.find(item => item.pkey === key)
+    }
     get({ retUrl = true }) {
         const node = rwc(this.pnodes)
         return retUrl ? node : this.pnodes.find(item => item.id === node)
