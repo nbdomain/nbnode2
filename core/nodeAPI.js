@@ -147,6 +147,7 @@ class NodeClient {
             socketUrl = "ws://" + node.info.socketServer + ":" + (node.info.socketPort || 31415)
         }*/
         socketUrl = url
+        console.log("connecting to", url)
         if (!socketUrl) return false
         const self = this
         return new Promise(resolve => {
@@ -177,6 +178,7 @@ class NodeClient {
                         resolve(false)
                         return
                     }
+                    console.log("connected to:", node.pkey)
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(async r => {
                         if (r) {
                             self.setConnected(true)
