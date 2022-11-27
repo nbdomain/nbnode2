@@ -297,6 +297,7 @@ class BlockMgr {
                 if (!node.uBlock) continue
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
                 if (height >= startHeight) { //download missing block
+                    console.log(pkey)
                     const n = Nodes.nodeFromKey(pkey)
                     const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
                     if (await this.downloadBlocks(startHeight, node.uBlock.block.height, n.url)) {
