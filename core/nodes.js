@@ -62,6 +62,7 @@ class Nodes {
         this.nodeServer.start(this.indexers)
     }
     async _fromDNS() {
+        console.log("loading nodes from DNS")
         return new Promise(resolve => {
             const domain = "nodes.nbdomain.com"
             dns.resolve(domain, "TXT", (err, data) => {
