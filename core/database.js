@@ -295,11 +295,12 @@ class Database {
       fs.unlinkSync(this.txpath)
     } catch (e) { }
 
-    if (fs.existsSync(filename)) {
-      fs.copyFileSync(filename, this.txpath)
-    } else {
-      fs.copyFileSync(Path.join(__dirname , "/db/template/txs.db.tpl.db"), this.txpath);
+    let restoreFile = filename
+    if (!fs.existsSync(filename)) {
+      restoreFile = Path.join(__dirname, "/db/template/txs.db.tpl.db")
     }
+    console.log("restore:", restoreFile, "to:", this.txpath)
+    fs.copyFileSync(restoreFile, this.txpath)
     this.txdb = null
     this.initdb('txdb')
 
@@ -312,14 +313,14 @@ class Database {
     //const { pipeline } = require('stream');
 
     try {
-      let dbname = Path.join(__dirname , `/public/bk_domains.db`)
+      let dbname = Path.join(__dirname, `/public/bk_domains.db`)
 
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       let sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.dmdb.prepare(sql).run()
 
-      dbname = Path.join(__dirname , `/public/bk_txs.db`)
+      dbname = Path.join(__dirname, `/public/bk_txs.db`)
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
@@ -880,7 +881,7 @@ class Database {
   writeToDisk(hash, buf, option) {
     const pp = CONFIG.dataPath
     if (!fs.existsSync(path)) {
-      path = Path.join(__dirname , "/db/data/")
+      path = Path.join(__dirname, "/db/data/")
       console.error("DataPath does exist, using ", path)
     }
     const sub = hash.slice(0, 3)
@@ -905,7 +906,7 @@ class Database {
   readDataFromDisk(hash, option = { string: true }) {
     const path = CONFIG.dataPath
     if (!fs.existsSync(path)) {
-      path = Path.join(__dirname , "/db/data/")
+      path = Path.join(__dirname, "/db/data/")
       console.error("DataPath does exist, using ", path)
     }
     const sub = hash.slice(0, 3)
