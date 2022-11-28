@@ -34,7 +34,7 @@ const VER_TXDB = 5
 class Database {
   constructor(txpath, dmpath, logger, indexers) {
     //this.chain = chain
-    this.dtpath = __dirname + "/db/odata.db"
+    this.dtpath = Path.join(__dirname, "/db/odata.db")
     this.txpath = txpath
     this.dmpath = dmpath
     this.logger = logger
@@ -45,7 +45,7 @@ class Database {
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
-    this.bkDBFile = __dirname + `/public/bk_domains.db`
+    this.bkDBFile = Path.join(__dirname, `/public/bk_domains.db`)
     this.indexers = indexers
   }
   initdb(dbname) {
@@ -137,13 +137,13 @@ class Database {
 
       if (!fs.existsSync(this.txpath)) {
         if (!fs.existsSync(this.txpath))
-          fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.txpath);
+          fs.copyFileSync(Path.join(__dirname, "/db/template/txs.db.tpl.db"), this.txpath);
       }
       if (!fs.existsSync(this.dmpath)) {
-        fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
+        fs.copyFileSync(Path.join(__dirname, "/db/template/domains.db.tpl.db"), this.dmpath);
       }
       if (!fs.existsSync(this.dtpath)) {
-        fs.copyFileSync(__dirname + "/db/template/odata.db.tpl.db", this.dtpath);
+        fs.copyFileSync(Path.join(__dirname, "/db/template/odata.db.tpl.db"), this.dtpath);
       }
       //const states = fs.statSync(this.dmpath + "." + VER_DMDB)
       //TXRESOLVED_FLAG = states.birthtimeMs
@@ -273,7 +273,7 @@ class Database {
     if (fs.existsSync(filename)) {
       fs.copyFileSync(filename, this.dmpath)
     } else {
-      fs.copyFileSync(__dirname + "/db/template/domains.db.tpl.db", this.dmpath);
+      fs.copyFileSync(Path.join(__dirname, "/db/template/domains.db.tpl.db"), this.dmpath);
     }
     this.dmdb = null
     MemDomains.clearObj()
@@ -298,7 +298,7 @@ class Database {
     if (fs.existsSync(filename)) {
       fs.copyFileSync(filename, this.txpath)
     } else {
-      fs.copyFileSync(__dirname + "/db/template/txs.db.tpl.db", this.txpath);
+      fs.copyFileSync(Path.join(__dirname , "/db/template/txs.db.tpl.db"), this.txpath);
     }
     this.txdb = null
     this.initdb('txdb')
@@ -312,14 +312,14 @@ class Database {
     //const { pipeline } = require('stream');
 
     try {
-      let dbname = __dirname + `/public/bk_domains.db`
+      let dbname = Path.join(__dirname , `/public/bk_domains.db`)
 
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       let sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.dmdb.prepare(sql).run()
 
-      dbname = __dirname + `/public/bk_txs.db`
+      dbname = Path.join(__dirname , `/public/bk_txs.db`)
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
@@ -878,9 +878,9 @@ class Database {
   }
   //--------------------------------data service---------------------------
   writeToDisk(hash, buf, option) {
-    const path = CONFIG.dataPath
+    const pp = CONFIG.dataPath
     if (!fs.existsSync(path)) {
-      path = __dirname + "/db/data/"
+      path = Path.join(__dirname , "/db/data/")
       console.error("DataPath does exist, using ", path)
     }
     const sub = hash.slice(0, 3)
@@ -905,7 +905,7 @@ class Database {
   readDataFromDisk(hash, option = { string: true }) {
     const path = CONFIG.dataPath
     if (!fs.existsSync(path)) {
-      path = __dirname + "/db/data/"
+      path = Path.join(__dirname , "/db/data/")
       console.error("DataPath does exist, using ", path)
     }
     const sub = hash.slice(0, 3)

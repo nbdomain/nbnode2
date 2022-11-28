@@ -16,6 +16,7 @@ const fs = require('fs')
 const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
+const Path = require('path')
 
 
 // ------------------------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ const PubSub = require('./pubsub')
 // ------------------------------------------------------------------------------------------------
 const today = new Date();
 var dd = String(today.getMonth() + 1 + "-" + today.getDate());
-const logFolder = __dirname + "/logg"
+const logFolder = Path.join(__dirname , "/logg")
 if (!fs.existsSync(logFolder)) {
   fs.mkdirSync(logFolder);
 }
@@ -61,7 +62,7 @@ if (myArgs) {
   logger.logFile("----------------------Node Started----------------------------")
   if (argv.reorg) {
     REORG = argv.reorg
-    fs.unlinkSync(__dirname + "/db/" + CONSTS.DMDB)
+    fs.unlinkSync(Path.join(__dirname , "/db/" + CONSTS.DMDB))
   }
 }
 
@@ -83,7 +84,7 @@ let server = null;
 
 class Indexers {
   static initDB() {
-    this.db = new Database(__dirname + "/db/" + CONSTS.TXDB, __dirname + "/db/" + CONSTS.DMDB, logger, this)
+    this.db = new Database(path.join(__dirname, "/db/" + CONSTS.TXDB), path.join(__dirname, "/db/" + CONSTS.DMDB), logger, this)
     this.db.open()
   }
   static async checkEnv() {

@@ -10,6 +10,7 @@ var bodyParser = require("body-parser");
 var cors = require('cors');
 const { ERR } = require('../../def')
 const { Util } = require('../../util.js')
+const Path = require('path')
 
 const { json } = require('body-parser');
 const fs = require("fs-extra");
@@ -171,7 +172,7 @@ async function handleNewTx({ txid, force = false }) {
 function save_pr(body, isNotify) {
     var data = JSON.stringify(body);
     var id = body.id;
-    let dir = __dirname + "/tx/";
+    let dir = Path.join(__dirname, "/tx/");
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
     }
@@ -183,7 +184,7 @@ function save_pr(body, isNotify) {
     console.log("save relay data:" + data)
     var ret = fs.writeFileSync(filename, data);
 
-    fs.remove(__dirname + "/tx/" + last_folder);
+    fs.remove(Path.join(__dirname, "/tx/" + last_folder));
 }
 app.post('/relay/save', (req, res) => {
     const IP = getClientIp(req);
@@ -192,7 +193,7 @@ app.post('/relay/save', (req, res) => {
     res.send({ err: 0 });
 })
 function get_pr(id, isNotify) {
-    let filename = __dirname + "/tx/" + today_folder + id;
+    let filename = Path.join(__dirname, "/tx/" + today_folder + id);
     //log(id);
     if (isNotify) filename += ".no";
     try {
@@ -311,7 +312,7 @@ app.get('/qt/:q', function (req, res) {
 
 app.get('/nodeInfo', async (req, res) => {
     let info = { ...CONFIG.server, ...CONFIG.node_info, ...CONSTS.payment };
-    info.version = "1.6." + fs.readFileSync(__dirname + '/../../../build_number', 'utf8').trim();
+    info.version = "1.6." + fs.readFileSync(Path.join(__dirname, '/../../../build_number'), 'utf8').trim();
     info.tld = CONSTS.tld_config
     const lib = await coinfly.create('bsv')
     if (CONFIG.key)
@@ -374,9 +375,9 @@ app.get('/admin', async (req, res) => {
             return;
         }
     }
-   // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
-   // await db.readKey("test.test.a")
-   await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db",__dirname+"/test.db")
+    // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
+    // await db.readKey("test.test.a")
+    await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db", Path.join(__dirname, "/test.db"))
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

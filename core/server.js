@@ -17,6 +17,7 @@ const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
 const { Nodes } = require('./nodes');
+const Path = require('path')
 
 
 
@@ -109,9 +110,9 @@ class LocalServer {
         next();
         return;
       }
-      res.sendFile(__dirname + "/public/index.html");
+      res.sendFile(Path.join(__dirname , "/public/index.html"));
     });
-    app.use('/files/', express.static(__dirname + '/public'))
+    app.use('/files/', express.static(Path.join(__dirname , '/public')))
 
     setInterval(() => {
       //console.log("clear domainMap cache");
@@ -146,7 +147,7 @@ class LocalServer {
       appSSL.use(createProxyMiddleware("**", { target: localAPI }));
       let domainError = {};
       greenlock = require("@root/greenlock").create({
-        packageRoot: __dirname + "/../",
+        packageRoot: Path.join(__dirname , "/../"),
         configDir: SSLDir,
         maintainerEmail: CONFIG.node_info.contact,
         notify: async function (event, details) {
