@@ -241,7 +241,7 @@ class BlockMgr {
                 continue
             }
             const bl = this.db.getLastBlock()
-            console.log("got last block", bl.height)
+            console.log("got last block", bl?.height)
             this.height = bl ? bl.height + 1 : 0
             if (Nodes.isProducer()) { //create and broadcast blocks
                 if (!this.uBlock) { //wait the block to confirm
