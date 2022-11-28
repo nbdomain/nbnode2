@@ -1,12 +1,8 @@
 const coinfly = require('coinfly')
 const parseArgs = require('minimist')
 
-
-async function main() {
-    createKeys('bsv')
-    createKeys('ar')
-}
 async function createKeys(chain, format) {
+    if (chain === 'bitcoin') chain = 'bsv'
     const bsvlib = await coinfly.create(chain)
     const p = await bsvlib.createPrivateKey(format)
     const pub = await bsvlib.getPublicKey(p)
@@ -25,5 +21,5 @@ if (myArgs && myArgs.length > 0) {
                  node tool [command] [arguments]\n
                  Commands:\n
                  key (crypto key related)\n
-                 \t -c [ar|bsv]\t\tcreate private/public keys,eg: key -c ar`)
+                 \t -c [ar|bitcoin]\t\tcreate private/public keys,eg: key -c ar`)
 }

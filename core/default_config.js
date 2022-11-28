@@ -10,6 +10,7 @@
 // ------------------------------------------------------------------------------------------------
 const CONFIG = {
   debug: true,
+  key:"", //unique node key. use 'node key -c bitcoin' to generate
   "node_info": { //public info of the node
     nbdomain: "", //nbdomain of the node
     payment: { bsv: "1Bti24c8ZQLYMTaifVkiRwJ1cwT4K6ucJu", ar: "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ" }, //address to receive payment
