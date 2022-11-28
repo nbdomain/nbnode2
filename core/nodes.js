@@ -7,6 +7,7 @@ const { NodeServer, NodeClient } = require('./nodeAPI');
 const { DEF } = require('./def');
 const CONSTS = require('./const');
 const { Util } = require('./util');
+const path = require('path')
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
@@ -247,15 +248,15 @@ class Nodes {
     }
     downloadAndUseDomainDB(from) {
         try {
-            let url = from + "/files/bk_txs.db"
-            let filename = __dirname + "/db/test.db"
+            let url = path.join(from, "/files/bk_txs.db")
+            let filename = path.join(__dirname, "/db/test.db")
             console.log("Downloading txdb from:", url)
             Util.downloadFile(url, filename)
             console.log("Download txdb successful")
             this.indexers.db.restoreTxDB(filename)
 
-            url = from + "/files/bk_domains.db"
-            filename = __dirname + "/db/test1.db"
+            url = path.join(from + "/files/bk_domains.db")
+            filename = path.join(__dirname, "/db/test1.db")
             console.log("Downloading domain db from:", url)
             Util.downloadFile(url, filename)
             console.log("Download domain db successful")
