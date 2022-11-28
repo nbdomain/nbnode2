@@ -248,14 +248,14 @@ class Nodes {
     }
     downloadAndUseDomainDB(from) {
         try {
-            let url = path.join(from, "/files/bk_txs.db")
+            let url = from + "/files/bk_txs.db"
             let filename = path.join(__dirname, "/db/test.db")
             console.log("Downloading txdb from:", url)
             Util.downloadFile(url, filename)
             console.log("Download txdb successful")
             this.indexers.db.restoreTxDB(filename)
 
-            url = path.join(from + "/files/bk_domains.db")
+            url = from + "/files/bk_domains.db"
             filename = path.join(__dirname, "/db/test1.db")
             console.log("Downloading domain db from:", url)
             Util.downloadFile(url, filename)
