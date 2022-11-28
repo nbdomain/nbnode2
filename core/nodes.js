@@ -246,19 +246,19 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
-    downloadAndUseDomainDB(from) {
+    async downloadAndUseDomainDB(from) {
         try {
             let url = from + "/files/bk_txs.db"
             let filename = path.join(__dirname, "/db/test.db")
             console.log("Downloading txdb from:", url)
-            Util.downloadFile(url, filename)
+            await Util.downloadFile(url, filename)
             console.log("Download txdb successful")
             this.indexers.db.restoreTxDB(filename)
 
             url = from + "/files/bk_domains.db"
             filename = path.join(__dirname, "/db/test1.db")
             console.log("Downloading domain db from:", url)
-            Util.downloadFile(url, filename)
+            await Util.downloadFile(url, filename)
             console.log("Download domain db successful")
             this.indexers.db.restoreDomainDB(filename)
         } catch (e) {

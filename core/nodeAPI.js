@@ -249,7 +249,7 @@ class NodeClient {
                 console.log("In sync with:", url)
                 return
             }
-            if (Nodes.downloadAndUseDomainDB(url) == false) {
+            if (await Nodes.downloadAndUseDomainDB(url) == false) {
                 console.error("failed to download good db")
             }
         }
