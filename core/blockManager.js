@@ -241,6 +241,7 @@ class BlockMgr {
                 continue
             }
             const bl = this.db.getLastBlock()
+            console.log("got last block", bl.height)
             this.height = bl ? bl.height + 1 : 0
             if (Nodes.isProducer()) { //create and broadcast blocks
                 if (!this.uBlock) { //wait the block to confirm
@@ -287,6 +288,7 @@ class BlockMgr {
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             } else {
+
                 console.log("dmVerify:", db.getDomainVerifyCode())
             }
             //check other node
@@ -298,9 +300,8 @@ class BlockMgr {
                 const height = node.uBlock.confirmed ? node.uBlock.block.height : node.uBlock.block.height - 1
                 if (height >= startHeight) { //download missing block
                     const n = Nodes.nodeFromKey(pkey)
-                    console.log(n)
                     const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
-                    if (await this.downloadBlocks(startHeight, node.uBlock.block.height, n.id)) {
+                    if (await this.downloadBlocks(startHeight, endHight, n.id)) {
                         this.uBlock = null
                         this.hasNewTX = false
                         break;
