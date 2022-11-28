@@ -84,7 +84,7 @@ let server = null;
 
 class Indexers {
   static initDB() {
-    this.db = new Database(path.join(__dirname, "/db/" + CONSTS.TXDB), path.join(__dirname, "/db/" + CONSTS.DMDB), logger, this)
+    this.db = new Database(Path.join(__dirname, "/db/" + CONSTS.TXDB), Path.join(__dirname, "/db/" + CONSTS.DMDB), logger, this)
     this.db.open()
   }
   static async checkEnv() {
