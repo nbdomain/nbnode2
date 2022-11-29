@@ -13,7 +13,6 @@ class BlockMgr {
         this.dmVerifyMap = {}
         this.height = 0
         this.signedBlock = -1
-        this.waitSyncCount = 0
         this.uBlock = null //next unconfirmed block
         this.db = indexers.db
         this._canResolve = true
@@ -117,14 +116,14 @@ class BlockMgr {
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
                         await db.backupDB()
-                        this.waitSyncCount = 0
                         this.dmVerifyMap = {}
                     } else { //I lost, restore last good domain db
-                        if (this.waitSyncCount < 6) {
-                            this.waitSyncCount++
-                            console.error("found inconsistent domain db, waited:", this.waitSyncCount * 10, " seconds")
-                            await wait(10000)
+                        if (this.waitSyncStart === 0) this.waitSyncStart = Date.now()
+                        const span = (Date.now() - this.waitSyncStart) / 1000
+                        if (span < 60) {
+                            console.error("found inconsistent domain db, waited:", span, " seconds")
                         } else {
+                            this.waitSyncStart = 0
                             this.lastVerify = maxVerify
                             this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)

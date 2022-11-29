@@ -81,7 +81,7 @@ class Resolver {
         if (lastAT != -1 && dd.length == 2) { //an email like address
             baseDomain = fullDomain.slice(lastAT + 1);
             subDomain = fullDomain.slice(0, lastAT + 1); //includes @
-            const ret = this.db.readUser(fullDomain)
+            const ret = await this.readUser(fullDomain)
             return ret ? { code: 0, domain: fullDomain, obj: { ...ret } } : { code: 1, msg: 'not found' }
         } else {
             baseDomain = dd[dd.length - 2] + '.' + dd[dd.length - 1];
@@ -157,8 +157,8 @@ class Resolver {
         } else {
             res = this.db.readUser(account)
         }
-        if (!res.chain) {
-            res.chain = Util.getchain(dd[1])
+        if (!res.attributes.chain) {
+            res.attributes.chain = Util.getchain(dd[1])
         }
         if (!res) return { code: 1 }
         if (!res.attributes.uid) {

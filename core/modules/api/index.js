@@ -113,9 +113,6 @@ async function getAllItems(para, forceFull = false, from = null, price = true) {
         const result = await resolver.readDomain({ fullDomain: dd[0], forceFull: forceFull, history: dd[1], price })
         if (!result) continue
         if (from && result.obj.ts <= from) continue
-        if (result.code === 0) {
-            result.chain = Util.getchain(dd[0])
-        }
         ret.push(result)
     }
     return ret
