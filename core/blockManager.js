@@ -120,7 +120,7 @@ class BlockMgr {
                         this.waitSyncCount = 0
                         this.dmVerifyMap = {}
                     } else { //I lost, restore last good domain db
-                        if (this.waitSyncCount < 3) {
+                        if (this.waitSyncCount < 6) {
                             this.waitSyncCount++
                             console.error("found inconsistent domain db, waited:", this.waitSyncCount * 10, " seconds")
                             await wait(10000)
@@ -252,10 +252,12 @@ class BlockMgr {
                             await wait(DEF.BLOCK_TIME * 2)
                             block = await this.createBlock(this.height)
                         }
-                        const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
-                        const uBlock = { sigs: {}, block }
-                        uBlock.sigs[Nodes.thisNode.key] = sig
-                        this.uBlock = uBlock
+                        if (block) {
+                            const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                            const uBlock = { sigs: {}, block }
+                            uBlock.sigs[Nodes.thisNode.key] = sig
+                            this.uBlock = uBlock
+                        }
                     }
 
                 } else {
