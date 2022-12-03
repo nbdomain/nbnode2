@@ -118,7 +118,7 @@ class BlockMgr {
                         await db.backupDB()
                         this.dmVerifyMap = {}
                     } else { //I lost, restore last good domain db
-                        if (this.waitSyncStart === 0) this.waitSyncStart = Date.now()
+                        if (!this.waitSyncStart || this.waitSyncStart === 0) this.waitSyncStart = Date.now()
                         const span = (Date.now() - this.waitSyncStart) / 1000
                         if (span < 60) {
                             console.error("found inconsistent domain db, waited:", span, " seconds")
@@ -127,10 +127,10 @@ class BlockMgr {
                             this.lastVerify = maxVerify
                             this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)
-                            if (await Nodes.downloadAndUseDomainDB(node.url) == false) {
+                            /*if (await Nodes.downloadAndUseDomainDB(node.url) == false) {
                                 console.error("failed to download good db")
                                 db.restoreLastGoodDomainDB()
-                            }
+                            } */
                         }
 
                     }
