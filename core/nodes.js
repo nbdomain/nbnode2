@@ -331,7 +331,7 @@ class Nodes {
                 if (res.data && res.data.code == 0) {
                     const d = res.data
                     if (d.raw) {
-                        oData = d.raw
+                        //oData = d.raw
                         await this.indexers.db.saveData({ data: d.raw, owner: d.owner, time: d.time, from: "nodes.js" })
                     }
                     return res.data
