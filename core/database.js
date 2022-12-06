@@ -748,6 +748,8 @@ class Database {
       const strObj = key + value + tags + ts
       domainHash = await Util.dataHash(strObj + domainHash)
       this.writeConfig("dmdb", "domainHash", domainHash)
+      this.logger.logFile(domain, ":keyupdate dmhash:", domainHash)
+
     } catch (e) {
       console.error(e)
     }
@@ -834,7 +836,7 @@ class Database {
         this.dmdb.prepare(sql).run()
 
         this.writeConfig("dmdb", "domainHash", domainHash)
-        //this.logger.logFile(obj.domain, ":::", domainHash)
+        this.logger.logFile(obj.domain, ":saveDomain dmhash:", domainHash)
         //if (obj.domain === "10200.test") {
         //  this.logger.logFile(strObj)
         //}

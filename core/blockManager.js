@@ -130,7 +130,7 @@ class BlockMgr {
                             if (await Nodes.downloadAndUseDomainDB(node.url) == false) {
                                 console.error("failed to download good db")
                                 db.restoreLastGoodDomainDB()
-                            } 
+                            }
                         }
 
                     }
