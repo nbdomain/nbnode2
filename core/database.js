@@ -556,56 +556,20 @@ class Database {
   setPaytx(obj) {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
-  markResolvedTX() {
-    const resolvedTX = this.readConfig("dmdb", "maxResolvedTx")
 
-    if (resolvedTX) {
-      const rTime = this.getTransactionTime(resolvedTX)
-      while (true) {
-        const arr = this.getUnresolvedTX(100, false)
-        if (arr.length === 0) return
-        for (const tx of arr) {
-          if (tx.txTime > rTime || (tx.txTime === rTime && tx.txid > resolvedTX)) return
-          this.txdb.prepare(`UPDATE txs set resolved = ${TXRESOLVED_FLAG} where txid=?`).run(tx.txid)
-        }
-      }
-    }
-  }
   getUnresolvedTX() {
     try {
-      const LEAST = 1000;
-      let listRet = [], got = 0;
-      while (got < LEAST) {
-        let height = this.readConfig('dmdb', 'resolvingHeight')
-        //console.log('resolving height:', height)
-        if (!height) height = 0
-        height = +height
-        const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
-        const list = this.txdb.prepare(sql).raw(false).all();
-        if (list.length != 0) {
-          height++
-          this.writeConfig('dmdb', 'resolvingHeight', height + '')
-        } else {
-          break;
-        }
-        got += list.length
-        listRet = listRet.concat(list)
+      let height = this.readConfig('dmdb', 'resolvingHeight')
+      //console.log('resolving height:', height)
+      if (!height) height = 0
+      height = +height
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
+      const list = this.txdb.prepare(sql).raw(false).all();
+      if (list.length != 0) {
+        height++
+        this.writeConfig('dmdb', 'resolvingHeight', height + '')
       }
-
-      return listRet;
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }
-  getUnresolvedTX1(count, mark = true) {
-    try {
-      //if (mark)
-      //  this.markResolvedTX()
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height >${this.resolvedHeight} ORDER BY txTime,txid ASC LIMIT ?`
-      const list = this.txdb.prepare(sql).raw(false).all(count);
-
-      return list;
+      return list
     } catch (e) {
       console.error(e)
       return []

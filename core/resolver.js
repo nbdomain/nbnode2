@@ -187,7 +187,6 @@ class Resolver {
                         console.warn(`--$----Handled All current TX from DB-------`)
                         this.resolveFinish = true
                         MemDomains.clearObj(); //release memory
-
                     }
                 } else {
                     console.log("get ", rtxArray.length, " txs from DB")
@@ -255,8 +254,8 @@ class Resolver {
             } catch (err) {
                 console.log(err)
             }
-            const waitTime = rtxArray.length == 0 ? 3000 : 500
-            await wait(waitTime)
+            if (rtxArray.length == 0)
+                await wait(3000)
         }
     }
 }
