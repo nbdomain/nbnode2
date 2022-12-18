@@ -9,6 +9,7 @@ const CONSTS = {
     },  // 'planaria','mattercloud','urchain','nbnode'
     TXDB: 'txs.db',
     DMDB: 'domains.db',
+    chainid:'main',
     payment: {
         prices: {
             domainHost: { bsv: 1000, ar: 1000 }, //host user's triditional domain and link to a nbdomain

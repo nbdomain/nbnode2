@@ -117,6 +117,10 @@ class Nodes {
             console.error("can't get info from:", url)
             return false
         }
+        if (info.chainid != CONSTS.chainid) {
+            console.error('different chainId:', info.chainid)
+            return false
+        }
         if (info.pkey === this.thisNode.key) { //self
             return false
         }

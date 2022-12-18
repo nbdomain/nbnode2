@@ -316,6 +316,7 @@ app.get('/nodeInfo', async (req, res) => {
         info.pkey = await lib.getPublicKey(CONFIG.key)
     info.statusHash = indexers.db.readConfig('txdb', 'statusHash')
     info.height = indexers.db.readConfig('txdb', 'height')
+    info.chainid = CONSTS.chainid
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
