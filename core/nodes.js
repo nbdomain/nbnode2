@@ -45,6 +45,7 @@ class Nodes {
         }
     }
     async start(indexers) {
+        indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
         const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
         this.thisNode = { key: pkey }
@@ -113,7 +114,7 @@ class Nodes {
         const info = await this.validatNode(url)
         //console.log(5, url)
         if (!info) {
-            console.error("can't get info from url")
+            console.error("can't get info from:", url)
             return false
         }
         if (info.pkey === this.thisNode.key) { //self
@@ -246,26 +247,32 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" }
     }
-    async downloadAndUseDomainDB(from) {
+    async downloadAndUseDomainDB(from, includingTxDB) {
         try {
-            let url = from + "/files/bk_txs.db"
-            let filename = path.join(__dirname, "/db/test.db")
-            console.log("Downloading txdb from:", url)
-            await Util.downloadFile(url, filename)
-            console.log("Download txdb successful")
-            this.indexers.db.restoreTxDB(filename)
-
-            url = from + "/files/bk_domains.db"
-            filename = path.join(__dirname, "/db/test1.db")
+            this._canResolve = false
+            if (includingTxDB) {
+                const url = from + "/files/bk_txs.db"
+                const filename = path.join(__dirname, "/db/test.db")
+                console.log("Downloading txdb from:", url)
+                await Util.downloadFile(url, filename)
+                console.log("Download txdb successful")
+                this.indexers.db.restoreTxDB(filename)
+            }
+            const url = from + "/files/bk_domains.db"
+            const filename = path.join(__dirname, "/db/test1.db")
             console.log("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
             console.log("Download domain db successful")
+            this.indexers.resolver.abortResolve(true)
             this.indexers.db.restoreDomainDB(filename)
+            this.indexers.resolver.abortResolve(false)
+            this._canResolve = true
+            return true
         } catch (e) {
             console.error(e.message)
-            return false
         }
-        return true
+        this._canResolve = true
+        return false
     }
     async verifySigs({ txTime, txid, sigs }) {
         const { Util } = this.indexers

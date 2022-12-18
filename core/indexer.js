@@ -88,8 +88,8 @@ class Indexer {
   async addTxFull({ txid, sigs, rawtx, txTime, oDataRecord, force = false, chain, replace = false }) {
     try {
       //console.log("adding:", txid)
-      
-      const { Nodes } = this.indexers
+
+      const { Nodes, resolver } = this.indexers
       if (!force && this.database.hasTransaction(txid) && !replace) {
         console.log("Skipping:", txid)
         if (sigs) {
@@ -122,6 +122,7 @@ class Indexer {
         }
         this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
+        resolver && resolver.resolveNext()
       }
       else {
         console.error("Invalid tx:", ret, txid)

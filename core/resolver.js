@@ -2,12 +2,14 @@ const { DomainTool } = require('./domainTool')
 const { ERR, MemDomains, NIDObject } = require('./def')
 const Parser = require('./parser')
 const { Util } = require('./util')
-
+const { setTimeout } = require('timers/promises')
 
 
 const MAX_RESOLVE_COUNT = 500
 
-let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function sleep(ms, signal) {
+    return await setTimeout(ms, undefined, { signal })
+}
 /**
    * Filter out private keys from object.
    * @param {object} data The object to filter.
@@ -44,6 +46,7 @@ class Resolver {
         this.resolveNextBatchTimerId = 0
         this.controllers = [] //control resolve switch
         this.db.onResetDB = this.onResetDB;
+        this.isBreak = new AbortController()
 
     }
     start() {
@@ -56,6 +59,13 @@ class Resolver {
         this.started = false
         clearTimeout(this.resolveNextBatchTimerId)
         this.pollForNewBlocksTimerId = null
+    }
+    resolveNext() {
+        this.isBreak.abort()
+        this.isBreak = new AbortController()
+    }
+    abortResolve(abort) {
+        this.abort = abort
     }
     onResetDB(type) {
         if (type == "domain") {
@@ -169,15 +179,12 @@ class Resolver {
     async resolveNextBatch() {
         if (!this.started) return
         while (true) {
-
-
             for (const controller of this.controllers) {
                 if (!controller.canResolve()) {
                     this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
                     return
                 }
             }
-            const { logger } = this.indexers
             const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
             //console.log("rtxArray:", rtxArray.length)
             const nidObjMap = MemDomains.getMap()
@@ -226,7 +233,6 @@ class Resolver {
                             }
                             const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
                             if (obj) {
-                                //logger.logFile("processed:", item.txid)
                                 nidObjMap[domain] = obj
                                 nidObjMap[domain].dirty = true
                             }
@@ -244,18 +250,19 @@ class Resolver {
                         return 0;
                     })
                     for (const item of sortedObj) {
-                        if (item.owner_key != null && item.dirty === true) {
+                        if (item.owner_key != null && item.dirty === true && !this.abort) {
                             console.log("saving:", item.domain)
                             delete item.dirty
                             await this.db.saveDomainObj(item)
                         }
                     }
+                    if (this.abort) continue
                 }
             } catch (err) {
                 console.log(err)
             }
             if (rtxArray.length == 0)
-                await wait(3000)
+                await sleep(3000, this.isBreak.signal)
         }
     }
 }

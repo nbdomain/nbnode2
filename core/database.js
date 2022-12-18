@@ -278,8 +278,11 @@ class Database {
     this.dmdb = null
     MemDomains.clearObj()
     this.initdb('dmdb')
-    TXRESOLVED_FLAG = Date.now()
+    TXRESOLVED_FLAG = this.getResolvedFlag()//Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
+  }
+  getResolvedFlag() {
+    return this.txdb.prepare("select resolved from txs where resolved!=0").raw(true).get()
   }
   restoreTxDB(filename) {
     console.log("Restoring tx DB from:", filename)
@@ -559,16 +562,15 @@ class Database {
 
   getUnresolvedTX() {
     try {
-      let height = this.readConfig('dmdb', 'resolvingHeight')
-      //console.log('resolving height:', height)
-      if (!height) height = 0
-      height = +height
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND height = ${height} ORDER BY txTime,txid ASC`
+      //  let height = this.readConfig('dmdb', 'resolvingHeight')||0
+      //  height = +height
+      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>${maxResolvedTxTime} ORDER BY txTime,txid ASC limit 100`
       const list = this.txdb.prepare(sql).raw(false).all();
-      if (list.length != 0) {
+      /*if (list.length != 0) {
         height++
         this.writeConfig('dmdb', 'resolvingHeight', height + '')
-      }
+      }*/
       return list
     } catch (e) {
       console.error(e)

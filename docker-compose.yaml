@@ -1,0 +1,9 @@
+version: '3.9'
+services:
+  nbnode2:
+    image: nbnode2:latest
+    container_name: nbnode2
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - 9000:9000

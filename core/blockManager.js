@@ -5,6 +5,7 @@ const { default: axios } = require('axios');
 const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
+const REQUIRE_CONSENSUE = DEF.CONSENSUE_COUNT / 2
 class BlockMgr {
     constructor(indexers) {
         this.indexers = indexers
@@ -18,6 +19,7 @@ class BlockMgr {
         this._canResolve = true
         this.removeTX = new Set()
         this.indexers.resolver.addController(this)
+        this.dmVerify = indexers.db.getDomainVerifyCode()
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
@@ -111,7 +113,7 @@ class BlockMgr {
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
-                if (maxLen >= (DEF.CONSENSUE_COUNT / 2) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
+                if (maxLen >= REQUIRE_CONSENSUE && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
 
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
@@ -120,14 +122,14 @@ class BlockMgr {
                     } else { //I lost, restore last good domain db
                         if (!this.waitSyncStart || this.waitSyncStart === 0) this.waitSyncStart = Date.now()
                         const span = (Date.now() - this.waitSyncStart) / 1000
-                        if (span < 60) {
+                        if (span < 120) {
                             console.error("found inconsistent domain db, waited:", span, " seconds")
                         } else {
                             this.waitSyncStart = 0
                             this.lastVerify = maxVerify
                             this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)
-                            if (await Nodes.downloadAndUseDomainDB(node.url) == false) {
+                            if (await Nodes.downloadAndUseDomainDB(node.url, this.txConsensue == false) == false) {
                                 console.error("failed to download good db")
                                 db.restoreLastGoodDomainDB()
                             }
@@ -234,6 +236,11 @@ class BlockMgr {
     async run() {
         while (true) {
             const { Nodes, db } = this.indexers
+            const dmVerify = db.getDomainVerifyCode()
+            if (this.dmVerify != dmVerify) { //update my domain sig
+                this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                this.dmVerify = dmVerify
+            }
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
@@ -261,7 +268,7 @@ class BlockMgr {
 
                 } else {
                     const { sigs, block } = this.uBlock
-                    if (Object.keys(sigs).length >= Math.floor(DEF.CONSENSUE_COUNT / 2 + 1)) {
+                    if (Object.keys(sigs).length >= Math.floor(REQUIRE_CONSENSUE + 1)) {
                         //save block
                         console.log("cBlock hash:", block.hash)
                         await this.indexers.db.saveBlock({ sigs, block })
@@ -277,14 +284,11 @@ class BlockMgr {
                     if (bcBlock) bcBlock.confirmed = true
                 }
                 if (bcBlock) {
-                    const dmVerify = db.getDomainVerifyCode()
-                    if (this.dmVerify != dmVerify) { //update my domain sig
-                        this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
-                        this.dmVerify = dmVerify
-                    }
+
                     bcBlock.dmSig = this.dmSig
                     bcBlock.dmVerify = dmVerify
-
+                    if (objLen(bcBlock.sigs) > REQUIRE_CONSENSUE) this.txConsensue = true
+                    if (objLen(this.dmVerifyMap[this.dmVerify]) > REQUIRE_CONSENSUE) this.dmConsensue = true
                     console.log("broadcast block, height:", bcBlock.block.height, " hash:", bcBlock.block.hash, " signed by:", objLen(bcBlock.sigs), " dmVerify:", dmVerify, "singed by:", objLen(this.dmVerifyMap[this.dmVerify]))
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
