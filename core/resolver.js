@@ -185,10 +185,10 @@ class Resolver {
                     return
                 }
             }
-            const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
-            //console.log("rtxArray:", rtxArray.length)
-            const nidObjMap = MemDomains.getMap()
             try {
+                const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
+                //console.log("rtxArray:", rtxArray.length)
+                const nidObjMap = MemDomains.getMap()
                 if (rtxArray == null || rtxArray.length == 0) {
                     if (!this.resolveFinish) {
                         console.warn(`--$----Handled All current TX from DB-------`)
@@ -211,8 +211,6 @@ class Resolver {
                             }
                             console.log("resolving:", item.txid)
                             this.db.setTransactionResolved(item.txid, item.txTime)
-
-
                             const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
                             if (!res) continue
                             const rtx = { ...item, ...res.rtx }
@@ -258,11 +256,12 @@ class Resolver {
                     }
                     if (this.abort) continue
                 }
+                if (rtxArray.length == 0)
+                    await sleep(3000, this.isBreak.signal)
             } catch (err) {
                 console.log(err)
             }
-            if (rtxArray.length == 0)
-                await sleep(3000, this.isBreak.signal)
+
         }
     }
 }
