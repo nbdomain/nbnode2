@@ -19,7 +19,7 @@ class BlockMgr {
         this._canResolve = true
         this.removeTX = new Set()
         this.indexers.resolver.addController(this)
-        this.dmVerify = indexers.db.getDomainVerifyCode()
+        //this.dmVerify = indexers.db.getDomainVerifyCode()
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
@@ -92,7 +92,7 @@ class BlockMgr {
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
             //console.log("receive:", nodeKey)
-            if (dmVerify) {
+            if (dmVerify && dmSig) {
                 if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
                 let hasNewVal = false
                 if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
@@ -236,11 +236,8 @@ class BlockMgr {
     async run() {
         while (true) {
             const { Nodes, db } = this.indexers
-            const dmVerify = db.getDomainVerifyCode()
-            if (this.dmVerify != dmVerify) { //update my domain sig
-                this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
-                this.dmVerify = dmVerify
-            }
+
+
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
@@ -284,7 +281,11 @@ class BlockMgr {
                     if (bcBlock) bcBlock.confirmed = true
                 }
                 if (bcBlock) {
-
+                    const dmVerify = db.getDomainVerifyCode()
+                    if (this.dmVerify != dmVerify) { //update my domain sig
+                        this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                        this.dmVerify = dmVerify
+                    }
                     bcBlock.dmSig = this.dmSig
                     bcBlock.dmVerify = dmVerify
                     if (objLen(bcBlock.sigs) > REQUIRE_CONSENSUE) this.txConsensue = true
