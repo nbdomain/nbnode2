@@ -564,8 +564,8 @@ class Database {
     try {
       //  let height = this.readConfig('dmdb', 'resolvingHeight')||0
       //  height = +height
-      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>${maxResolvedTxTime} ORDER BY txTime,txid ASC limit 100`
+      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')||0
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} ORDER BY txTime,txid ASC limit 100`
       const list = this.txdb.prepare(sql).raw(false).all();
       /*if (list.length != 0) {
         height++
