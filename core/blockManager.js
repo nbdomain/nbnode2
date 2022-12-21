@@ -129,10 +129,10 @@ class BlockMgr {
                             this.lastVerify = maxVerify
                             this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)
-                            if (await Nodes.downloadAndUseDomainDB(node.url, this.txConsensue == false) == false) {
+                            /*if (await Nodes.downloadAndUseDomainDB(node.url, this.txConsensue == false) == false) {
                                 console.error("failed to download good db")
                                 db.restoreLastGoodDomainDB()
-                            }
+                            }*/
                         }
 
                     }

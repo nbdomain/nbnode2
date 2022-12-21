@@ -28,7 +28,7 @@ const logFolder = Path.join(__dirname , "/logg")
 if (!fs.existsSync(logFolder)) {
   fs.mkdirSync(logFolder);
 }
-var logStream = fs.createWriteStream(logFolder + "/log_" + dd + ".txt", { flags: "a" });
+var logStream = fs.createWriteStream(Path.join(logFolder, "/log_" + dd + ".txt"), { flags: "a" });
 class loggerPlus {
   static logFile(...args) {
     const da = new Date()
