@@ -267,9 +267,8 @@ class Nodes {
             console.log("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
             console.log("Download domain db successful")
-            this.indexers.resolver.abortResolve(true)
+            this.indexers.resolver.abortResolve()
             this.indexers.db.restoreDomainDB(filename)
-            this.indexers.resolver.abortResolve(false)
             this._canResolve = true
             return true
         } catch (e) {

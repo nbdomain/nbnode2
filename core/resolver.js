@@ -3,6 +3,8 @@ const { ERR, MemDomains, NIDObject } = require('./def')
 const Parser = require('./parser')
 const { Util } = require('./util')
 const { setTimeout } = require('timers/promises')
+const { CMD } = require('./def');
+
 
 
 const MAX_RESOLVE_COUNT = 500
@@ -64,8 +66,8 @@ class Resolver {
         this.isBreak.abort()
         this.isBreak = new AbortController()
     }
-    abortResolve(abort) {
-        this.abort = abort
+    abortResolve() {
+        this.abort = true
     }
     onResetDB(type) {
         if (type == "domain") {
@@ -176,6 +178,47 @@ class Resolver {
         }
         return { code: 0, ...res }
     }
+    async resolveOneTX(item){
+        try {
+            const nidObjMap = MemDomains.getMap()
+            const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
+            delete item.bytes
+            if (!rawtx) {
+                console.log("found")
+                return
+            }
+            if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
+                console.log("found")
+            }
+            console.log("resolving:", item.txid)
+            this.db.setTransactionResolved(item.txid, item.txTime)
+            const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
+            if (!res) return
+            const rtx = { ...item, ...res.rtx }
+            if (!rtx.output || rtx.output?.err) {
+                //console.error(item.txid, " parse error:", rtx.output?.err)
+                return
+            }
+            let domain = rtx.output.domain
+            if (!(domain in nidObjMap)) {
+                let onDiskNid = this.db.loadDomain(domain, true)
+                if (!onDiskNid) {
+                    nidObjMap[domain] = new NIDObject(domain)
+                } else {
+                    nidObjMap[domain] = onDiskNid
+                }
+            }
+            const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
+            if (obj) {
+                nidObjMap[domain] = obj
+                //nidObjMap[domain].dirty = true
+                if(rtx.command!=CMD.KEY)
+                    await this.db.saveDomainObj(obj)
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
     async resolveNextBatch() {
         if (!this.started) return
         while (true) {
@@ -186,6 +229,7 @@ class Resolver {
                 }
             }
             try {
+                this.abort = false
                 const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
                 //console.log("rtxArray:", rtxArray.length)
                 const nidObjMap = MemDomains.getMap()
@@ -199,62 +243,9 @@ class Resolver {
                     console.log("get ", rtxArray.length, " txs from DB")
                     this.resolveFinish = false
                     for (const item of rtxArray) {
-                        try {
-                            const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
-                            delete item.bytes
-                            if (!rawtx) {
-                                console.log("found")
-                                continue
-                            }
-                            if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
-                                console.log("found")
-                            }
-                            console.log("resolving:", item.txid)
-                            this.db.setTransactionResolved(item.txid, item.txTime)
-                            const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
-                            if (!res) continue
-                            const rtx = { ...item, ...res.rtx }
-                            if (!rtx.output || rtx.output?.err) {
-                                //console.error(item.txid, " parse error:", rtx.output?.err)
-                                continue
-                            }
-
-                            let domain = rtx.output.domain
-
-                            if (!(domain in nidObjMap)) {
-                                let onDiskNid = this.db.loadDomain(domain, true)
-                                if (!onDiskNid) {
-                                    nidObjMap[domain] = new NIDObject(domain)
-                                } else {
-                                    nidObjMap[domain] = onDiskNid
-                                }
-                            }
-                            const obj = await Parser.fillObj(nidObjMap[domain], rtx, nidObjMap)
-                            if (obj) {
-                                nidObjMap[domain] = obj
-                                nidObjMap[domain].dirty = true
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
+                       await this.resolveOneTX(item)
+                       if (this.abort) break;
                     }
-                    const sortedObj = []
-                    for (const domain in nidObjMap) {
-                        sortedObj.push(nidObjMap[domain])
-                    }
-                    sortedObj.sort((x, y) => {
-                        if (x.domain < y.domain) { return -1; }
-                        if (x.domain > y.domain) { return 1; }
-                        return 0;
-                    })
-                    for (const item of sortedObj) {
-                        if (item.owner_key != null && item.dirty === true && !this.abort) {
-                            console.log("saving:", item.domain)
-                            delete item.dirty
-                            await this.db.saveDomainObj(item)
-                        }
-                    }
-                    if (this.abort) continue
                 }
                 if (rtxArray.length == 0)
                     await sleep(3000, this.isBreak.signal)

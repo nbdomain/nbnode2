@@ -158,6 +158,7 @@ class Database {
 
       if (fs.existsSync(this.bkDBFile))
         fs.unlinkSync(this.bkDBFile)
+      this.indexers.resolver.abortResolve()
       this.restoreLastGoodDomainDB()
     }
     if (this.onResetDB) {
@@ -259,7 +260,7 @@ class Database {
   restoreDomainDB(filename) {
     console.log("Restoring domain DB from:", filename)
     this.dmdb.close()
-
+    let isReset = false
     try {
       fs.unlinkSync(this.dmpath + '-shm')
     } catch (e) { }
@@ -274,11 +275,12 @@ class Database {
       fs.copyFileSync(filename, this.dmpath)
     } else {
       fs.copyFileSync(Path.join(__dirname, "/db/template/domains.db.tpl.db"), this.dmpath);
+      isReset = true
     }
     this.dmdb = null
     MemDomains.clearObj()
     this.initdb('dmdb')
-    TXRESOLVED_FLAG = this.getResolvedFlag()//Date.now()
+    TXRESOLVED_FLAG = isReset?Date.now():this.getResolvedFlag()//Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
   }
   getResolvedFlag() {
