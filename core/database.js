@@ -280,7 +280,7 @@ class Database {
     this.dmdb = null
     MemDomains.clearObj()
     this.initdb('dmdb')
-    TXRESOLVED_FLAG = isReset?Date.now():this.getResolvedFlag()//Date.now()
+    TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
   }
   getResolvedFlag() {
