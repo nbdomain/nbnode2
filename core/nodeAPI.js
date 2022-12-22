@@ -1,7 +1,6 @@
 const { Server } = require('socket.io')
 const axios = require('axios')
 const NBPeer = require('./nbpeer')
-const CONFIG = require('./config').CONFIG
 
 const cmd = {
     hello: {
@@ -17,6 +16,7 @@ let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
+        const {config} = this.indexers
         this.nbpeer = new NBPeer()
         const self = this
         const io = new Server(indexers.server.listener, {
@@ -52,7 +52,7 @@ class NodeServer {
                     console.log("adding:", obj.server)
                     await indexers.Nodes.addNode({ url: obj.server })
                 }
-                const sig = await indexers.Util.bitcoinSign(CONFIG.key, obj.data)
+                const sig = await indexers.Util.bitcoinSign(config.key, obj.data)
                 ret({ v: cmd.hello.rv, sig })
             })
             self._setup(socket, indexers)
@@ -138,6 +138,8 @@ class NodeClient {
         this.connected = connected
     }
     async connect(node) {
+        const {config} = this.indexers
+
         const Util = this.indexers.Util
         this.node = node
         let socketUrl = null, url = node.id
@@ -153,7 +155,7 @@ class NodeClient {
         return new Promise(resolve => {
             const manager = new Manager(socketUrl, { autoConnect: false });
             const socket = manager.socket("/");
-            socket.auth = { username: "abc", key: "123", serverUrl: CONFIG.server.publicUrl }
+            socket.auth = { username: "abc", key: "123", serverUrl: config.server.publicUrl }
             manager.open((err) => {
                 if (err) {
                     console.error(err)
@@ -166,7 +168,7 @@ class NodeClient {
             socket.on('connect', function () {
                 console.log('Connected to:', socketUrl);
                 const datav = Date.now().toString()
-                const s = CONFIG.server
+                const s = config.server
                 const serverUrl = s.publicUrl
                 let helloPara = { data: datav, v: cmd.hello.v }
                 if (s.publicUrl) helloPara.server = serverUrl
@@ -294,7 +296,7 @@ class NodeClient {
 class rpcHandler {
     static handlingMap = {}
     static async handleNewTxNotify({ indexers, para, socket, force = false }) {
-        let { db, Parser, indexer, Nodes } = indexers
+        let { db, Parser, indexer, Nodes,config } = indexers
         if (para.sigs) {
             db.addTransactionSigs(para.txid, para.sigs)
         }
@@ -327,7 +329,7 @@ class rpcHandler {
             socket.volatile.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { console.error("data is missing:", para.txid); delete this.handlingMap[para.txid]; return }
-                mySig = await Util.bitcoinSign(CONFIG.key, tx.txid)
+                mySig = await Util.bitcoinSign(config.key, tx.txid)
                 if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     const sigs = db.getTransactionSigs(para.txid)
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
@@ -339,7 +341,7 @@ class rpcHandler {
         }
     }
     static async handleNewTxFromApp({ indexers, obj }) {
-        const { indexer, Parser, Util, Nodes, db } = indexers
+        const { indexer, Parser, Util, Nodes, db,config } = indexers
         let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
         if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
             console.error("parseRaw error err:", ret)
@@ -370,7 +372,7 @@ class rpcHandler {
             if (ret.rtx && ret.rtx.oHash) {
                 oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
             }
-            const sig = await Util.bitcoinSign(CONFIG.key, ret1.txid)
+            const sig = await Util.bitcoinSign(config.key, ret1.txid)
             let sigs = { [Nodes.thisNode.key]: sig }
             if (await indexer.addTxFull({ txid: ret1.txid, sigs, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
                 db.addTransactionSigs(ret1.txid, sigs)

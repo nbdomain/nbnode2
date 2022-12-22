@@ -4,6 +4,7 @@
  * Entry point
  */
 
+const { CONFIG } = require('../data/config')
 const Indexer = require('./indexer')
 const LocalServer = require('./server')
 const Database = require('./database')
@@ -24,7 +25,7 @@ const Path = require('path')
 // ------------------------------------------------------------------------------------------------
 const today = new Date();
 var dd = String(today.getMonth() + 1 + "-" + today.getDate());
-const logFolder = Path.join(__dirname , "/logg")
+const logFolder = CONFIG.getPath('log')
 if (!fs.existsSync(logFolder)) {
   fs.mkdirSync(logFolder);
 }
@@ -84,7 +85,7 @@ let server = null;
 
 class Indexers {
   static initDB() {
-    this.db = new Database(Path.join(__dirname, "/db/" + CONSTS.TXDB), Path.join(__dirname, "/db/" + CONSTS.DMDB), logger, this)
+    this.db = new Database(CONFIG.getPath("db"), logger, this)
     this.db.open()
   }
   static async checkEnv() {
@@ -101,11 +102,13 @@ class Indexers {
   static async init() {
 
     if (!await this.checkEnv()) return false
+    this.config = CONFIG
     this.initDB()
     this.logger = logger
     this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
     this.Parser = Parser
+    Util.indexers = this
     this.Util = Util
     this.resolver = this.indexer.resolver
     this.blockMgr = new BlockMgr(this)

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Page Title</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+</head>
+
+<body>
+    <button onclick="run_sub()">test sub</button>
+    <script>
+        let count = 0;
+        function run_sub() {
+            console.log("here")
+            const countElement = document.createElement("pre");
+            document.body.appendChild(countElement);
+            const eventSource = new EventSource("http://localhost:9001/api/sub/aaa.test886.test");
+            count++
+            eventSource.addEventListener("key_update", ({ data }) => {
+                countElement.innerText = `The key is updated ${count} ! The content is now ${data}.`;
+            });
+        }
+
+    </script>
+</body>
+
+</html>

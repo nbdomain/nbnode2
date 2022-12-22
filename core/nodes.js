@@ -1,4 +1,3 @@
-const config = require('./config').CONFIG
 const axios = require('axios')
 const coinfly = require('coinfly')
 const rwc = require("random-weighted-choice")
@@ -45,6 +44,8 @@ class Nodes {
         }
     }
     async start(indexers) {
+        this.indexers = indexers
+        const {config} = indexers
         indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
         const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
@@ -139,6 +140,7 @@ class Nodes {
         return true
     }
     async loadNodes() {
+        const {config} = this.indexers
         const self = this;
         const _addFromArray = async function (nodes) {
             if (!Array.isArray(nodes)) return
@@ -165,6 +167,7 @@ class Nodes {
 
     }
     isProducer(pkey) {
+        const config = this.indexers.config
         if (!pkey) return this._isProducer
         if (config.disableProducer) return false
         return CONSTS.producers.indexOf(pkey) != -1
@@ -173,6 +176,8 @@ class Nodes {
         this.removeNode(node.id)
     }
     async connectAsClient(node) {
+        const {config} = this.indexers
+
         if (this.nodeClients[node.id]) {
             console.log("already connected, ignore:", node.id)
             return false

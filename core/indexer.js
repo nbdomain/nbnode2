@@ -12,7 +12,6 @@ const Resolver = require('./resolver')
 const Parser = require('./parser')
 const { BSVChain } = require('./chains')
 const { Nodes } = require('./nodes')
-const { CONFIG } = require('./config')
 const { DEF } = require('./def')
 const process = require('process')
 const { Util } = require('./util')
@@ -52,9 +51,10 @@ class Indexer {
   }
 
   async start() {
+    const {config} = this.indexers
     this.resolver.start()
-    if (CONFIG.exit_count != 0)
-      this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * CONFIG.exit_count);
+    if (config.exit_count != 0)
+      this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * config.exit_count);
   }
 
 

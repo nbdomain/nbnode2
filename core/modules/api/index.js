@@ -2,7 +2,6 @@
  * NBDomain HTTP server for 3rd party.
  */
 var url = require('url');
-const { CONFIG } = require('../../config')
 const CONSTS = require('../../const')
 
 var express = require('express');
@@ -21,7 +20,7 @@ var app = express();
 const { createSession } = require("better-sse");
 const coinfly = require("coinfly");
 const rateLimit = require('express-rate-limit')
-let indexers = null;
+let indexers = null,CONFIG = null;
 const today = new Date();
 
 const day = today.getDate();
@@ -469,6 +468,7 @@ app.get('/tools/market/rates/:symbol', async (req, res) => {
 
 module.exports = function (env) {
     indexers = env.indexers;
+    CONFIG = indexers.config
     return new Promise((resolve) => {
         const server = app.listen(0, function () {
             const port = server.address().port;

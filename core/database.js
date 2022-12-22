@@ -9,7 +9,6 @@ const Parser = require('./parser')
 const mongoToSqlConverter = require("mongo-to-sql-converter")
 const { Util } = require('./util')
 const { createChannel } = require("better-sse")
-const { CONFIG } = require('./config')
 const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
@@ -32,11 +31,19 @@ const VER_TXDB = 5
 // ------------------------------------------------------------------------------------------------
 
 class Database {
-  constructor(txpath, dmpath, logger, indexers) {
+  constructor(path, logger, indexers) {
     //this.chain = chain
-    this.dtpath = Path.join(__dirname, "/db/odata.db")
-    this.txpath = txpath
-    this.dmpath = dmpath
+    this.path = path
+    this.bkPath = Path.join(path,"backup")
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path);
+    }
+    if (!fs.existsSync(this.bkPath)) {
+      fs.mkdirSync(this.bkPath);
+    }
+    this.dtfile = Path.join(path, "odata.db")
+    this.txfile = Path.join(path, "txs.db")
+    this.dmfile = Path.join(path, "domains.db")
     this.logger = logger
     this.txdb = null
     this.dmdb = null
@@ -45,7 +52,6 @@ class Database {
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
-    this.bkDBFile = Path.join(__dirname, `/public/bk_domains.db`)
     this.indexers = indexers
   }
   initdb(dbname) {
@@ -54,7 +60,7 @@ class Database {
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = new Sqlite3Database(this.txpath, { fileMustExist: true })
+        this.txdb = new Sqlite3Database(this.txfile, { fileMustExist: true })
         // 100MB cache
         this.txdb.pragma('cache_size = 6400')
         this.txdb.pragma('page_size = 16384')
@@ -71,7 +77,7 @@ class Database {
       //  Domains DB
       //-------------------------------------------------------//
       if (!this.dmdb) {
-        this.dmdb = new Sqlite3Database(this.dmpath, { fileMustExist: true })
+        this.dmdb = new Sqlite3Database(this.dmfile, { fileMustExist: true })
         // 100MB cache
         this.dmdb.pragma('cache_size = 6400')
         this.dmdb.pragma('page_size = 16384')
@@ -109,7 +115,7 @@ class Database {
     }
     if (dbname === 'dtdb') {
       //----------------------------DATA DB----------------------------------
-      this.dtdb = new Sqlite3Database(this.dtpath, { fileMustExist: true })
+      this.dtdb = new Sqlite3Database(this.dtfile, { fileMustExist: true })
       // 100MB cache
       this.dtdb.pragma('cache_size = 6400')
       this.dtdb.pragma('page_size = 16384')
@@ -121,31 +127,31 @@ class Database {
   }
   open() {
     if (!this.txdb) {
-      if (!fs.existsSync(this.txpath + "." + VER_TXDB)) {
-        if (fs.existsSync(this.txpath)) {
-          fs.unlinkSync(this.txpath)
-          fs.unlinkSync(this.dmpath)
+      if (!fs.existsSync(this.txfile + "." + VER_TXDB)) {
+        if (fs.existsSync(this.txfile)) {
+          fs.unlinkSync(this.txfile)
+          fs.unlinkSync(this.dmfile)
         }
-        fs.writeFileSync(this.txpath + "." + VER_TXDB, "do not delete this file");
+        fs.writeFileSync(this.txfile + "." + VER_TXDB, "do not delete this file");
       }
-      if (!fs.existsSync(this.dmpath + "." + VER_DMDB)) {
-        if (fs.existsSync(this.dmpath)) {
-          fs.unlinkSync(this.dmpath)
+      if (!fs.existsSync(this.dmfile + "." + VER_DMDB)) {
+        if (fs.existsSync(this.dmfile)) {
+          fs.unlinkSync(this.dmfile)
         }
-        fs.writeFileSync(this.dmpath + "." + VER_DMDB, "do not delete this file");
+        fs.writeFileSync(this.dmfile + "." + VER_DMDB, "do not delete this file");
       }
 
-      if (!fs.existsSync(this.txpath)) {
-        if (!fs.existsSync(this.txpath))
-          fs.copyFileSync(Path.join(__dirname, "/db/template/txs.db.tpl.db"), this.txpath);
+      if (!fs.existsSync(this.txfile)) {
+        if (!fs.existsSync(this.txfile))
+          fs.copyFileSync(Path.join(__dirname, "/template/txs.db"), this.txfile);
       }
-      if (!fs.existsSync(this.dmpath)) {
-        fs.copyFileSync(Path.join(__dirname, "/db/template/domains.db.tpl.db"), this.dmpath);
+      if (!fs.existsSync(this.dmfile)) {
+        fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), this.dmfile);
       }
-      if (!fs.existsSync(this.dtpath)) {
-        fs.copyFileSync(Path.join(__dirname, "/db/template/odata.db.tpl.db"), this.dtpath);
+      if (!fs.existsSync(this.dtfile)) {
+        fs.copyFileSync(Path.join(__dirname, "/template/odata.db"), this.dtfile);
       }
-      //const states = fs.statSync(this.dmpath + "." + VER_DMDB)
+      //const states = fs.statSync(this.dmfile + "." + VER_DMDB)
       //TXRESOLVED_FLAG = states.birthtimeMs
       this.initdb('txdb')
       this.initdb('dmdb')
@@ -155,9 +161,9 @@ class Database {
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
-
-      if (fs.existsSync(this.bkDBFile))
-        fs.unlinkSync(this.bkDBFile)
+      const bkDBFile = Path.join(this.bkPath,"bk_domains.db")
+      if (fs.existsSync(bkDBFile))
+        fs.unlinkSync(bkDBFile)
       this.indexers.resolver.abortResolve()
       this.restoreLastGoodDomainDB()
     }
@@ -262,19 +268,19 @@ class Database {
     this.dmdb.close()
     let isReset = false
     try {
-      fs.unlinkSync(this.dmpath + '-shm')
+      fs.unlinkSync(this.dmfile + '-shm')
     } catch (e) { }
     try {
-      fs.unlinkSync(this.dmpath + '-wal')
+      fs.unlinkSync(this.dmfile + '-wal')
     } catch (e) { }
     try {
-      fs.unlinkSync(this.dmpath)
+      fs.unlinkSync(this.dmfile)
     } catch (e) { }
 
     if (fs.existsSync(filename)) {
-      fs.copyFileSync(filename, this.dmpath)
+      fs.copyFileSync(filename, this.dmfile)
     } else {
-      fs.copyFileSync(Path.join(__dirname, "/db/template/domains.db.tpl.db"), this.dmpath);
+      fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), this.dmfile);
       isReset = true
     }
     this.dmdb = null
@@ -291,41 +297,41 @@ class Database {
     this.txdb.close()
 
     try {
-      fs.unlinkSync(this.txpath + '-shm')
+      fs.unlinkSync(this.txfile + '-shm')
     } catch (e) { }
     try {
-      fs.unlinkSync(this.txpath + '-wal')
+      fs.unlinkSync(this.txfile + '-wal')
     } catch (e) { }
     try {
-      fs.unlinkSync(this.txpath)
+      fs.unlinkSync(this.txfile)
     } catch (e) { }
 
     let restoreFile = filename
     if (!fs.existsSync(filename)) {
-      restoreFile = Path.join(__dirname, "/db/template/txs.db.tpl.db")
+      restoreFile = Path.join(__dirname, "/template/txs.db")
     }
-    console.log("restore:", restoreFile, "to:", this.txpath)
-    fs.copyFileSync(restoreFile, this.txpath)
+    console.log("restore:", restoreFile, "to:", this.txfile)
+    fs.copyFileSync(restoreFile, this.txfile)
     this.txdb = null
     this.initdb('txdb')
 
   }
   restoreLastGoodDomainDB() {
-    this.restoreDomainDB(this.bkDBFile)
+    this.restoreDomainDB(Path.join(this.bkPath,"bk_domains.db"))
   }
   async backupDB() {
     //const { createGzip } = require('zlib');
     //const { pipeline } = require('stream');
 
     try {
-      let dbname = Path.join(__dirname, `/public/bk_domains.db`)
+      let dbname = Path.join(this.bkPath, `bk_domains.db`)
 
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       let sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.dmdb.prepare(sql).run()
 
-      dbname = Path.join(__dirname, `/public/bk_txs.db`)
+      dbname = Path.join(this.bkPath, `/bk_txs.db`)
       if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
       sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
@@ -849,7 +855,8 @@ class Database {
   }
   //--------------------------------data service---------------------------
   writeToDisk(hash, buf, option) {
-    const pp = CONFIG.dataPath
+    const {config} = this.indexers
+    const pp = config.dataPath
     if (!fs.existsSync(path)) {
       path = Path.join(__dirname, "/db/data/")
       console.error("DataPath does exist, using ", path)
@@ -874,7 +881,8 @@ class Database {
     return hash
   }
   readDataFromDisk(hash, option = { string: true }) {
-    const path = CONFIG.dataPath
+    const {config} = this.indexers
+    const path = config.dataPath
     if (!fs.existsSync(path)) {
       path = Path.join(__dirname, "/db/data/")
       console.error("DataPath does exist, using ", path)

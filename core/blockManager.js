@@ -2,7 +2,6 @@ const { DEF } = require('./def');
 const { Util } = require('./util')
 var stringify = require('json-stable-stringify');
 const { default: axios } = require('axios');
-const CONFIG = require('./config').CONFIG
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 const REQUIRE_CONSENSUE = DEF.CONSENSUE_COUNT / 2
@@ -84,7 +83,7 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         try {
-            const { Nodes, db } = this.indexers
+            const { Nodes, db,config } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (Nodes.thisNode.key === nodeKey) return //myself
             if (block.version != DEF.BLOCK_VER) return
@@ -157,7 +156,7 @@ class BlockMgr {
                 if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
 
                     if (!sigs[Nodes.thisNode.key]) { //add my sig
-                        const sig = await Util.bitcoinSign(CONFIG.key, hash)
+                        const sig = await Util.bitcoinSign(config.key, hash)
                         sigs[Nodes.thisNode.key] = sig
                     }
                     if (objLen(this.uBlock.sigs) < objLen(sigs)) {
@@ -235,7 +234,7 @@ class BlockMgr {
     }
     async run() {
         while (true) {
-            const { Nodes, db } = this.indexers
+            const { Nodes, db,config } = this.indexers
 
 
             if (this.hasNewTX) {
@@ -256,7 +255,7 @@ class BlockMgr {
                             block = await this.createBlock(this.height)
                         }
                         if (block) {
-                            const sig = await Util.bitcoinSign(CONFIG.key, block.hash)
+                            const sig = await Util.bitcoinSign(config.key, block.hash)
                             const uBlock = { sigs: {}, block }
                             uBlock.sigs[Nodes.thisNode.key] = sig
                             this.uBlock = uBlock
@@ -283,7 +282,7 @@ class BlockMgr {
                 if (bcBlock) {
                     const dmVerify = db.getDomainVerifyCode()
                     if (this.dmVerify != dmVerify) { //update my domain sig
-                        this.dmSig = await Util.bitcoinSign(CONFIG.key, dmVerify)
+                        this.dmSig = await Util.bitcoinSign(config.key, dmVerify)
                         this.dmVerify = dmVerify
                     }
                     bcBlock.dmSig = this.dmSig

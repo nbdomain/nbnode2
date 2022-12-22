@@ -12,7 +12,6 @@ const URL = require('url')
 var dns = require("dns");
 var axios = require("axios");
 const { ExpressPeerServer } = require('peer');
-const { CONFIG } = require('./config')
 const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
@@ -138,18 +137,20 @@ class LocalServer {
     })
   }*/
   async startSSLServer() {
+    const {config} = this.indexers
+
     //Start HTTPS server
-    if (CONFIG.server.publicUrl && CONFIG.server.autoSSL) {
-      const pURL = URL.parse(CONFIG.server.publicUrl)
+    if (config.server.publicUrl && config.server.autoSSL) {
+      const pURL = URL.parse(config.server.publicUrl)
       localDomain = pURL.hostname
       var appSSL = express();
-      const localAPI = "http://localhost:" + CONFIG.server.port;
+      const localAPI = "http://localhost:" + config.server.port;
       appSSL.use(createProxyMiddleware("**", { target: localAPI }));
       let domainError = {};
       greenlock = require("@root/greenlock").create({
         packageRoot: Path.join(__dirname , "/../"),
         configDir: SSLDir,
-        maintainerEmail: CONFIG.node_info.contact,
+        maintainerEmail: config.node_info.contact,
         notify: async function (event, details) {
           if ("error" === event) {
           }
@@ -172,17 +173,19 @@ class LocalServer {
     }
   }
   async startProxyServer(app) {
+    const {config} = this.indexers
+
     return new Promise(resolve => {
       const self = this;
-      this.listener = app.listen(CONFIG.server.port, async function () {
-        console.log(`NBnode server started on port ${CONFIG.server.port}...`);
+      this.listener = app.listen(config.server.port, async function () {
+        console.log(`NBnode server started on port ${config.server.port}...`);
 
         var proxyPassConfig = CONSTS.proxy_map;
 
         for (let uri in proxyPassConfig) {
           uri = uri.trim().toLowerCase();
           console.log("uri", uri);
-          let env = CONFIG;
+          let env = config;
           env.indexers = self.indexers;
           let service_folder = proxyPassConfig[uri];
           let port = 0;

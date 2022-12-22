@@ -13,7 +13,6 @@ const { blake3 } = require('hash-wasm')
 const { default: axios } = require('axios');
 const stream = require('stream');
 const { promisify } = require('util');
-const { CONFIG } = require('./config')
 const NBLib = require("nblib2");
 const childProcess = require('child_process');
 const LocalStorage = require('node-localstorage').LocalStorage;
@@ -77,8 +76,9 @@ class CMD_BASE {
 
 class Util {
     static async initNBLib() {
+        const {config} = this.indexers
         await NBLib.init({
-            API: "http://localhost:" + CONFIG.server.port + "/api/",
+            API: "http://localhost:" + config.server.port + "/api/",
             debug: true, //enable debug or not. 
             tld_config: CONSTS.tld_config,
             enable_write: false  //enable functions that can update and write value to NBdomain

@@ -1,0 +1,8 @@
+5/April
++ odata.db for offchain data
+
+4/April
++ add 'server' 'dataPath' in config.js, 
++ suppprt nbd v3
++ support p2p command 'getdata'
++ add 'data' table to txdb

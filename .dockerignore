@@ -1,0 +1,13 @@
+node_modules/
+npm-debug.log
+core/logg
+artest/
+ssl.d/
+storage/
+temp/
+*.sh
+core/db/domains.*
+core/db/odata.*
+core/db/txs.*
+.git
+core/public
