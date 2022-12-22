@@ -262,14 +262,14 @@ class Nodes {
             this._canResolve = false
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
-                const filename = path.join(db.path, "/d/txs.db")
+                const filename = path.join(db.path, "d/txs.db")
                 console.log("Downloading txdb from:", url)
                 await Util.downloadFile(url, filename)
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
             }
             const url = from + "/files/bk_domains.db"
-            const filename = path.join(db.path, "/d/domains.db")
+            const filename = path.join(db.path, "d/domains.db")
             console.log("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
             console.log("Download domain db successful")
