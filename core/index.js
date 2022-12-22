@@ -22,6 +22,9 @@ let CONFIG = null
 try{
   CONFIG  = require('../data/config').CONFIG
 }catch(e){
+  if (!fs.existsSync('../data')) {
+    fs.mkdirSync('../data');
+  }
   fs.copyFileSync(Path.join(__dirname,"default_config.js"),Path.join(__dirname,"../data/config.js"))
   console.error("Please edit data/config.js as it fits")
   process.exit(0)
@@ -34,7 +37,7 @@ try{
 // ------------------------------------------------------------------------------------------------
 const today = new Date();
 var dd = String(today.getMonth() + 1 + "-" + today.getDate());
-const logFolder = CONFIG.getPath('log')
+const logFolder = CONFIG.path['log']||Path.join(__dirname,"../data/log")
 if (!fs.existsSync(logFolder)) {
   fs.mkdirSync(logFolder);
 }
@@ -94,7 +97,8 @@ let server = null;
 
 class Indexers {
   static initDB() {
-    this.db = new Database(CONFIG.getPath("db"), logger, this)
+    const dbPath = CONFIG.path['db']||Path.join(__dirname,"../data/db")
+    this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
   static async checkEnv() {
