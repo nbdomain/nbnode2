@@ -258,17 +258,18 @@ class Nodes {
     }
     async downloadAndUseDomainDB(from, includingTxDB) {
         try {
+            const {db} = this.indexers
             this._canResolve = false
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
-                const filename = path.join(__dirname, "/db/test.db")
+                const filename = path.join(db.path, "/d/txs.db")
                 console.log("Downloading txdb from:", url)
                 await Util.downloadFile(url, filename)
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
             }
             const url = from + "/files/bk_domains.db"
-            const filename = path.join(__dirname, "/db/test1.db")
+            const filename = path.join(db.path, "/d/domains.db")
             console.log("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
             console.log("Download domain db successful")
