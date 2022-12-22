@@ -23,6 +23,7 @@ try{
   CONFIG  = require('../data/config').CONFIG
 }catch(e){
   if (!fs.existsSync('../data')) {
+    console.log(1)
     fs.mkdirSync('../data');
   }
   fs.copyFileSync(Path.join(__dirname,"default_config.js"),Path.join(__dirname,"../data/config.js"))
