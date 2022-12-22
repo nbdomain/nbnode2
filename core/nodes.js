@@ -7,6 +7,8 @@ const { DEF } = require('./def');
 const CONSTS = require('./const');
 const { Util } = require('./util');
 const path = require('path')
+const fs = require('fs')
+
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
