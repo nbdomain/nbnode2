@@ -24,7 +24,7 @@ try{
 }catch(e){
   if (!fs.existsSync(Path.join(__dirname,'../data'))) {
     console.log(1)
-    fs.mkdirSync(Path.join(__dirname,'../data')));
+    fs.mkdirSync(Path.join(__dirname,'../data'));
   }
   fs.copyFileSync(Path.join(__dirname,"default_config.js"),Path.join(__dirname,"../data/config.js"))
   console.error("Please edit data/config.js as it fits")
