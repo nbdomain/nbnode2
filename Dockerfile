@@ -14,7 +14,6 @@ USER node
 WORKDIR /opt/app/
 COPY --chown=node:node --from=build /tmp/node_modules /opt/app/node_modules
 COPY --chown=node:node . /opt/app
-COPY ./core/default_config.js /opt/app/core/config.js
 EXPOSE 9000
 
 CMD ["node","core"]

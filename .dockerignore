@@ -1,13 +1,13 @@
 node_modules/
 npm-debug.log
-core/logg
+core/modules/api/tx
+core/modules/chain/data
 artest/
 ssl.d/
 storage/
 temp/
 *.sh
-core/db/domains.*
-core/db/odata.*
-core/db/txs.*
+data/db
 .git
 core/public
+.DS_Store

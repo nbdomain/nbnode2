@@ -120,23 +120,10 @@ class LocalServer {
 
     await this.startProxyServer(app);
 
-    this.startSSLServer(app);
+  //  this.startSSLServer(app);
   }
-  /*async startSSLServer(app) {
-    var https = require('https');
-    var attrs = [{ name: 'commonName', value: 'contoso.com' }];
-    var pems = selfsigned.generate(attrs, { days: 365 });
-    var credentials = { key: pems.private, cert: pems.cert };
-    var httpsServer = https.createServer(credentials, app);
-    httpsServer.listen(4000);
-    httpsServer.on("request", (req, res) => {
-      const evs = this.listener.listeners("request").slice(0);
-      for (let i = 0; i < evs.length; i++) {
-        evs[i].call(this.listener, req, res);
-      }
-    })
-  }*/
-  async startSSLServer() {
+
+/*  async startSSLServer() {
     const {config} = this.indexers
 
     //Start HTTPS server
@@ -171,7 +158,7 @@ class LocalServer {
       // Get's SSL certificates magically!
       green.serve(appSSL);
     }
-  }
+  } */
   async startProxyServer(app) {
     const {config} = this.indexers
 

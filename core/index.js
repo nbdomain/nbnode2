@@ -4,7 +4,6 @@
  * Entry point
  */
 
-const { CONFIG } = require('../data/config')
 const Indexer = require('./indexer')
 const LocalServer = require('./server')
 const Database = require('./database')
@@ -18,6 +17,16 @@ const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
 const Path = require('path')
+let CONFIG = null
+
+try{
+  CONFIG  = require('../data/config').CONFIG
+}catch(e){
+  fs.copyFileSync(Path.join(__dirname,"default_config.js"),Path.join(__dirname,"../data/config.js"))
+  console.error("Please edit data/config.js as it fits")
+  process.exit(0)
+}
+
 
 
 // ------------------------------------------------------------------------------------------------
