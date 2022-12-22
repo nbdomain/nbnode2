@@ -293,8 +293,8 @@ class BlockMgr {
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             } else {
-
-                console.log("dmVerify:", db.getDomainVerifyCode())
+                this.dmVerify = db.getDomainVerifyCode()
+                console.log("dmVerify:", this.dmVerify)
             }
             //check other node
             //console.log(JSON.stringify(this.nodePool))
