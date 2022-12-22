@@ -666,11 +666,11 @@ class Database {
       if (ret) {
         let value = JSON.parse(ret.value);
         if (value.__shash) { //big value saved to data db
-          value = this.readData(value.__shash).raw
-          if (!value) {
+          const value1 = this.readData(value.__shash).raw
+          if (!value1) {
             const d = await this.indexers.Nodes.getData(value.__shash)
             value = d.raw
-          }
+          }else value = value1
         }
         return value;
       }
