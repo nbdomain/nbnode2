@@ -267,6 +267,7 @@ class Nodes {
                 await Util.downloadFile(url, filename)
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
+                fs.unlinkSync(filename)
             }
             const url = from + "/files/bk_domains.db"
             const filename = path.join(db.path, "d_domains.db")
@@ -276,6 +277,7 @@ class Nodes {
             this.indexers.resolver.abortResolve()
             this.indexers.db.restoreDomainDB(filename)
             this._canResolve = true
+            fs.unlinkSync(filename)
             return true
         } catch (e) {
             console.error(e.message)
