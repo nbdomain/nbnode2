@@ -187,9 +187,6 @@ class Resolver {
                 console.log("found")
                 return
             }
-            if (item.txid == "3a51d5baf6c186c26a85350f46c0df32a7435ed7f962791084aa62a5a9944201") {
-                console.log("found")
-            }
             console.log("resolving:", item.txid)
             this.db.setTransactionResolved(item.txid, item.txTime)
             const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
@@ -224,8 +221,7 @@ class Resolver {
         while (true) {
             for (const controller of this.controllers) {
                 if (!controller.canResolve()) {
-                    this.resolveNextBatchTimerId = setTimeout(this.resolveNextBatch.bind(this), this.resolveNextBatchInterval)
-                    return
+                    await sleep(3000, this.isBreak.signal)
                 }
             }
             try {

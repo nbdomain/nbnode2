@@ -112,7 +112,7 @@ class BlockMgr {
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
-                if (maxLen >= REQUIRE_CONSENSUE && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
+                if ( (maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
 
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
@@ -170,9 +170,6 @@ class BlockMgr {
         } catch (e) {
             console.error(e)
         }
-    }
-    async downloadDomainDB(pkey) {
-        const n = this.db.getNode(pkey)
     }
     async downloadBlocks(from, to, url) {
         let ret = false, resetDB = false
@@ -232,11 +229,37 @@ class BlockMgr {
         this.hasNewTX = true
         this.uBlock = null
     }
+/*    async syncDomainDB() {
+        const { db, Nodes } = this.indexers
+        if (Nodes.isProducer()) return
+        console.log("Syncing domain db ...")
+        if(Nodes.getConnectedClients()=={})return
+        const url = Nodes.getConnectedClients()[0].node.id
+        if (await Nodes.downloadAndUseDomainDB(url) == false) {
+            console.error("failed to download good db")
+        }
+    }
+    async isInSync(){
+        const { db, Nodes } = this.indexers
+        if (Nodes.isProducer()) return
+        if(Nodes.getConnectedClients()=={})return
+        const url = Nodes.getConnectedClients()[0].node.id
+        try{
+            const res = await axios.get(url + "/api/datacount")
+            if (res.data && res.data.dmHash) {
+                const verify = db.getDomainVerifyCode()
+                if (verify === res.data.dmHash) {
+                    console.log("In sync with:", url)
+                    return true
+                }
+            }
+        }catch(e){}
+        
+        return false
+    }*/
     async run() {
         while (true) {
             const { Nodes, db,config } = this.indexers
-
-
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
