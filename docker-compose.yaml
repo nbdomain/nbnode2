@@ -1,9 +1,11 @@
-version: '3.9'
 services:
-  nbnode2:
-    image: nbnode2:latest
-    container_name: nbnode2
+  nbnode:
+    image: nbdomain/nbnode:latest
+    container_name: nbnode
     build:
       dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - data:/opt/app/data
     ports:
       - 9000:9000

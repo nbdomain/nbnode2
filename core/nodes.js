@@ -2,7 +2,7 @@ const axios = require('axios')
 const coinfly = require('coinfly')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const { NodeServer, NodeClient } = require('./nodeAPI');
+const { NodeServer, NodeClient,rpcHandler } = require('./nodeAPI');
 const { DEF } = require('./def');
 const CONSTS = require('./const');
 const { Util } = require('./util');
@@ -238,7 +238,8 @@ class Nodes {
         return connected_clients
     }
     async sendNewTx(obj) {
-        const { Parser } = this.indexers
+        return await rpcHandler.handleNewTxFromApp({indexers:this.indexers,obj})
+        /*const { Parser } = this.indexers
         let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
         if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
             console.error("parseRaw error err:", ret)
@@ -256,7 +257,7 @@ class Nodes {
             }
         }
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
-        return { code: 1, msg: "No Other nodes connected, cannot send tx" }
+        return { code: 1, msg: "No Other nodes connected, cannot send tx" } */
     }
     async downloadAndUseDomainDB(from, includingTxDB) {
         try {

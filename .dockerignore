@@ -1,7 +1,7 @@
 node_modules/
 npm-debug.log
 core/modules/api/tx
-core/modules/chain/data
+core/modules/chain/data/txHistory.db
 artest/
 ssl.d/
 storage/

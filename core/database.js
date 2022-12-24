@@ -34,7 +34,7 @@ class Database {
   constructor(path, logger, indexers) {
     //this.chain = chain
     this.path = path
-    this.bkPath = Path.join(path,"backup")
+    this.bkPath = Path.join(path, "backup")
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path);
     }
@@ -161,7 +161,7 @@ class Database {
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
-      const bkDBFile = Path.join(this.bkPath,"bk_domains.db")
+      const bkDBFile = Path.join(this.bkPath, "bk_domains.db")
       if (fs.existsSync(bkDBFile))
         fs.unlinkSync(bkDBFile)
       this.indexers.resolver.abortResolve()
@@ -317,7 +317,7 @@ class Database {
 
   }
   restoreLastGoodDomainDB() {
-    this.restoreDomainDB(Path.join(this.bkPath,"bk_domains.db"))
+    this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
   }
   async backupDB() {
     //const { createGzip } = require('zlib');
@@ -568,12 +568,12 @@ class Database {
     this.setPayTxStmt.run(obj.domain, obj.payment_txid, obj.tld, obj.protocol, obj.publicKey, obj.raw_tx, obj.ts, obj.type);
   }
 
-  getUnresolvedTX() {
+  getUnresolvedTX(limit = 100) {
     try {
       //  let height = this.readConfig('dmdb', 'resolvingHeight')||0
       //  height = +height
-      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')||0
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} ORDER BY txTime,txid ASC limit 100`
+      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime') || 0
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} ORDER BY txTime,txid ASC limit ${limit}`
       const list = this.txdb.prepare(sql).raw(false).all();
       /*if (list.length != 0) {
         height++
@@ -670,7 +670,7 @@ class Database {
           if (!value1) {
             const d = await this.indexers.Nodes.getData(value.__shash)
             value = d.raw
-          }else value = value1
+          } else value = value1
         }
         return value;
       }
@@ -855,7 +855,7 @@ class Database {
   }
   //--------------------------------data service---------------------------
   writeToDisk(hash, buf, option) {
-    const {config} = this.indexers
+    const { config } = this.indexers
     const pp = config.dataPath
     if (!fs.existsSync(path)) {
       path = Path.join(__dirname, "/db/data/")
@@ -881,7 +881,7 @@ class Database {
     return hash
   }
   readDataFromDisk(hash, option = { string: true }) {
-    const {config} = this.indexers
+    const { config } = this.indexers
     const path = config.dataPath
     if (!fs.existsSync(path)) {
       path = Path.join(__dirname, "/db/data/")

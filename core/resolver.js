@@ -48,7 +48,7 @@ class Resolver {
         this.resolveNextBatchTimerId = 0
         this.controllers = [] //control resolve switch
         this.db.onResetDB = this.onResetDB;
-        this.isBreak = new AbortController()
+        this.isBreak = null
 
     }
     start() {
@@ -63,8 +63,9 @@ class Resolver {
         this.pollForNewBlocksTimerId = null
     }
     resolveNext() {
-        this.isBreak.abort()
-        this.isBreak = new AbortController()
+        if(this.isBreak){
+            this.isBreak.abort()
+        }
     }
     abortResolve() {
         this.abort = true
@@ -221,7 +222,8 @@ class Resolver {
         while (true) {
             for (const controller of this.controllers) {
                 if (!controller.canResolve()) {
-                    await sleep(3000, this.isBreak.signal)
+                    //this.isBreak = new AbortController()
+                    await sleep(3000)
                 }
             }
             try {
@@ -243,9 +245,12 @@ class Resolver {
                        if (this.abort) break;
                     }
                 }
-                if (rtxArray.length == 0)
-                    await sleep(3000, this.isBreak.signal)
+                if (rtxArray.length == 0){
+                    //this.isBreak = new AbortController()
+                    await sleep(3000)
+                }
             } catch (err) {
+                //this.isBreak = null
                 console.log(err)
             }
 

@@ -16,7 +16,7 @@ let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
-        const {config} = this.indexers
+        const { config } = this.indexers
         this.nbpeer = new NBPeer()
         const self = this
         const io = new Server(indexers.server.listener, {
@@ -138,7 +138,7 @@ class NodeClient {
         this.connected = connected
     }
     async connect(node) {
-        const {config} = this.indexers
+        const { config } = this.indexers
 
         const Util = this.indexers.Util
         this.node = node
@@ -184,7 +184,7 @@ class NodeClient {
                     Util.bitcoinVerify(node.pkey, datav, res.sig).then(async r => {
                         if (r) {
                             self.setConnected(true)
-                           // await self.syncDomainDB.bind(self)()
+                            // await self.syncDomainDB.bind(self)()
                             await self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
@@ -279,7 +279,7 @@ class NodeClient {
 class rpcHandler {
     static handlingMap = {}
     static async handleNewTxNotify({ indexers, para, socket, force = false }) {
-        let { db, Parser, indexer, Nodes,config } = indexers
+        let { db, Parser, indexer, Nodes, config } = indexers
         if (para.sigs) {
             db.addTransactionSigs(para.txid, para.sigs)
         }
@@ -307,7 +307,6 @@ class rpcHandler {
                     }
                     await wait(2000)
                 }
-
             }
             socket.volatile.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
@@ -316,6 +315,10 @@ class rpcHandler {
                 if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     const sigs = db.getTransactionSigs(para.txid)
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
+                    const list = db.getUnresolvedTX(1)
+                    if (list && list.length > 0) {
+                        resolver.resolveOneTX(list[0])
+                    }
                 } else {
                     console.error("error adding:", para.txid)
                 }
@@ -324,7 +327,7 @@ class rpcHandler {
         }
     }
     static async handleNewTxFromApp({ indexers, obj }) {
-        const { indexer, Parser, Util, Nodes, db,config } = indexers
+        const { indexer, Parser, Util, Nodes, db, config, resolver } = indexers
         let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
         if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
             console.error("parseRaw error err:", ret)
@@ -361,6 +364,10 @@ class rpcHandler {
                 db.addTransactionSigs(ret1.txid, sigs)
                 sigs = db.getTransactionSigs(ret1.txid)
                 Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+                const list = db.getUnresolvedTX(1)
+                if (list && list.length > 0) {
+                    resolver.resolveOneTX(list[0])
+                }
             }
         } else {
             console.log("send tx failed")
