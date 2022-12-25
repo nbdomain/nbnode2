@@ -185,7 +185,7 @@ class NodeClient {
                         if (r) {
                             self.setConnected(true)
                             // await self.syncDomainDB.bind(self)()
-                            await self.pullNewTxs.bind(self)()
+                            //await self.pullNewTxs.bind(self)()
                         } else {
                             console.log(socketUrl + " verification failed. Disconnect")
                             socket.disconnect()
@@ -279,7 +279,7 @@ class NodeClient {
 class rpcHandler {
     static handlingMap = {}
     static async handleNewTxNotify({ indexers, para, socket, force = false }) {
-        let { db, Parser, indexer, Nodes, config } = indexers
+        let { db, Parser, indexer, Nodes, config, resolver } = indexers
         if (para.sigs) {
             db.addTransactionSigs(para.txid, para.sigs)
         }

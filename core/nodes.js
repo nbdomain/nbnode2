@@ -2,7 +2,7 @@ const axios = require('axios')
 const coinfly = require('coinfly')
 const rwc = require("random-weighted-choice")
 var dns = require("dns");
-const { NodeServer, NodeClient,rpcHandler } = require('./nodeAPI');
+const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI');
 const { DEF } = require('./def');
 const CONSTS = require('./const');
 const { Util } = require('./util');
@@ -26,7 +26,7 @@ class Nodes {
         })
     }
     nodeFromKey(key) {
-        console.log(JSON.stringify(this.pnodes))
+        //        console.log(JSON.stringify(this.pnodes))
         return this.pnodes.find(item => item.pkey === key)
     }
     get({ retUrl = true }) {
@@ -47,7 +47,7 @@ class Nodes {
     }
     async start(indexers) {
         this.indexers = indexers
-        const {config} = indexers
+        const { config } = indexers
         indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
         const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
@@ -142,7 +142,7 @@ class Nodes {
         return true
     }
     async loadNodes() {
-        const {config} = this.indexers
+        const { config } = this.indexers
         const self = this;
         const _addFromArray = async function (nodes) {
             if (!Array.isArray(nodes)) return
@@ -178,7 +178,7 @@ class Nodes {
         this.removeNode(node.id)
     }
     async connectAsClient(node) {
-        const {config} = this.indexers
+        const { config } = this.indexers
 
         if (this.nodeClients[node.id]) {
             console.log("already connected, ignore:", node.id)
@@ -238,7 +238,7 @@ class Nodes {
         return connected_clients
     }
     async sendNewTx(obj) {
-        return await rpcHandler.handleNewTxFromApp({indexers:this.indexers,obj})
+        return await rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
         /*const { Parser } = this.indexers
         let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
         if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
@@ -261,7 +261,7 @@ class Nodes {
     }
     async downloadAndUseDomainDB(from, includingTxDB) {
         try {
-            const {db} = this.indexers
+            const { db } = this.indexers
             this._canResolve = false
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"

@@ -83,7 +83,7 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         try {
-            const { Nodes, db,config } = this.indexers
+            const { Nodes, db, config } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (Nodes.thisNode.key === nodeKey) return //myself
             if (block.version != DEF.BLOCK_VER) return
@@ -112,7 +112,7 @@ class BlockMgr {
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
-                if ( (maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
+                if ((maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
 
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
@@ -175,6 +175,7 @@ class BlockMgr {
         let ret = false, resetDB = false
         const { db, indexer, Nodes } = this.indexers
         this._canResolve = false
+        db.restoreLastGoodDomainDB() //restore last good state
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
@@ -229,37 +230,37 @@ class BlockMgr {
         this.hasNewTX = true
         this.uBlock = null
     }
-/*    async syncDomainDB() {
-        const { db, Nodes } = this.indexers
-        if (Nodes.isProducer()) return
-        console.log("Syncing domain db ...")
-        if(Nodes.getConnectedClients()=={})return
-        const url = Nodes.getConnectedClients()[0].node.id
-        if (await Nodes.downloadAndUseDomainDB(url) == false) {
-            console.error("failed to download good db")
-        }
-    }
-    async isInSync(){
-        const { db, Nodes } = this.indexers
-        if (Nodes.isProducer()) return
-        if(Nodes.getConnectedClients()=={})return
-        const url = Nodes.getConnectedClients()[0].node.id
-        try{
-            const res = await axios.get(url + "/api/datacount")
-            if (res.data && res.data.dmHash) {
-                const verify = db.getDomainVerifyCode()
-                if (verify === res.data.dmHash) {
-                    console.log("In sync with:", url)
-                    return true
-                }
+    /*    async syncDomainDB() {
+            const { db, Nodes } = this.indexers
+            if (Nodes.isProducer()) return
+            console.log("Syncing domain db ...")
+            if(Nodes.getConnectedClients()=={})return
+            const url = Nodes.getConnectedClients()[0].node.id
+            if (await Nodes.downloadAndUseDomainDB(url) == false) {
+                console.error("failed to download good db")
             }
-        }catch(e){}
-        
-        return false
-    }*/
+        }
+        async isInSync(){
+            const { db, Nodes } = this.indexers
+            if (Nodes.isProducer()) return
+            if(Nodes.getConnectedClients()=={})return
+            const url = Nodes.getConnectedClients()[0].node.id
+            try{
+                const res = await axios.get(url + "/api/datacount")
+                if (res.data && res.data.dmHash) {
+                    const verify = db.getDomainVerifyCode()
+                    if (verify === res.data.dmHash) {
+                        console.log("In sync with:", url)
+                        return true
+                    }
+                }
+            }catch(e){}
+            
+            return false
+        }*/
     async run() {
         while (true) {
-            const { Nodes, db,config } = this.indexers
+            const { Nodes, db, config } = this.indexers
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
