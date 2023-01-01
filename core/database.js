@@ -451,10 +451,10 @@ class Database {
     const row = this.txdb.prepare(sql).get(txid)
     const data = row && row.raw
     if (!data) return null
-    if (row.chain == 'bsv' || row.chain == 'not') {
+    if (row.chain == 'bsv') {
       return data.toString('hex')
     }
-    if (row.chain == 'ar') {
+    if (row.chain == 'ar' || row.chain == 'not') {
       return data.toString()
     }
     console.error("database.js getRawTransaction: unsupported chain")

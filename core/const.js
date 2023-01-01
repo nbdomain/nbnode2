@@ -69,7 +69,7 @@ const CONSTS = {
                 "other_admins": []
             },
         },
-        "not": {
+        "pv": {
             "chain": "not",
             "address": {
                 "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",

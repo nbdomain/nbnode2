@@ -16,8 +16,13 @@ function getChainHandler(chain) {
 }
 class NOTChain {
     static async getAttrib({ rawtx }) {
-        const tx = JSON.parse(rawtx);
-        return Util.parseJson(tx.d[1])
+        try{
+            const tx = JSON.parse(rawtx);
+            return Util.parseJson(tx.d[1])
+        }catch(e){
+            return null
+        }
+       
     }
     static async raw2rtx({ rawtx, oData, time, db }) {
         const tx = Util.parseJson(rawtx);
