@@ -314,23 +314,30 @@ class rpcHandler {
                     await wait(2000)
                 }
             }
-            socket.volatile.emit("getTx", para, async (data) => {
+            const data = await Nodes.getTx(para.txid)
+            if (!data) { console.error("data is missing:", para.txid); delete this.handlingMap[para.txid]; return }
+            mySig = await Util.bitcoinSign(config.key, tx.txid)
+            if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
+                const sigs = db.getTransactionSigs(para.txid)
+                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
+                resolver.resolveOneTX(db.getTransaction(tx.txid))
+            } else {
+                console.error("error adding:", para.txid)
+            }
+            delete this.handlingMap[para.txid]
+            /*socket.emit("getTx", para, async (data) => {
                 console.log("handleNewTx:", para.txid)
                 if (!data) { console.error("data is missing:", para.txid); delete this.handlingMap[para.txid]; return }
                 mySig = await Util.bitcoinSign(config.key, tx.txid)
                 if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     const sigs = db.getTransactionSigs(para.txid)
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
-                    //const list = db.getUnresolvedTX(1)
-                    //if (list && list.length > 0) {
-                    //    resolver.resolveOneTX(list[0])
-                    //}
                     resolver.resolveOneTX(db.getTransaction(tx.txid))
                 } else {
                     console.error("error adding:", para.txid)
                 }
                 delete this.handlingMap[para.txid]
-            })
+            }) */
         }
     }
     static async handleNewTxFromApp({ indexers, obj }) {
