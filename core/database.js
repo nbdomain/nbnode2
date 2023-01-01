@@ -727,7 +727,7 @@ class Database {
       const strObj = key + value + tags + ts
       domainHash = await Util.dataHash(strObj + domainHash)
       this.writeConfig("dmdb", "domainHash", domainHash)
-      this.logger.logFile(domain, ":keyupdate dmhash:", domainHash)
+      this.logger.logFile(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
 
     } catch (e) {
       console.error(e)
