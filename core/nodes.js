@@ -70,8 +70,9 @@ class Nodes {
         this.nodeServer.start(this.indexers)
     }
     async _fromDNS() {
+        const { config } = this.indexers
         return new Promise(resolve => {
-            const domain = "nodes.nbdomain.com"
+            const domain = `nodes_${config.chainid}.nbdomain.com`
             dns.resolve(domain, "TXT", (err, data) => {
                 let nodes = []
                 for (let i = 0; i < data?.length; i++) {

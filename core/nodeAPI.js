@@ -99,7 +99,7 @@ class NodeServer {
         socket.on("pullNewTx", async (para, ret) => {
             console.log("pullNewTx:", para)
             const { db } = indexers
-            ret(await db.pullNewTx(para.afterHeight))
+            ret(await db.pullNewTx(para))
         })
         socket.on("getConfirmations", (para, ret) => {
             console.log("getConfirmations:", para)
@@ -246,9 +246,10 @@ class NodeClient {
 
     async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
         const { db, indexer } = this.indexers
-        const height = +db.readConfig("txdb", "height")
+        //const height = +db.readConfig("txdb", "height")
+        const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
         if (para == null) {
-            para = { afterHeight: height }
+            para = { fromTime }
         }
         para.v = 1
         para.from = this.from

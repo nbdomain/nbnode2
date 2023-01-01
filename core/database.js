@@ -451,7 +451,7 @@ class Database {
     const row = this.txdb.prepare(sql).get(txid)
     const data = row && row.raw
     if (!data) return null
-    if (row.chain == 'bsv') {
+    if (row.chain == 'bsv' || row.chain == 'not') {
       return data.toString('hex')
     }
     if (row.chain == 'ar') {
@@ -960,13 +960,18 @@ class Database {
     await this.updaetAllTxHashes()
     console.log("verify finish")
   }
-  async pullNewTx(afterHeight) {
-    const uBlock = this.getBlock(afterHeight, true)
-    if (uBlock) {
-      const block = uBlock.block
-      const tx = block.txs[block.txs.length - 1]
-      return await this.queryTX(tx.txTime - 1, -1, 500)
+  async pullNewTx({ afterHeight, fromTime }) {
+    let time = fromTime
+    if (afterHeight) {
+      const uBlock = this.getBlock(afterHeight, true)
+      if (uBlock) {
+        const block = uBlock.block
+        const tx = block.txs[block.txs.length - 1]
+        time = tx.txTime - 1
+      }
     }
+    if (!time) return []
+    return await this.queryTX(time - 1, -1, 500)
   }
   //------------------------------Blocks--------------------------------
   getLastBlock() {
