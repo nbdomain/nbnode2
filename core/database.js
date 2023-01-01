@@ -659,6 +659,10 @@ class Database {
       return { code: 1, msg: e.message }
     }
   }
+  async readChildrenKeys(parentKey) {
+    const sql = "select key,value,ts from keys where parent = ?"
+    return this.dmdb.prepare(sql).all(parentKey)
+  }
   async readKey(keyName) {
     try {
       //const keyLenName = keyName + "/len";
@@ -696,6 +700,7 @@ class Database {
 
   async saveKey({ key, value, domain, tags, ts }) {
     const fullKey = key + '.' + domain
+    const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
       //set key
       if (value.length > DEF.MAX_VALUE_LEN) { //big value saved to data db
@@ -704,8 +709,8 @@ class Database {
           value = JSON.stringify({ __shash: hash })
         }
       }
-      let sql = "Insert or Replace into keys (key,value,domain,ts) values(?,?,?,?)"
-      this.dmdb.prepare(sql).run(fullKey, value, domain, ts)
+      let sql = "Insert or Replace into keys (key,value,domain,ts,parent) values(?,?,?,?,?)"
+      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent)
       //remove old tags
       sql = "delete from tags where key = ?"
       this.dmdb.prepare(sql).run(fullKey)

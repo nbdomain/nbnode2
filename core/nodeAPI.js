@@ -37,6 +37,11 @@ class NodeServer {
         })*/
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
+            if (socket.handshake.auth.chainid != config.chainid) {
+                console.error("different chainid, disconnect")
+                socket.disconnect()
+                return
+            }
             if (io.of('/').sockets.size > 20) {
                 console.error("enough clients, disconnect")
                 socket.disconnect()
@@ -155,7 +160,7 @@ class NodeClient {
         return new Promise(resolve => {
             const manager = new Manager(socketUrl, { autoConnect: false });
             const socket = manager.socket("/");
-            socket.auth = { username: "abc", key: "123", serverUrl: config.server.publicUrl }
+            socket.auth = { username: "abc", key: "123", serverUrl: config.server.publicUrl, chainid: config.chainid }
             manager.open((err) => {
                 if (err) {
                     console.error(err)

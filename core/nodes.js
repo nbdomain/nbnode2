@@ -7,7 +7,7 @@ const { DEF } = require('./def');
 const CONSTS = require('./const');
 const { Util } = require('./util');
 const path = require('path')
-const fs = require('fs')
+const fs = require('fs');
 
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -109,7 +109,7 @@ class Nodes {
         // delete this.nodeClients[url]
     }
     async addNode({ url, isPublic = true }) {
-
+        const { config } = this.indexers
         if (this.endpoint && url.indexOf(this.endpoint) != -1) {
             console.error(url, "self")
             return true
@@ -120,7 +120,7 @@ class Nodes {
             console.error("can't get info from:", url)
             return false
         }
-        if (info.chainid != CONSTS.chainid) {
+        if (info.chainid != config.chainid) {
             console.error('different chainId:', info.chainid)
             return false
         }

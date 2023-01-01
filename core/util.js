@@ -76,7 +76,7 @@ class CMD_BASE {
 
 class Util {
     static async initNBLib() {
-        const {config} = this.indexers
+        const { config } = this.indexers
         await NBLib.init({
             API: "http://localhost:" + config.server.port + "/api/",
             debug: true, //enable debug or not. 
@@ -101,7 +101,7 @@ class Util {
         return await bsvLib.sign(privateKey, data)
     }
     static async verifyRaw({ expectedId, rawtx, chain }) {
-        const lib = chain === 'bsv' ? bsvLib : arLib
+        const lib = await CoinFly.create(chain)
         return await lib.verifyRaw({ expectedId, rawtx })
     }
     static async bitcoinVerify(publicKey, data, sig) {

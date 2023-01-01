@@ -11,6 +11,10 @@ class DomainTool {
     static async fetchDomainPrice(domain, db, newTx = false) {
         try {
             await Util.initNBLib()
+            const dd = domain.split('.')
+            const tld = dd[dd.length - 1]
+            const check_url = CONSTS.tld_config[tld].priceUrl
+            if (!check_url) return { code: 0, price: 0 }
             const key = domain + ".prices"
             const obj = await db.loadDomain("priceinfo.a")
             if (obj && obj.keys[key]) {
@@ -28,9 +32,9 @@ class DomainTool {
                     console.error("fetchDomainPrice:", e.message)
                 }
             }
-            let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
-            console.log(`Sending request to URL ${url}`);
-            let res = await axios.get(url, { timeout: 10000 });
+            //let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
+            console.log(`Sending request to URL ${check_url}`);
+            let res = await axios.get(check_url, { timeout: 10000 });
             return res.data;
         } catch (error) {
             console.log(error);

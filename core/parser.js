@@ -1,6 +1,6 @@
 const { Parser_Domain } = require('./parser_domain')
 const { Parser_NFT } = require('./parser_nft');
-const { ARChain, BSVChain } = require('./chains.js');
+const { getChainHandler } = require('./chains.js');
 const { CMD } = require('./def');
 
 const parsers = {}
@@ -11,7 +11,9 @@ class Parser {
         this.db = db
     }
     static async parse({ rawtx, oData, height, time, chain }) {
-        let rtx = (chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+        //let rtx = (chain === 'ar' ? await ARChain.raw2rtx({ rawtx, oData, height, time, db: this.db }) : await BSVChain.raw2rtx({ rawtx, oData, height, time, db: this.db }))
+
+        let rtx = await (getChainHandler(chain).raw2rtx({ rawtx, oData, height, time, db: this.db }))
         return { code: rtx ? 0 : 1, rtx: rtx }
     }
     static domainParser() {
@@ -23,7 +25,8 @@ class Parser {
         return this.parser_nft
     }
     static getAttrib({ rawtx, chain }) {
-        return chain === 'ar' ? ARChain.getAttrib({ rawtx }) : BSVChain.getAttrib({ rawtx })
+        const handler = getChainHandler(chain)
+        return handler.getAttrib({ rawtx })
     }
     static async parseTX({ rawtx, oData, height, time, chain, newTx = false }) {
         const ret = await this.parse({ rawtx, oData, height, time, chain })

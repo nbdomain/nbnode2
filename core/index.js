@@ -19,13 +19,13 @@ const PubSub = require('./pubsub')
 const Path = require('path')
 let CONFIG = null
 
-try{
-  CONFIG  = require('../data/config').CONFIG
-}catch(e){
-  if (!fs.existsSync(Path.join(__dirname,'../data'))) {
-    fs.mkdirSync(Path.join(__dirname,'../data'));
+try {
+  CONFIG = require('../data/config').CONFIG
+} catch (e) {
+  if (!fs.existsSync(Path.join(__dirname, '../data'))) {
+    fs.mkdirSync(Path.join(__dirname, '../data'));
   }
-  fs.copyFileSync(Path.join(__dirname,"default_config.js"),Path.join(__dirname,"../data/config.js"))
+  fs.copyFileSync(Path.join(__dirname, "default_config.js"), Path.join(__dirname, "../data/config.js"))
   console.error("Please edit data/config.js as it fits")
   process.exit(0)
 }
@@ -37,7 +37,7 @@ try{
 // ------------------------------------------------------------------------------------------------
 const today = new Date();
 var dd = String(today.getMonth() + 1 + "-" + today.getDate());
-const logFolder = CONFIG?.path?.log||Path.join(__dirname,"../data/log")
+const logFolder = CONFIG?.path?.log || Path.join(__dirname, "../data/log")
 if (!fs.existsSync(logFolder)) {
   fs.mkdirSync(logFolder);
 }
@@ -75,7 +75,7 @@ if (myArgs) {
   logger.logFile("----------------------Node Started----------------------------")
   if (argv.reorg) {
     REORG = argv.reorg
-    fs.unlinkSync(Path.join(__dirname , "/db/" + CONSTS.DMDB))
+    fs.unlinkSync(Path.join(__dirname, "/db/" + CONSTS.DMDB))
   }
 }
 
@@ -97,7 +97,7 @@ let server = null;
 
 class Indexers {
   static initDB() {
-    const dbPath = CONFIG?.path?.db||Path.join(__dirname,"../data/db")
+    const dbPath = CONFIG?.path?.db || Path.join(__dirname, "../data/db")
     this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
@@ -116,6 +116,7 @@ class Indexers {
 
     if (!await this.checkEnv()) return false
     this.config = CONFIG
+    if (!this.config.chainid) this.config.chainid = 'main'
     this.initDB()
     this.logger = logger
     this.indexer = new Indexer(this.db, this, logger)

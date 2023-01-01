@@ -20,7 +20,7 @@ var app = express();
 const { createSession } = require("better-sse");
 const coinfly = require("coinfly");
 const rateLimit = require('express-rate-limit')
-let indexers = null,CONFIG = null;
+let indexers = null, CONFIG = null;
 const today = new Date();
 
 const day = today.getDate();
@@ -315,7 +315,7 @@ app.get('/nodeInfo', async (req, res) => {
         info.pkey = await lib.getPublicKey(CONFIG.key)
     info.statusHash = indexers.db.readConfig('txdb', 'statusHash')
     info.height = indexers.db.readConfig('txdb', 'height')
-    info.chainid = CONSTS.chainid
+    info.chainid = CONFIG.chainid
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {

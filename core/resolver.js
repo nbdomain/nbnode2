@@ -63,7 +63,7 @@ class Resolver {
         this.pollForNewBlocksTimerId = null
     }
     resolveNext() {
-        if(this.isBreak){
+        if (this.isBreak) {
             this.isBreak.abort()
         }
     }
@@ -107,9 +107,10 @@ class Resolver {
                 const subObj = this.db.readKeyHistory(fullDomain, history)
                 return subObj ? { code: 0, domain: fullDomain, obj: subObj } : null
             } else {
-                const subObj = await this.db.readKey(fullDomain)
+                const children = fullDomain[0] === '.'
+                const subObj = children ? await this.db.readChildrenKeys(fullDomain.slice(1)) : await this.db.readKey(fullDomain)
                 if (subObj) {
-                    let retObj = { code: 0, domain: fullDomain, obj: subObj }
+                    let retObj = { code: 0, domain: children ? fullDomain.slice(1) : fullDomain, obj: subObj }
                     return retObj;
                 }
             }
@@ -179,7 +180,7 @@ class Resolver {
         }
         return { code: 0, ...res }
     }
-    async resolveOneTX(item){
+    async resolveOneTX(item) {
         try {
             const nidObjMap = MemDomains.getMap()
             const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
@@ -210,7 +211,7 @@ class Resolver {
             if (obj) {
                 nidObjMap[domain] = obj
                 //nidObjMap[domain].dirty = true
-                if(rtx.command!=CMD.KEY)
+                if (rtx.command != CMD.KEY)
                     await this.db.saveDomainObj(obj)
             }
         } catch (e) {
@@ -241,11 +242,11 @@ class Resolver {
                     console.log("get ", rtxArray.length, " txs from DB")
                     this.resolveFinish = false
                     for (const item of rtxArray) {
-                       await this.resolveOneTX(item)
-                       if (this.abort) break;
+                        await this.resolveOneTX(item)
+                        if (this.abort) break;
                     }
                 }
-                if (rtxArray.length == 0){
+                if (rtxArray.length == 0) {
                     //this.isBreak = new AbortController()
                     await sleep(3000)
                 }

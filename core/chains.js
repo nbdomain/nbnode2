@@ -4,7 +4,59 @@ const { ArUtil, Util } = require("./util")
 const BitID = require('bitidentity');
 const axios = require('axios')
 
-
+function getChainHandler(chain) {
+    let lib = null
+    switch (chain) {
+        case 'bsv': lib = BSVChain; break;
+        case 'ar': lib = ARChain; break;
+        case 'not': lib = NOTChain; break;
+    }
+    if (!lib) console.error("unsupported chain:", chain)
+    return lib
+}
+class NOTChain {
+    static async getAttrib({ rawtx }) {
+        const tx = JSON.parse(rawtx);
+        return Util.parseJson(tx.d[1])
+    }
+    static async raw2rtx({ rawtx, oData, time, db }) {
+        const tx = Util.parseJson(rawtx);
+        let rtx = {
+            time: time,
+            txid: tx.txid,
+            publicKey: tx.pk,
+            output: null,
+        };
+        const attrib = Util.parseJson(tx.d[1])
+        rtx.ts = +attrib.ts
+        if (!attrib.ts || !Number.isInteger(+rtx.ts)) {
+            console.error("timestamp is missing:", rtx.txid)
+            return null
+        }
+        let cmds = null
+        if (attrib.v === 3) {
+            if (!oData) oData = db.readData(attrib.hash).raw
+            cmds = Util.parseJson(oData)
+            rtx.command = cmds[2]
+            const hash = await Util.dataHash(oData)
+            if (hash !== attrib.hash) {
+                console.error("hash mismatch:", attrib.hash)
+                return null
+            }
+            rtx.oHash = hash
+        }
+        let out = [], out0 = {}, i = 2
+        for (; i < cmds.length + 2; i++) {
+            out0['s' + i] = cmds[i - 2]
+        }
+        out.push(out0)
+        out.push({ protocol: "bitidentity" })
+        out.push({ e: { a: "", v: 0 } })
+        rtx.out = out
+        rtx.chain = 'not'
+        return rtx
+    }
+}
 class ARChain {
     static async verify(rawtx, height, time, db) {
         //const v = await ARAPI.verifyTx(rawtx)
@@ -261,5 +313,4 @@ class BSVChain {
     }
 }
 
-module.exports.ARChain = ARChain
-module.exports.BSVChain = BSVChain
+module.exports.getChainHandler = getChainHandler

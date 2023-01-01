@@ -9,10 +9,8 @@ const CONSTS = {
     },  // 'planaria','mattercloud','urchain','nbnode'
     TXDB: 'txs.db',
     DMDB: 'domains.db',
-    chainid:'main',
     payment: {
         prices: {
-            domainHost: { bsv: 1000, ar: 1000 }, //host user's triditional domain and link to a nbdomain
             keyUpdate: { bsv: 2, ar: 10, contributeRate: 0.2 },
             sellFee: 0.1,
         },
@@ -29,7 +27,6 @@ const CONSTS = {
         '/web/': "web",
         "/chain/": "chain"
     },
-    "nidcheck_endpoint": "https://util.nbsite.link/namecheck/v1/check/",
     "admin": {
         "transfer_fee": 1000,
         "transfer_fee_rate": 0.1
@@ -37,6 +34,7 @@ const CONSTS = {
     "tld_config": {
         "test": {
             "testing": true,
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
             "chain": "bsv",
             "address": {
                 "payment": "19fLpT5LpaMGKuLfUVqmNdXkVceq2rbjyn",
@@ -53,6 +51,7 @@ const CONSTS = {
         },
         "b": {
             "chain": "bsv",
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
             "address": {
                 "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",
                 "protocol": "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ",
@@ -62,11 +61,19 @@ const CONSTS = {
         },
         "a": {
             "chain": "ar",
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
             "address": {
                 "payment": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
                 "protocol": "ardomaina",
                 "admin": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
                 "other_admins": []
+            },
+        },
+        "not": {
+            "chain": "not",
+            "address": {
+                "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",
+                "protocol": "notp1",
             },
         }
     }
