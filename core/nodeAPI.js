@@ -321,10 +321,10 @@ class rpcHandler {
                 if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                     const sigs = db.getTransactionSigs(para.txid)
                     Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
-                    const list = db.getUnresolvedTX(1)
-                    if (list && list.length > 0) {
-                        resolver.resolveOneTX(list[0])
-                    }
+                    //const list = db.getUnresolvedTX(1)
+                    //if (list && list.length > 0) {
+                    //    resolver.resolveOneTX(list[0])
+                    //}
                 } else {
                     console.error("error adding:", para.txid)
                 }
