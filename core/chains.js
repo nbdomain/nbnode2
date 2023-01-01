@@ -16,13 +16,13 @@ function getChainHandler(chain) {
 }
 class NOTChain {
     static async getAttrib({ rawtx }) {
-        try{
+        try {
             const tx = JSON.parse(rawtx);
             return Util.parseJson(tx.d[1])
-        }catch(e){
+        } catch (e) {
             return null
         }
-       
+
     }
     static async raw2rtx({ rawtx, oData, time, db }) {
         const tx = Util.parseJson(rawtx);
@@ -41,6 +41,11 @@ class NOTChain {
         let cmds = null
         if (attrib.v === 3) {
             if (!oData) oData = db.readData(attrib.hash).raw
+            if (!oData) { //read from other peer
+                const { Nodes } = require('./nodes')
+                const d = await Nodes.getData(attrib.hash, { string: true })
+                oData = d.raw
+            }
             cmds = Util.parseJson(oData)
             rtx.command = cmds[2]
             const hash = await Util.dataHash(oData)
