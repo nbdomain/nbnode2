@@ -961,7 +961,7 @@ class Database {
     console.log("verify finish")
   }
   async pullNewTx({ afterHeight, fromTime }) {
-    let time = fromTime
+    let time = +fromTime || 0
     if (afterHeight) {
       const uBlock = this.getBlock(afterHeight, true)
       if (uBlock) {
@@ -970,7 +970,6 @@ class Database {
         time = tx.txTime - 1
       }
     }
-    if (!time) return []
     return await this.queryTX(time - 1, -1, 500)
   }
   //------------------------------Blocks--------------------------------

@@ -175,11 +175,11 @@ class BlockMgr {
         let ret = false, resetDB = false
         const { db, indexer, Nodes } = this.indexers
         this._canResolve = false
-        db.restoreLastGoodDomainDB() //restore last good state
         try {
             console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
             if (res.data) {
+                db.restoreLastGoodDomainDB() //restore last good state
                 for (const blockItem of res.data) {
                     let block = JSON.parse(blockItem.body)
                     //if (block.version != DEF.BLOCK_VER) continue
