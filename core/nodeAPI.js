@@ -325,6 +325,7 @@ class rpcHandler {
                     //if (list && list.length > 0) {
                     //    resolver.resolveOneTX(list[0])
                     //}
+                    resolver.resolveOneTX(db.getTransaction(tx.txid))
                 } else {
                     console.error("error adding:", para.txid)
                 }
