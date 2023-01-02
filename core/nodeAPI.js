@@ -219,7 +219,7 @@ class NodeClient {
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
                 const para = JSON.parse(arg.data)
-                rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
+                await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
                 await self.indexers.Nodes.addNode({ url: arg.data.url })
