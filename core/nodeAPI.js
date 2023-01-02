@@ -210,11 +210,13 @@ class NodeClient {
         })
     }
     async _setup() {
+        const { logger } = this.indexers
         const self = this
         console.log("setup for:", this.node.id)
         this.socket.on('notify', async (arg) => {
             if (arg.id && self.handlingMap[arg.id])
                 return
+            logger.logFile("handling:", arg.id)
             if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
