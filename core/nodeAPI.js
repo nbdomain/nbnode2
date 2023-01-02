@@ -209,9 +209,9 @@ class NodeClient {
             })
         })
     }
-    async handlerNewTx() {
-        if (this.handleNewTx) return
-        this.handlerNewTx = true
+    async handleNewTx() {
+        if (this.newTxStarted) return
+        this.newTxStarted = true
         while (true) {
             const arg = this.newtxQ.shift()
             if (arg) {
@@ -235,7 +235,7 @@ class NodeClient {
             if (arg.cmd === "newtx") {
                 if (!self.newtxQ) self.newtxQ = []
                 self.newtxQ.push(arg)
-                self.handlerNewTx()
+                self.handleNewTx()
                 //const para = JSON.parse(arg.data)
                 //await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
