@@ -209,6 +209,19 @@ class NodeClient {
             })
         })
     }
+    async handlerNewTx() {
+        if (this.handleNewTx) return
+        this.handlerNewTx = true
+        while (true) {
+            const arg = this.newtxQ.shift()
+            if (arg) {
+                const para = JSON.parse(arg.data)
+                await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
+            } else {
+                await wait(1000)
+            }
+        }
+    }
     async _setup() {
         const { logger } = this.indexers
         const self = this
@@ -220,8 +233,11 @@ class NodeClient {
             if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
-                const para = JSON.parse(arg.data)
-                await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
+                if (!self.newtxQ) self.newtxQ = []
+                self.newtxQ.push(arg)
+                self.handlerNewTx()
+                //const para = JSON.parse(arg.data)
+                //await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
             }
             if (arg.cmd === "newNode") {
                 await self.indexers.Nodes.addNode({ url: arg.data.url })
