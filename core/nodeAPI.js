@@ -216,7 +216,7 @@ class NodeClient {
             const arg = this.newtxQ.shift()
             if (arg) {
                 const para = JSON.parse(arg.data)
-                await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
+                await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: this.socket })
             } else {
                 await wait(1000)
             }
