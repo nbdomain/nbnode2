@@ -38,7 +38,8 @@ class Parser {
         try {
             if (newTx) { //new rawtx
                 const tsNow = Date.now() / 1000
-                const tspan = tsNow - rtx.ts
+                const ts = rtx.ts > 10000000000 ? rtx.ts / 1000 : rtx.ts
+                const tspan = tsNow - ts
                 if (tspan > 120 || tspan < -1) { //shall not after tsNow
                     console.error("invalid timestamp:tspan=", tspan, " tsNow:", tsNow, " ts:", rtx.ts)
                     return { code: 1, msg: "invalid timestamp" }
