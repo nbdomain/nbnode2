@@ -90,11 +90,11 @@ class Util {
     }
     static async fetchDomainPrice(domain, db, newTx = false) {
         try {
-            const { config, CONSTS } = this.indexers
+            const { config, CONSTS, Nodes } = this.indexers
             await Util.initNBLib()
             const dd = domain.split('.')
             const tld = dd[dd.length - 1]
-            const check_url = CONSTS.tld_config[tld].priceUrl
+            const check_url = CONSTS.tld_config[tld].price_url
             if (!check_url) return { code: 0, price: 0 }
             const key = domain + ".prices"
             const obj = await db.loadDomain("priceinfo.a")
@@ -114,8 +114,8 @@ class Util {
                 }
             }
             //let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
-            console.log(`Sending request to URL ${check_url}`);
-            let res = await axios.get(check_url, { timeout: 10000 });
+            console.log(`Sending request to URL ${check_url + domain}`);
+            let res = await axios.get(check_url + domain, { timeout: 10000 });
             return res.data;
         } catch (error) {
             console.log(error);
