@@ -2,7 +2,6 @@
  * NBDomain HTTP server for 3rd party.
  */
 var url = require('url');
-const CONSTS = require('../../const')
 
 var express = require('express');
 var bodyParser = require("body-parser");
@@ -307,6 +306,7 @@ app.get('/qt/:q', function (req, res) {
 });
 
 app.get('/nodeInfo', async (req, res) => {
+    const {CONSTS} = indexers
     let info = { ...CONFIG.server, ...CONFIG.node_info, ...CONSTS.payment };
     info.version = "1.6." + fs.readFileSync(Path.join(__dirname, '/../../../build_number'), 'utf8').trim();
     info.tld = CONSTS.tld_config
@@ -319,7 +319,7 @@ app.get('/nodeInfo', async (req, res) => {
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
-
+    const {CONSTS} = indexers
     res.json(CONSTS.tld_config);
 });
 app.get('/onSale', (req, res) => {

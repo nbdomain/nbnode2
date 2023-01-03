@@ -1,4 +1,3 @@
-const { DomainTool } = require('./domainTool')
 const { ERR, MemDomains, NIDObject } = require('./def')
 const Parser = require('./parser')
 const { Util } = require('./util')
@@ -141,7 +140,7 @@ class Resolver {
                 }
                 return { code: 0, obj: obj, domain: fullDomain }
             }
-            let ret = price ? await DomainTool.fetchDomainPrice(fullDomain, this.db) : { code: 110 };
+            let ret = price ? await Util.fetchDomainPrice(fullDomain, this.db) : { code: 110 };
             ret.domain = fullDomain;
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;

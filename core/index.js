@@ -117,12 +117,16 @@ class Indexers {
     if (!await this.checkEnv()) return false
     this.config = CONFIG
     if (!this.config.chainid) this.config.chainid = 'main'
+    if (this.config.tld) {
+      CONSTS.tld_config = { ...this.config.tld, ...CONSTS.tld_config }
+    }
+    this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger
     this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
     this.Parser = Parser
-    Util.indexers = this
+    Util.init(this)
     this.Util = Util
     this.resolver = this.indexer.resolver
     this.blockMgr = new BlockMgr(this)

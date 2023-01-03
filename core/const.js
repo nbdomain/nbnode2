@@ -4,9 +4,6 @@ const MEMPOOL_EXPIRATION = 60 * 60 * 24
 require('axios').default.defaults.timeout = TIMEOUT
 
 const CONSTS = {
-    API: {
-        bsv: "planaria", ar: 'arnode'
-    },  // 'planaria','mattercloud','urchain','nbnode'
     TXDB: 'txs.db',
     DMDB: 'domains.db',
     payment: {
@@ -69,13 +66,6 @@ const CONSTS = {
                 "other_admins": []
             },
         },
-        "pv": {
-            "chain": "not",
-            "address": {
-                "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",
-                "protocol": "notp1",
-            },
-        }
     }
 }
 module.exports = CONSTS

@@ -4,7 +4,6 @@ const rwc = require("random-weighted-choice")
 var dns = require("dns");
 const { NodeServer, NodeClient, rpcHandler } = require('./nodeAPI');
 const { DEF } = require('./def');
-const CONSTS = require('./const');
 const { Util } = require('./util');
 const path = require('path')
 const fs = require('fs');
@@ -170,7 +169,7 @@ class Nodes {
 
     }
     isProducer(pkey) {
-        const config = this.indexers.config
+        const { config, CONSTS } = this.indexers
         if (!pkey) return this._isProducer
         if (config.disableProducer) return false
         return CONSTS.producers.indexOf(pkey) != -1

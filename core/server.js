@@ -12,7 +12,6 @@ const URL = require('url')
 var dns = require("dns");
 var axios = require("axios");
 const { ExpressPeerServer } = require('peer');
-const CONSTS = require('./const')
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { createCipheriv } = require('crypto');
 const { Nodes } = require('./nodes');
@@ -160,7 +159,7 @@ class LocalServer {
     }
   } */
   async startProxyServer(app) {
-    const {config} = this.indexers
+    const {config,CONSTS} = this.indexers
 
     return new Promise(resolve => {
       const self = this;

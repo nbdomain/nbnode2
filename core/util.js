@@ -3,7 +3,6 @@
  */
 
 
-const CONSTS = require('./const');
 const cp = require('child_process');
 const nbpay = require('nbpay')
 const fs = require('fs')
@@ -21,7 +20,7 @@ nbpay.auto_config();
 let arLib = null, bsvLib = null;
 CoinFly.create('ar').then(lib => arLib = lib)
 CoinFly.create('bsv').then(lib => bsvLib = lib)
-const SUB_PROTOCOL_MAP = CONSTS.tld_config
+let SUB_PROTOCOL_MAP = null
 
 class ArNodes {
     async _getPeers(seed) {
@@ -75,14 +74,53 @@ class CMD_BASE {
 };
 
 class Util {
+    static init(indexers) {
+        this.indexers = indexers
+        const { CONSTS } = this.indexers
+        SUB_PROTOCOL_MAP = CONSTS.tld_config
+    }
     static async initNBLib() {
-        const { config } = this.indexers
+        const { config, CONSTS } = this.indexers
         await NBLib.init({
             API: "http://localhost:" + config.server.port + "/api/",
             debug: true, //enable debug or not. 
             tld_config: CONSTS.tld_config,
             enable_write: false  //enable functions that can update and write value to NBdomain
         });
+    }
+    static async fetchDomainPrice(domain, db, newTx = false) {
+        try {
+            const { config, CONSTS } = this.indexers
+            await Util.initNBLib()
+            const dd = domain.split('.')
+            const tld = dd[dd.length - 1]
+            const check_url = CONSTS.tld_config[tld].priceUrl
+            if (!check_url) return { code: 0, price: 0 }
+            const key = domain + ".prices"
+            const obj = await db.loadDomain("priceinfo.a")
+            if (obj && obj.keys[key]) {
+                return { code: 0, price: obj.keys[key].value.price }
+            }
+            domain = encodeURIComponent(domain)
+            const otherNode = Nodes.get({})
+            if (otherNode) {
+                try {
+                    const url = otherNode + "/api/?nid=" + key + ".priceinfo.a"
+                    console.log("getting price from:", url)
+                    let res = await axios.get(url)
+                    if (res.data && res.data.code == 0) return { code: 0, price: res.data.obj.v.price }
+                } catch (e) {
+                    console.error("fetchDomainPrice:", e.message)
+                }
+            }
+            //let url = `${CONSTS.nidcheck_endpoint}${domain}?prereg=${newTx}`;
+            console.log(`Sending request to URL ${check_url}`);
+            let res = await axios.get(check_url, { timeout: 10000 });
+            return res.data;
+        } catch (error) {
+            console.log(error);
+            return { code: -1000, message: error };
+        }
     }
     static async verifyTX(txs) {
         const bsvTX = txs.filter(tx => tx.chain === 'bsv').map(item => item.txid)

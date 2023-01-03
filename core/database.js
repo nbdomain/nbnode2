@@ -835,7 +835,7 @@ class Database {
   }
   async queryTX(fromTime, toTime, limit = -1) {
     try {
-      if (toTime == -1) toTime = 9999999999
+      if (toTime == -1) toTime = 9999999999999
       let sql = `SELECT * from txs where (txTime > ? AND txTime < ? ) `
       if (limit != -1) sql += "limit " + limit
       //console.log(sql,fromTime,toTime)
