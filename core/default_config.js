@@ -24,6 +24,8 @@ const CONFIG = {
     port: 9000,  //local port for http service, https will use 443 and ignore this setting
     hideFromList: false //(optional) if add this node to /api/nodes endpoint
   },
+  allowIPs: [],
+  apiKeys: [],
   dataPath: "", //Existing Disk Path for big data, default is core/db/data
   pnodes: ["https://api.nbdomain.com"],//other(than public) nbnode peers and will not share with other nodes
   "exit_count": 0, //exit the process each x minutes. Used with PM2 to restart process every x minutes. 0 for no exit

@@ -12,8 +12,6 @@ const { createChannel } = require("better-sse")
 const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
-const { default: axios } = require('axios')
-const hash = require('bsv/lib/crypto/hash')
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -34,7 +32,7 @@ class Database {
   constructor(path, logger, indexers) {
     //this.chain = chain
     this.path = path
-    this.bkPath = Path.join(path, "backup")
+    this.bkPath = Path.join(path, "../files")
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path);
     }

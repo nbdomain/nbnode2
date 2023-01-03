@@ -108,9 +108,9 @@ class LocalServer {
         next();
         return;
       }
-      res.sendFile(Path.join(__dirname , "/public/index.html"));
+      res.sendFile(Path.join(__dirname, "/public/index.html"));
     });
-    app.use('/files/', express.static(Path.join(__dirname , '/public')))
+    app.use('/files/', express.static(Path.join(__dirname, '../data/files')))
 
     setInterval(() => {
       //console.log("clear domainMap cache");
@@ -119,47 +119,47 @@ class LocalServer {
 
     await this.startProxyServer(app);
 
-  //  this.startSSLServer(app);
+    //  this.startSSLServer(app);
   }
 
-/*  async startSSLServer() {
-    const {config} = this.indexers
-
-    //Start HTTPS server
-    if (config.server.publicUrl && config.server.autoSSL) {
-      const pURL = URL.parse(config.server.publicUrl)
-      localDomain = pURL.hostname
-      var appSSL = express();
-      const localAPI = "http://localhost:" + config.server.port;
-      appSSL.use(createProxyMiddleware("**", { target: localAPI }));
-      let domainError = {};
-      greenlock = require("@root/greenlock").create({
-        packageRoot: Path.join(__dirname , "/../"),
-        configDir: SSLDir,
-        maintainerEmail: config.node_info.contact,
-        notify: async function (event, details) {
-          if ("error" === event) {
-          }
-        },
-      });
-      const res = await greenlock.sites.add({
-        subject: pURL.hostname,
-        altnames: [pURL.hostname],
-      });
-      console.log("sites.add", res);
-      const green = require("greenlock-express").init(() => {
-        return {
-          greenlock,
-          cluster: false,
-        };
-      });
-      // Serves on 80 and 443
-      // Get's SSL certificates magically!
-      green.serve(appSSL);
-    }
-  } */
+  /*  async startSSLServer() {
+      const {config} = this.indexers
+  
+      //Start HTTPS server
+      if (config.server.publicUrl && config.server.autoSSL) {
+        const pURL = URL.parse(config.server.publicUrl)
+        localDomain = pURL.hostname
+        var appSSL = express();
+        const localAPI = "http://localhost:" + config.server.port;
+        appSSL.use(createProxyMiddleware("**", { target: localAPI }));
+        let domainError = {};
+        greenlock = require("@root/greenlock").create({
+          packageRoot: Path.join(__dirname , "/../"),
+          configDir: SSLDir,
+          maintainerEmail: config.node_info.contact,
+          notify: async function (event, details) {
+            if ("error" === event) {
+            }
+          },
+        });
+        const res = await greenlock.sites.add({
+          subject: pURL.hostname,
+          altnames: [pURL.hostname],
+        });
+        console.log("sites.add", res);
+        const green = require("greenlock-express").init(() => {
+          return {
+            greenlock,
+            cluster: false,
+          };
+        });
+        // Serves on 80 and 443
+        // Get's SSL certificates magically!
+        green.serve(appSSL);
+      }
+    } */
   async startProxyServer(app) {
-    const {config,CONSTS} = this.indexers
+    const { config, CONSTS } = this.indexers
 
     return new Promise(resolve => {
       const self = this;

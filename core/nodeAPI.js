@@ -229,7 +229,7 @@ class NodeClient {
         this.socket.on('notify', async (arg) => {
             if (arg.id && self.handlingMap[arg.id])
                 return
-            logger.logFile("handling:", arg.id)
+            //logger.logFile("handling:", arg.id)
             if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
@@ -338,8 +338,8 @@ class rpcHandler {
             mySig = await Util.bitcoinSign(config.key, tx.txid)
             if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                 const sigs = db.getTransactionSigs(para.txid)
-                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
-                resolver.resolveOneTX(db.getTransaction(tx.txid))
+                await Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
+                await resolver.resolveOneTX(db.getTransaction(tx.txid))
             } else {
                 console.error("error adding:", para.txid)
             }

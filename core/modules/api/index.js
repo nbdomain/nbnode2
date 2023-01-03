@@ -48,7 +48,24 @@ function getClientIp(req) {
         req.connection.socket.remoteAddress;
     return IP.split(",")[0];
 }
-
+/*app.use(function checkAccess(req, res, next) {
+    const { config } = indexers
+    if (config.allowIPs.length != 0) {
+        const IP = getClientIp(req)
+        if (config.allowIPs.indexOf(IP) == -1) {
+            res.end("not allowed")
+            return
+        }
+    }
+    if (config.apiKeys.length != 0) {
+        const apiKey = req.header('x-api-key');
+        if (config.apiKeys.indexOf(apiKey) == -1) {
+            res.end("not allowed")
+            return
+        }
+    }
+    next()
+}) */
 app.get('/', async function (req, res, next) {
 
     let domain = req.query['nid'];
@@ -306,7 +323,7 @@ app.get('/qt/:q', function (req, res) {
 });
 
 app.get('/nodeInfo', async (req, res) => {
-    const {CONSTS} = indexers
+    const { CONSTS } = indexers
     let info = { ...CONFIG.server, ...CONFIG.node_info, ...CONSTS.payment };
     info.version = "1.6." + fs.readFileSync(Path.join(__dirname, '/../../../build_number'), 'utf8').trim();
     info.tld = CONSTS.tld_config
@@ -319,7 +336,7 @@ app.get('/nodeInfo', async (req, res) => {
     res.json(info);
 })
 app.get(`/tld`, function (req, res) {
-    const {CONSTS} = indexers
+    const { CONSTS } = indexers
     res.json(CONSTS.tld_config);
 });
 app.get('/onSale', (req, res) => {
