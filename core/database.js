@@ -713,7 +713,7 @@ class Database {
     return retKeys
   }
 
-  async saveKey({ key, value, domain, props, tags, ts }) {
+  async saveKey({ key, value, domain, props = {}, tags, ts }) {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {

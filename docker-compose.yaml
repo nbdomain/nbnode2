@@ -1,11 +1,12 @@
+version: '2'
 services:
   nbnode:
-    image: nbdomain/nbnode:latest
+    image: bloodchen/nbnode:latest
     container_name: nbnode
     build:
       dockerfile: Dockerfile
     restart: always
     volumes:
-      - data:/opt/app/data
+      - ./data:/opt/app/data
     ports:
       - 9000:9000
