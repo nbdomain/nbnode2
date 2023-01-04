@@ -330,6 +330,7 @@ class BlockMgr {
                 if (height >= startHeight) { //download missing block
                     const n = Nodes.nodeFromKey(pkey)
                     const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
+                    if (endHight - startHeight >= 200) continue
                     if (await this.downloadBlocks(startHeight, endHight, n.id)) {
                         this.uBlock = null
                         this.hasNewTX = false
