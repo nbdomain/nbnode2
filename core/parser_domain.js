@@ -398,11 +398,13 @@ class CMD_KEY {
     static parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            let tags = null, pay = {}, hasPay = false
+            let tags = null, props, pay = {}, hasPay = false
             output.value = JSON.parse(rtx.out[0].s5);
             const s6 = Util.parseJson(rtx.out[0].s6)
             tags = s6 && s6.tags;
             if (tags) output.tags = tags
+            props = s6 && s6.props;
+            if (props) output.props = props
 
             output.ts = rtx.ts ? rtx.ts : rtx.time
             output.txid = rtx.txid
@@ -473,7 +475,7 @@ class CMD_KEY {
             if (output.pay) newValue.pay = output.pay
             if (output.tags) newValue.tags = output.tags
             //CMD_KEY.updateKey(nidObj, newKey, newValue, rtx.output)
-            await this.parser.db.saveKey({ key: newKey, value: JSON.stringify(newValue), domain: output.domain, tags: output.tags, ts: output.ts })
+            await this.parser.db.saveKey({ key: newKey, value: JSON.stringify(newValue), domain: output.domain, props: output.props, tags: output.tags, ts: output.ts })
         }
         return nidObj
     }

@@ -145,6 +145,18 @@ app.get('/qf/*', async function (req, res) {
     const ret = await getAllItems(para, true, from)
     res.json(ret)
 })
+app.get('/qt/:q', function (req, res) {
+    const q = req.params['q']
+    const result = indexers.db.queryByTags(q);
+    res.json(result);
+    return;
+});
+app.get('/qk/:q', function (req, res) {
+    const q = req.params['q']
+    const result = indexers.db.queryByKeys(q);
+    res.json(result);
+    return;
+});
 app.get('/keys/:domains', async (req, res) => {
 
 })
@@ -315,12 +327,7 @@ app.get('/p2p/:cmd/', async function (req, res) { //sever to server command
     }
     res.json(ret)
 })
-app.get('/qt/:q', function (req, res) {
-    const q = req.params['q']
-    const result = indexers.db.queryByTags(q);
-    res.json(result);
-    return;
-});
+
 
 app.get('/nodeInfo', async (req, res) => {
     const { CONSTS } = indexers

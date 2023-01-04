@@ -26,7 +26,7 @@ class NodeServer {
                 "preflightContinue": false,
                 "optionsSuccessStatus": 204
             },
-            transports: ["websocket"]
+            //transports: ["websocket"]
         })
         /*io.attach(CONFIG.server.socketPort || 31415, {
             cors: {
@@ -159,7 +159,7 @@ class NodeClient {
         if (!socketUrl) return false
         const self = this
         return new Promise(resolve => {
-            const manager = new Manager(socketUrl, { autoConnect: false, transports: ["websocket"] });
+            const manager = new Manager(socketUrl, { autoConnect: false });
             const socket = manager.socket("/");
             socket.auth = { username: "abc", key: "123", serverUrl: config.server.publicUrl, chainid: config.chainid }
             manager.open((err) => {

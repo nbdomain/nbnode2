@@ -88,7 +88,6 @@ class Database {
       }
 
       //this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
-      this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
       //this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
       //this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
       this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
@@ -173,14 +172,12 @@ class Database {
     try {
       //this.combineTXDB();
       let sql = ""
-      try {
-        sql = "ALTER TABLE txs ADD sigs text"
-        this.txdb.prepare(sql).run()
-      } catch (e) { }
 
       try {
-        sql = "ALTER TABLE keys ADD domain text"
-        this.dmdb.prepare(sql).run()
+        for (let i = 1; i < 21; i++) {
+          sql = `ALTER TABLE keys ADD p${i} TEXT`
+          this.dmdb.prepare(sql).run()
+        }
       } catch (e) { }
 
       try {
@@ -657,13 +654,30 @@ class Database {
       return { code: 1, msg: e.message }
     }
   }
+  queryByKeys(q) {
+    const MongoDBQuery = `db.keys.find(${q})`
+    try {
+      let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
+      const ret = this.dmdb.prepare(SQLQuery).all()
+      for (const item of ret) {
+        delete item.id
+        for (const key in item) {
+          if (item[key] === null) delete item[key]
+        }
+      }
+      return ret
+    } catch (e) {
+      return { code: 1, msg: e.message }
+    }
+  }
   async readChildrenKeys(parentKey) {
     const sql = "select key,value,ts from keys where parent = ?"
     return this.dmdb.prepare(sql).all(parentKey)
   }
   async readKey(keyName) {
     try {
-      //const keyLenName = keyName + "/len";
+      if (!this.readKeyStmt)
+        this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
       const ret = this.readKeyStmt.get(keyName);
       if (ret) {
         let value = JSON.parse(ret.value);
@@ -673,6 +687,9 @@ class Database {
             const d = await this.indexers.Nodes.getData(value.__shash)
             value = d.raw
           } else value = value1
+        }
+        for (let i = 1; i < 21; i++) {
+          if (ret['p' + i]) value['p' + i] = ret['p' + i]
         }
         return value;
       }
@@ -696,7 +713,7 @@ class Database {
     return retKeys
   }
 
-  async saveKey({ key, value, domain, tags, ts }) {
+  async saveKey({ key, value, domain, props, tags, ts }) {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
@@ -707,8 +724,10 @@ class Database {
           value = JSON.stringify({ __shash: hash })
         }
       }
-      let sql = "Insert or Replace into keys (key,value,domain,ts,parent) values(?,?,?,?,?)"
-      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent)
+      let sql = `Insert or Replace into keys (key,value,domain,ts,parent,
+        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20) 
+        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20)
       //remove old tags
       sql = "delete from tags where key = ?"
       this.dmdb.prepare(sql).run(fullKey)
