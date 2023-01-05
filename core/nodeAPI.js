@@ -39,7 +39,7 @@ class NodeServer {
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
             if (socket.handshake.auth.chainid != config.chainid) {
-                console.error("different chainid, disconnect")
+                console.error("different chainid, disconnect to:", socket.handshake.auth.chainid)
                 socket.disconnect()
                 return
             }

@@ -14,6 +14,7 @@ USER node
 WORKDIR /opt/app/
 COPY --chown=node:node --from=build /tmp/node_modules /opt/app/node_modules
 COPY --chown=node:node . /opt/app
+
 EXPOSE 9000
 
 CMD ["node","core"]
