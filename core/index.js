@@ -122,10 +122,22 @@ class Indexers {
     return true
   }
   static async start() {
-    if (!await this.server.start()) return false
-    if (!await Nodes.start(this)) return false
-    if (!await this.indexer.start()) return false
-    if (!this.blockMgr.run()) return false
+    if (!await this.server.start()) {
+      console.error("server start failed")
+      return false
+    }
+    if (!await Nodes.start(this)) {
+      console.error("Nodes start failed")
+      return false
+    }
+    if (!await this.indexer.start()) {
+      console.error("indexer start failed")
+      return false
+    }
+    if (!this.blockMgr.run()) {
+      console.error("blockMrg run failed")
+      return false
+    }
   }
   static async stop() {
     this.indexer && await this.indexer.stop();
