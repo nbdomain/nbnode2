@@ -18,6 +18,7 @@ class BlockMgr {
         this._canResolve = true
         this.removeTX = new Set()
         this.indexers.resolver.addController(this)
+        this.txConsensue = false
         //this.dmVerify = indexers.db.getDomainVerifyCode()
     }
     async createBlock(height, ntx = 10) {
