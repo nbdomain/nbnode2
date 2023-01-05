@@ -118,7 +118,7 @@ class LocalServer {
     }, 60 * 1000);
 
     await this.startProxyServer(app);
-
+    return true
     //  this.startSSLServer(app);
   }
 
