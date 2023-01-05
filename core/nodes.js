@@ -275,7 +275,7 @@ class Nodes {
                     console.error("no connected client")
                     return false
                 }
-                from = clients.node.id
+                from = clients[0].node.id
             }
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
