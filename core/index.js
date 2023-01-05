@@ -138,6 +138,7 @@ class Indexers {
       console.error("blockMrg run failed")
       return false
     }
+    return true
   }
   static async stop() {
     this.indexer && await this.indexer.stop();

@@ -21,7 +21,7 @@ class Nodes {
         this.nodeClients = {}
         //this.isProducer = config.server.producer
     }
-    static async checkTime() {
+    async checkTime() {
         const timeSync = NtpTimeSync.getInstance({ replyTimeout: 10000 });
         const result = await timeSync.getTime();
         console.log("real time", result.now);
