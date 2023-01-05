@@ -271,7 +271,10 @@ class Nodes {
             this._canResolve = false
             if (!from) {
                 const clients = this.getConnectedClients()
-                if (clients.length == 0) return false
+                if (clients.length == 0) {
+                    console.error("no connected client")
+                    return false
+                }
                 from = clients.node.id
             }
             if (includingTxDB) {
