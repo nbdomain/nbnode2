@@ -343,6 +343,7 @@ class BlockMgr {
             }
             await wait(DEF.BLOCK_TIME)
         }
+        return true
     }
 }
 module.exports = BlockMgr
