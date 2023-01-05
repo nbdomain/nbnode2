@@ -381,7 +381,7 @@ class Nodes {
         const { db } = this.indexers
         while (true) {
             const block = db.getLastBlock()
-            if (block.height < 100) {
+            if (!block || block.height < 100) {
                 if (await this.downloadAndUseDomainDB())
                     continue
             }
