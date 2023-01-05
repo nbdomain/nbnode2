@@ -121,7 +121,8 @@ class BlockMgr {
                     } else { //I lost, restore last good domain db
                         if (!this.waitSyncStart || this.waitSyncStart === 0) this.waitSyncStart = Date.now()
                         const span = (Date.now() - this.waitSyncStart) / 1000
-                        if (span < 120) {
+
+                        if (this.height < 100 || span < 120) {
                             console.error("found inconsistent domain db, waited:", span, " seconds")
                         } else {
                             this.waitSyncStart = 0

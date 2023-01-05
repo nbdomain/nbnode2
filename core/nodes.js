@@ -265,7 +265,7 @@ class Nodes {
         console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
         return { code: 1, msg: "No Other nodes connected, cannot send tx" } */
     }
-    async downloadAndUseDomainDB(from, includingTxDB) {
+    async downloadAndUseDomainDB(from, includingTxDB = true) {
         try {
             const { db } = this.indexers
             this._canResolve = false
@@ -384,15 +384,13 @@ class Nodes {
         const { db } = this.indexers
         while (true) {
             const block = db.getLastBlock()
-            if (!block || block.height < 100) {
-                if (await this.downloadAndUseDomainDB())
-                    continue
+            if (block && block.height > 100) {
+                for (const id in this.nodeClients) {
+                    if (this.nodeClients[id].connected)
+                        this.nodeClients[id].pullNewTxs();
+                }
             }
-            for (const id in this.nodeClients) {
-                if (this.nodeClients[id].connected)
-                    this.nodeClients[id].pullNewTxs();
-            }
-            await wait(1000 * 60)
+            await wait(1000 * 10)
         }
     }
     static inst() {
