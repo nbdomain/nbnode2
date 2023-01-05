@@ -13,7 +13,6 @@ const Parser = require('./parser')
 const { Util } = require('./util')
 const parseArgs = require('minimist')
 const fs = require('fs')
-const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
 const Path = require('path')
@@ -101,20 +100,8 @@ class Indexers {
     this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
-  static async checkEnv() {
-    const timeSync = NtpTimeSync.getInstance();
-    const result = await timeSync.getTime();
-    console.log("real time", result.now);
-    console.log("offset in milliseconds", result.offset);
-    if (Math.abs(result.offset) > 2000) {
-      console.error("OS time is not in sync with NTP, please resync")
-      return false
-    }
-    return true
-  }
-  static async init() {
 
-    if (!await this.checkEnv()) return false
+  static async init() {
     this.config = CONFIG
     if (!this.config.chainid) this.config.chainid = 'main'
     if (this.config.tld) {
@@ -135,10 +122,10 @@ class Indexers {
     return true
   }
   static async start() {
-    await this.server.start()
-    const seedNode = await Nodes.start(this)
-    await this.indexer.start()
-    this.blockMgr.run()
+    if (!await this.server.start()) return false
+    if (!await Nodes.start(this)) return false
+    if (!await this.indexer.start()) return false
+    if (!this.blockMgr.run()) return false
   }
   static async stop() {
     this.indexer && await this.indexer.stop();
@@ -152,7 +139,9 @@ async function main() {
   if (!await Indexers.init()) {
     process.exit(-1)
   }
-  await Indexers.start()
+  if (!await Indexers.start()) {
+    process.exit(-1)
+  }
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -7,6 +7,8 @@ const { DEF } = require('./def');
 const { Util } = require('./util');
 const path = require('path')
 const fs = require('fs');
+const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
+
 
 
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -18,6 +20,17 @@ class Nodes {
         this._canResolve = true
         this.nodeClients = {}
         //this.isProducer = config.server.producer
+    }
+    static async checkTime() {
+        const timeSync = NtpTimeSync.getInstance({ replyTimeout: 10000 });
+        const result = await timeSync.getTime();
+        console.log("real time", result.now);
+        console.log("offset in milliseconds", result.offset);
+        if (Math.abs(result.offset) > 2000) {
+            console.error("OS time is not in sync with NTP, please resync")
+            return false
+        }
+        return true
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -52,6 +65,9 @@ class Nodes {
         const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
         this.thisNode = { key: pkey }
         this._isProducer = this.isProducer(pkey)
+        if (this.isProducer() && !this.checkTime()) {
+            return false
+        }
         this.indexers = indexers
         this.nodeClient = new NodeClient()
         this.endpoint = config.server.publicUrl
@@ -253,6 +269,11 @@ class Nodes {
         try {
             const { db } = this.indexers
             this._canResolve = false
+            if (!from) {
+                const clients = this.getConnectedClients()
+                if (clients.length == 0) return false
+                from = clients.node.id
+            }
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
                 const filename = path.join(db.path, "d_txs.db")
@@ -356,11 +377,14 @@ class Nodes {
     canResolve() {
         return this._canResolve
     }
-    async startTxSync(indexers) {
-        this.indexers = indexers
-    }
     async pullNewTxs() {
+        const { db } = this.indexers
         while (true) {
+            const block = db.getLastBlock()
+            if (block.height < 100) {
+                if (await this.downloadAndUseDomainDB())
+                    continue
+            }
             for (const id in this.nodeClients) {
                 if (this.nodeClients[id].connected)
                     this.nodeClients[id].pullNewTxs();
