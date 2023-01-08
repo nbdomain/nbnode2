@@ -151,9 +151,9 @@ app.get('/qt/:q', function (req, res) {
     res.json(result);
     return;
 });
-app.get('/qk/:q', function (req, res) {
+app.get('/mq/:q', function (req, res) {
     const q = req.params['q']
-    const result = indexers.db.queryByKeys(q);
+    const result = indexers.db.mangoQuery(q);
     res.json(result);
     return;
 });

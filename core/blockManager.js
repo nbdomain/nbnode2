@@ -122,8 +122,8 @@ class BlockMgr {
                     } else { //I lost, restore last good domain db
                         if (!this.waitSyncStart || this.waitSyncStart === 0) this.waitSyncStart = Date.now()
                         const span = (Date.now() - this.waitSyncStart) / 1000
-
-                        if (this.height > 100 && span < 120) {
+                        const lb = db.getLastBlock()
+                        if (lb && lb.height > 100 && span < 120) {
                             console.error("found inconsistent domain db, waited:", span, " seconds")
                         } else {
                             this.waitSyncStart = 0
@@ -181,7 +181,7 @@ class BlockMgr {
             console.log(`downloading block ${from}-${to} from: ${url}`)
             const res = await axios.get(url + `/api/getBlocks?from=${from}&&to=${to}`)
             if (res.data) {
-                db.restoreLastGoodDomainDB() //restore last good state
+                // db.restoreLastGoodDomainDB() //restore last good state
                 for (const blockItem of res.data) {
                     let block = JSON.parse(blockItem.body)
                     //if (block.version != DEF.BLOCK_VER) continue

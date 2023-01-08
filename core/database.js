@@ -568,8 +568,10 @@ class Database {
       //  let height = this.readConfig('dmdb', 'resolvingHeight')||0
       //  height = +height
       const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime') || 0
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} ORDER BY txTime,txid ASC limit ${limit}`
+      const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
       const list = this.txdb.prepare(sql).raw(false).all();
+
       /*if (list.length != 0) {
         height++
         this.writeConfig('dmdb', 'resolvingHeight', height + '')
@@ -654,10 +656,21 @@ class Database {
       return { code: 1, msg: e.message }
     }
   }
-  queryByKeys(q) {
-    const MongoDBQuery = `db.keys.find(${q})`
+  mangoQuery(q) {
+    q = JSON.parse(q)
+    const tags = q.tags
+    delete q.tags
+    let nokey = (Object.keys(q).length == 0)
+    const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
     try {
       let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
+      if (tags) {
+        let tagsql = mongoToSqlConverter.convertToSQL(`db.tags.find(${JSON.stringify(tags)},{key:1})`, true)
+        SQLQuery = SQLQuery.slice(0, -1)
+        tagsql = tagsql.slice(0, -1)
+        if (!nokey) SQLQuery += " AND "
+        SQLQuery += "key in (" + tagsql + ")"
+      }
       const ret = this.dmdb.prepare(SQLQuery).all()
       for (const item of ret) {
         delete item.id

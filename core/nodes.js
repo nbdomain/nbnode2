@@ -277,6 +277,14 @@ class Nodes {
                 }
                 from = clients[0].node.id
             }
+            const url = from + "/files/bk_domains.db"
+            const filename = path.join(db.path, "d_domains.db")
+            console.log("Downloading domain db from:", url)
+            await Util.downloadFile(url, filename)
+            console.log("Download domain db successful")
+            this.indexers.resolver.abortResolve()
+            this.indexers.db.restoreDomainDB(filename)
+            fs.unlinkSync(filename)
             if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
                 const filename = path.join(db.path, "d_txs.db")
@@ -286,15 +294,7 @@ class Nodes {
                 this.indexers.db.restoreTxDB(filename)
                 fs.unlinkSync(filename)
             }
-            const url = from + "/files/bk_domains.db"
-            const filename = path.join(db.path, "d_domains.db")
-            console.log("Downloading domain db from:", url)
-            await Util.downloadFile(url, filename)
-            console.log("Download domain db successful")
-            this.indexers.resolver.abortResolve()
-            this.indexers.db.restoreDomainDB(filename)
             this._canResolve = true
-            fs.unlinkSync(filename)
             return true
         } catch (e) {
             console.error(e.message)
