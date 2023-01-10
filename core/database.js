@@ -656,21 +656,30 @@ class Database {
       return { code: 1, msg: e.message }
     }
   }
+  queryChildCount(parent) {
+    const sql = "select count(*) from keys where parent = ?"
+    const res = this.dmdb.prepare(sql).raw(true).get(parent)
+    return { [parent]: res[0] }
+  }
   mangoQuery(q) {
     q = JSON.parse(q)
     const tags = q.tags
     delete q.tags
+    const limit = q.limit
+    delete q.limit
     let nokey = (Object.keys(q).length == 0)
     const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
     try {
       let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
+      SQLQuery = SQLQuery.slice(0, -1)
       if (tags) {
         let tagsql = mongoToSqlConverter.convertToSQL(`db.tags.find(${JSON.stringify(tags)},{key:1})`, true)
-        SQLQuery = SQLQuery.slice(0, -1)
         tagsql = tagsql.slice(0, -1)
         if (!nokey) SQLQuery += " AND "
         SQLQuery += "key in (" + tagsql + ")"
       }
+      if (limit)
+        SQLQuery += " limit " + limit
       const ret = this.dmdb.prepare(SQLQuery).all()
       for (const item of ret) {
         delete item.id

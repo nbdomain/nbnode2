@@ -145,9 +145,9 @@ app.get('/qf/*', async function (req, res) {
     const ret = await getAllItems(para, true, from)
     res.json(ret)
 })
-app.get('/qt/:q', function (req, res) {
+app.get('/qc/:q', function (req, res) {
     const q = req.params['q']
-    const result = indexers.db.queryByTags(q);
+    const result = indexers.db.queryChildCount(q);
     res.json(result);
     return;
 });
