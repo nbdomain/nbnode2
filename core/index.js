@@ -18,19 +18,6 @@ const PubSub = require('./pubsub')
 const Path = require('path')
 let CONFIG = null
 
-try {
-  CONFIG = require('../data/config').CONFIG
-} catch (e) {
-  if (!fs.existsSync(Path.join(__dirname, '../data'))) {
-    fs.mkdirSync(Path.join(__dirname, '../data'));
-  }
-  fs.copyFileSync(Path.join(__dirname, "default_config.js"), Path.join(__dirname, "../data/config.js"))
-  console.error("Please edit data/config.js as it fits")
-  process.exit(0)
-}
-
-
-
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
