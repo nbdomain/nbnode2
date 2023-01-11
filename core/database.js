@@ -663,6 +663,8 @@ class Database {
   }
   mangoQuery(q) {
     q = JSON.parse(q)
+    const retCount = !!q.count
+    if (q.count) q = q.count
     const tags = q.tags
     delete q.tags
     const limit = q.limit
@@ -681,6 +683,7 @@ class Database {
       if (limit)
         SQLQuery += " limit " + limit
       const ret = this.dmdb.prepare(SQLQuery).all()
+      if (retCount) return ret.length
       for (const item of ret) {
         delete item.id
         for (const key in item) {

@@ -398,7 +398,7 @@ app.get('/admin', async (req, res) => {
     }
     // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
     // await db.readKey("test.test.a")
-    await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db", Path.join(__dirname, "/test.db"))
+    //await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db", Path.join(__dirname, "/test.db"))
     res.end("ok")
 })
 app.get('/reverify', async (req, res) => {

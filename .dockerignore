@@ -1,13 +1,15 @@
 node_modules/
 npm-debug.log
+.DS_Store
 core/modules/api/tx
+core/modules/api/test.db
 core/modules/chain/data/txHistory.db
 artest/
 ssl.d/
 storage/
 temp/
 *.sh
-data/db
+data/*
 .git
 core/public
 .DS_Store

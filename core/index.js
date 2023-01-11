@@ -16,7 +16,7 @@ const fs = require('fs')
 const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
 const Path = require('path')
-let CONFIG = null
+let CONFIG = require('../data/config.js').CONFIG
 
 // ------------------------------------------------------------------------------------------------
 // Globals
