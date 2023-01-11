@@ -84,7 +84,7 @@ class BlockMgr {
     }
     async onReceiveBlock(nodeKey, uBlock) {
         try {
-            const { Nodes, db, config } = this.indexers
+            const { Nodes, db, config, logger } = this.indexers
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (Nodes.thisNode.key === nodeKey) return //myself
             if (block.version != DEF.BLOCK_VER) return
@@ -113,8 +113,18 @@ class BlockMgr {
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
+                if (maxLen < REQUIRE_CONSENSUE) {//no consensue
+                    if (!this.noSyncStart) this.waitSyncStart = Date.now()
+                    const span = (Date.now() - this.noSyncStart) / 1000
+                    if (span < 120) {
+                        console.error("NBDomain system not in sync for:", span, "seconds")
+                    } else {
+                        console.log("restore last consensue db")
+                        logger.logFile("restore last consensue db")
+                        db.restoreLastGoodDomainDB()
+                    }
+                }
                 if ((maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense
-
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         this.lastVerify = maxVerify
                         await db.backupDB()

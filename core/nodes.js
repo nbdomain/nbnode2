@@ -126,6 +126,12 @@ class Nodes {
     }
     async addNode({ url, isPublic = true }) {
         const { config } = this.indexers
+        if (!this.handling) this.handling = {}
+        if (this.handling[url]) {
+            console.error("handled:", url)
+            return false
+        }
+        this.handling[url] = true
         if (this.endpoint && url.indexOf(this.endpoint) != -1) {
             console.error(url, "self")
             return true
