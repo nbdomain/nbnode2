@@ -113,8 +113,8 @@ class BlockMgr {
                 if (maxVerify === this.dmVerify) {
                     maxLen++ //add my vote
                 }
-                if (maxLen < REQUIRE_CONSENSUE) {//no consensue
-                    if (!this.noSyncStart) this.waitSyncStart = Date.now()
+                if (maxLen < REQUIRE_CONSENSUE && objLen(this.dmVerifyMap) > REQUIRE_CONSENSUE) {//no consensue
+                    if (!this.noSyncStart) this.noSyncStart = Date.now()
                     const span = (Date.now() - this.noSyncStart) / 1000
                     if (span < 120) {
                         console.error("NBDomain system not in sync for:", span, "seconds")
@@ -122,6 +122,7 @@ class BlockMgr {
                         console.log("restore last consensue db")
                         logger.logFile("restore last consensue db")
                         db.restoreLastGoodDomainDB()
+                        this.noSyncStart = 0
                     }
                 }
                 if ((maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && this.lastVerify != maxVerify && this.canResolve()) {//reach consense

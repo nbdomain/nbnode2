@@ -181,6 +181,13 @@ class Database {
       } catch (e) { }
 
       try {
+        for (let i = 1; i < 6; i++) {
+          sql = `ALTER TABLE keys ADD u${i} TEXT UNIQUE`
+          this.dmdb.prepare(sql).run()
+        }
+      } catch (e) { }
+
+      try {
         sql = "ALTER TABLE txs RENAME COLUMN time TO status"
         this.txdb.prepare(sql).run()
       } catch (e) { }
@@ -750,9 +757,9 @@ class Database {
         }
       }
       let sql = `Insert or Replace into keys (key,value,domain,ts,parent,
-        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20) 
-        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20)
+        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
+        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
       //remove old tags
       sql = "delete from tags where key = ?"
       this.dmdb.prepare(sql).run(fullKey)
