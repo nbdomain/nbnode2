@@ -71,8 +71,6 @@ class Parser {
     }
     static async fillObj(nidObj, rtx, objMap) {
         let retObj = null
-
-
         if (rtx.output.err) {
             return null
         }

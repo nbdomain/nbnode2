@@ -22,7 +22,6 @@ class NOTChain {
         } catch (e) {
             return null
         }
-
     }
     static async raw2rtx({ rawtx, oData, time, db }) {
         const tx = Util.parseJson(rawtx);

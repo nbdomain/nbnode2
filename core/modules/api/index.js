@@ -41,31 +41,33 @@ app.use('/notify', apiLimiter)
 
 //获取访问ip
 function getClientIp(req) {
-    const IP =
+    let IP =
         req.headers["x-forwarded-for"] ||
         req.connection.remoteAddress ||
         req.socket.remoteAddress ||
         req.connection.socket.remoteAddress;
-    return IP.split(",")[0];
+    IP = IP.split(',')[0]
+    IP = IP.split(":").pop()
+    return IP;
 }
-/*app.use(function checkAccess(req, res, next) {
+app.use(function checkAccess(req, res, next) {
     const { config } = indexers
     if (config.allowIPs.length != 0) {
         const IP = getClientIp(req)
-        if (config.allowIPs.indexOf(IP) == -1) {
+        if (config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
             res.end("not allowed")
             return
         }
     }
-    if (config.apiKeys.length != 0) {
+    /*if (config.apiKeys.length != 0) {
         const apiKey = req.header('x-api-key');
         if (config.apiKeys.indexOf(apiKey) == -1) {
             res.end("not allowed")
             return
         }
-    }
+    }*/
     next()
-}) */
+})
 app.get('/', async function (req, res, next) {
 
     let domain = req.query['nid'];
@@ -151,12 +153,17 @@ app.get('/qc/:q', function (req, res) {
     res.json(result);
     return;
 });
-app.get('/mq/:q', function (req, res) {
+app.get('/mq/:q', async function (req, res) {
     const q = req.params['q']
-    const result = indexers.db.mangoQuery(q);
+    const result = await indexers.db.mangoQuery(q);
     res.json(result);
     return;
 });
+app.get('/dbq', async (req, res) => {
+    let { exp, para } = req.query
+    para = para.split('|')
+    res.json(indexers.db.runQuery(exp, para))
+})
 app.get('/keys/:domains', async (req, res) => {
 
 })
@@ -396,6 +403,7 @@ app.get('/admin', async (req, res) => {
             return;
         }
     }
+    db.delKey("kkk.users.test.pv")
     // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
     // await db.readKey("test.test.a")
     //await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db", Path.join(__dirname, "/test.db"))
@@ -416,9 +424,9 @@ app.get('/getData', (req, res) => {
     const ret = indexers.db.getFullTx({ txid })
     res.json(ret)
 })
-app.get('/find_domain', (req, res) => {
+app.get('/find_domain', async (req, res) => {
     var addr = req.query.address;
-    let result = indexers.db.findDomains({ address: addr });
+    let result = await indexers.db.findDomains({ address: addr });
     const arr = []
     result.forEach(item => {
         const dd = item.domain.split('.')
@@ -432,13 +440,13 @@ app.get('/find_domain', (req, res) => {
     })
 
 })
-app.get('/findDomain', function (req, res) {
+app.get('/findDomain', async (req, res) => {
     try {
         let addr = req.query.address, result = [];
         if (addr) {
             const arrAdd = addr.split(',')
             for (const addr of arrAdd) {
-                result.push({ address: addr, result: indexers.db.findDomains({ address: addr }) });
+                result.push({ address: addr, result: await indexers.db.findDomains({ address: addr }) });
             }
         } else if (req.query.option) {
             let option = JSON.parse(req.query.option)

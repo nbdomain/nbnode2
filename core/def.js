@@ -17,6 +17,8 @@ const CMD = {
     "ADMIN": "admin",
     "SELL": "sell",
     "BUY": "buy",
+    "DEL_KEY": "del_key",
+    "DEL_CHILD": "del_child",
     "TRANSFER": "transfer",
     "NOP": "nop",
     "MAKE_PUBLIC": "make_public",

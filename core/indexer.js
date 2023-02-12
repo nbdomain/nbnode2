@@ -123,7 +123,10 @@ class Indexer {
         }
         this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
-        resolver && resolver.resolveNext()
+        const list = this.database.getUnresolvedTX(1)
+        if (list && list.length > 0) {
+          resolver.resolveOneTX(list[0])
+        }
       }
       else {
         console.error("Invalid tx:", ret, txid)

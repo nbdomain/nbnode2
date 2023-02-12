@@ -168,6 +168,23 @@ class Util {
         }
         return null
     }
+    static parseKey(key) {
+        const items = key.split('.')
+        const len = items.length
+        if (len < 2) return {}
+        return { domain: items[len - 2] + '.' + items[len - 1], parent: items.slice(1).join('.'), tld: items[len - 1] }
+    }
+    static changeKeyname(o, oldKey, newKey) {
+        if (oldKey === newKey || !o) return
+        const d = Object.getOwnPropertyDescriptor(o, oldKey)
+        if (d) Object.defineProperty(o, newKey, d);
+        delete o[oldKey];
+        for (const key in o) {
+            if (typeof o[key] === 'object') {
+                Util.changeKeyname(o[key], oldKey, newKey)
+            }
+        }
+    }
     static getchain(domain) {
         let tld = null
         if (domain) {

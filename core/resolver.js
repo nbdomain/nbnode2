@@ -129,7 +129,7 @@ class Resolver {
             if (obj) {
                 obj = reduceKeys_(obj, true)
                 if (forceFull) { // keys
-                    const keysRet = this.db.getAllKeys(fullDomain)
+                    const keysRet = await this.db.getAllKeys(fullDomain)
                     obj.keys = keysRet ? keysRet : []
                 }
                 if (obj.nfts) {

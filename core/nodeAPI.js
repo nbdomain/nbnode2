@@ -339,24 +339,10 @@ class rpcHandler {
             if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
                 const sigs = db.getTransactionSigs(para.txid)
                 await Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
-                await resolver.resolveOneTX(db.getTransaction(tx.txid))
             } else {
                 console.error("error adding:", para.txid)
             }
             delete this.handlingMap[para.txid]
-            /*socket.emit("getTx", para, async (data) => {
-                console.log("handleNewTx:", para.txid)
-                if (!data) { console.error("data is missing:", para.txid); delete this.handlingMap[para.txid]; return }
-                mySig = await Util.bitcoinSign(config.key, tx.txid)
-                if (await indexers.indexer.addTxFull({ txid: para.txid, sigs: { ...para.sigs, [Nodes.thisNode.key]: mySig }, rawtx: data.tx.rawtx || data.rawtx, txTime: data.tx.txTime, oDataRecord: data.oDataRecord, chain: data.tx.chain })) {
-                    const sigs = db.getTransactionSigs(para.txid)
-                    Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: para.txid, sigs }) })
-                    resolver.resolveOneTX(db.getTransaction(tx.txid))
-                } else {
-                    console.error("error adding:", para.txid)
-                }
-                delete this.handlingMap[para.txid]
-            }) */
         }
     }
     static async handleNewTxFromApp({ indexers, obj }) {
@@ -397,10 +383,6 @@ class rpcHandler {
                 db.addTransactionSigs(ret1.txid, sigs)
                 sigs = db.getTransactionSigs(ret1.txid)
                 Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
-                const list = db.getUnresolvedTX(1)
-                if (list && list.length > 0) {
-                    resolver.resolveOneTX(list[0])
-                }
             }
         } else {
             console.log("send tx failed")

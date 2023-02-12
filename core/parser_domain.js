@@ -2,6 +2,9 @@
 const { Util, CMD_BASE } = require("./util.js");
 const { CMD, MemDomains, DEF } = require("./def")
 
+let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
+
+
 class Parser_Domain {
     constructor() {
     }
@@ -45,7 +48,61 @@ class Parser_Domain {
         return {
             [CMD.KEY]: CMD_KEY, [CMD.USER]: CMD_USER, [CMD.NOP]: CMD_NOP, [CMD.REGISTER]: CMD_REGISTER, [CMD.PAY_REGISTER]: CMD_PAY_REGISTER,
             [CMD.BUY]: CMD_BUY, [CMD.SELL]: CMD_SELL, [CMD.ADMIN]: CMD_ADMIN, [CMD.TRANSFER]: CMD_TRANSER, [CMD.MAKE_PUBLIC]: CMD_MAKE_PUBLIC,
+            [CMD.DEL_KEY]: CMD_DEL_KEY, [CMD.DEL_CHILD]: CMD_DEL_CHILD,
         }
+    }
+}
+class CMD_DEL_KEY {
+    static async parseTX(rtx) {
+        let output = CMD_BASE.parseTX(rtx);
+        output.keys = []
+        output.keys = JSON.parse(rtx.out[0].s5);
+        for (const key of output.keys) {
+            const res = Util.parseKey(key)
+            if (res.domain != output.domain) {
+                output.err = "No del access to:" + res.domain
+                break;
+            }
+            const ret = await this.parser.db.readKey(key)
+            if (!ret) {
+                output.err = "key doesn't exist: " + key
+                break;
+            }
+        }
+        return output
+    }
+    static fillObj(nidObj, rtx) {
+        const output = rtx.output
+        for (const key of output.keys) {
+            this.parser.db.delKey(key)
+        }
+        return nidObj
+    }
+}
+class CMD_DEL_CHILD {
+    static parseTX(rtx) {
+        let output = CMD_BASE.parseTX(rtx);
+        output.parents = []
+        output.parents = JSON.parse(rtx.out[0].s5);
+        for (const parent of output.parents) {
+            const res = Util.parseKey(parent)
+            if (res.domain != output.domain) {
+                output.err = "No del access to:" + res.domain
+                break;
+            }
+            if (this.parser.db.queryChildCount(parent) === 0) {
+                output.err = "No children for:" + parent
+                break;
+            }
+        }
+        return output
+    }
+    static fillObj(nidObj, rtx) {
+        const output = rtx.output
+        for (const parent of output.parents) {
+            this.parser.db.delChild(parent)
+        }
+        return nidObj
     }
 }
 class CMD_USER {
@@ -368,9 +425,6 @@ class CMD_ADMIN {
 class CMD_KEY {
     static verify(rtx, output) {
         let err = null
-        if (output.domain == "10200.test") {
-            console.log("found")
-        }
         const obj = this.parser.db.loadDomain(output.domain)
         if (!obj) { err = "CMD_KEY: domain not exist"; return err; }
         if (obj.owner_key != rtx.publicKey) {
@@ -395,17 +449,65 @@ class CMD_KEY {
         }
         return 1
     }
-    static parseTX(rtx) {
+    static async handleProps(props, fullkey, parent) {
+        for (const key in props) {
+            if (typeof (props[key]) === 'object')
+                props[key] = JSON.stringify(props[key])
+        }
+        const defination = await this.parser.db.readKey('_def.' + parent)//get defination of this level
+        if (defination && objLen(props) > 0) {
+            const v = defination.v
+            let u_check = [], u_value = []
+            for (let kd in v) {
+                const defs = v[kd].split(':')
+                Util.changeKeyname(props, defs[0], kd)
+                if (defs[1] && defs[1].indexOf('u') != -1) { //unique
+                    u_check.push(kd)
+                    u_value.push(props[kd])
+                }
+                if (defs[1] && defs[1].indexOf('i') != -1) { //integer
+                    props[kd] = '' + props[kd]
+                }
+            }
+            if (u_check.length > 0) {
+                let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
+                u_check.shift()
+                for (const u of u_check) {
+                    sql += "OR " + u + " = ?"
+                }
+                sql += " ) "
+                try {
+                    const res = this.parser.db.dmdb.prepare(sql).get(...u_value)
+                    if (res && res.key != fullkey) { //
+                        return { code: 1, err: 'unique constrain failed' }
+                    }
+                } catch (e) {
+                    console.error(e.message)
+                }
+
+            }
+        }
+        return { code: 0 }
+    }
+    static async parseTX(rtx) {
         let output = CMD_BASE.parseTX(rtx);
         try {
-            let tags = null, props, pay = {}, hasPay = false
-            output.value = JSON.parse(rtx.out[0].s5);
-            const s6 = Util.parseJson(rtx.out[0].s6)
-            tags = s6 && s6.tags;
-            if (tags) output.tags = tags
-            props = s6 && s6.props;
-            if (props) output.props = props
+            let pay = {}, hasPay = false
+            output.values = []
+            const v = JSON.parse(rtx.out[0].s5);
+            if (Array.isArray(v)) output.values = v
+            else {
+                const k = Object.keys(v)[0]
+                output.values.push({ k, v: v[k] })
+            }
 
+            for (const item of output.values) {
+                if (item.props) {
+                    const parent = item.k.slice(item.k.indexOf('.') + 1) + '.' + output.domain
+                    output.err = (await this.handleProps(item.props, item.k + '.' + output.domain, parent)).err
+                    if (output.err) throw new Error(output.err)
+                }
+            }
             output.ts = rtx.ts ? rtx.ts : rtx.time
             output.txid = rtx.txid
             for (const out of rtx.out) {
@@ -422,9 +524,6 @@ class CMD_KEY {
                 output.err = err*/
         } catch (e) {
             output.err = e.message
-        }
-        if (typeof output.value != "object") {
-            output.err = "Invalid value of key:" + output.value
         }
         return output;
     }
@@ -469,14 +568,17 @@ class CMD_KEY {
             }
         } */
         const output = rtx.output
-        for (const key in rtx.output.value) {
-            let newKey = key.toLowerCase()
-            let newValue = { v: output.value[key], id: output.txid }
-            if (output.pay) newValue.pay = output.pay
-            if (output.tags) newValue.tags = output.tags
-            //CMD_KEY.updateKey(nidObj, newKey, newValue, rtx.output)
-            await this.parser.db.saveKey({ key: newKey, value: JSON.stringify(newValue), domain: output.domain, props: output.props, tags: output.tags, ts: output.ts })
+        for (const item of output.values) {
+            const { k, v, tags, props } = item
+            let newValue = { v, id: output.txid }
+            await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
+        /* for (const key in rtx.output.value) {
+             let newKey = key.toLowerCase()
+             if (output.pay) newValue.pay = output.pay
+             if (output.tags) newValue.tags = output.tags
+             //CMD_KEY.updateKey(nidObj, newKey, newValue, rtx.output)
+         } */
         return nidObj
     }
 }

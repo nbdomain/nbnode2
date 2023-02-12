@@ -13,6 +13,7 @@ const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
@@ -27,6 +28,7 @@ const VER_TXDB = 5
 // ------------------------------------------------------------------------------------------------
 // Database
 // ------------------------------------------------------------------------------------------------
+
 
 class Database {
   constructor(path, logger, indexers) {
@@ -85,6 +87,7 @@ class Database {
 
         // Synchronizes WAL at checkpoints
         this.dmdb.pragma('synchronous = NORMAL')
+        this.readKeyStmt = null
       }
 
       //this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
@@ -180,12 +183,6 @@ class Database {
         }
       } catch (e) { }
 
-      try {
-        for (let i = 1; i < 6; i++) {
-          sql = `ALTER TABLE keys ADD u${i} TEXT UNIQUE`
-          this.dmdb.prepare(sql).run()
-        }
-      } catch (e) { }
 
       try {
         sql = "ALTER TABLE txs RENAME COLUMN time TO status"
@@ -602,8 +599,7 @@ class Database {
     return null;
   }
   queryTags(expression) {
-    let sql = "select DISTINCT tag from tags where tag like ?";
-    return this.dmdb.prepare(sql).all(expression);
+
   }
 
   saveUsers(nidObj) {
@@ -668,7 +664,51 @@ class Database {
     const res = this.dmdb.prepare(sql).raw(true).get(parent)
     return { [parent]: res[0] }
   }
-  mangoQuery(q) {
+  async handleOneKeyItem(item) {
+    const plist = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'u1', 'u2', 'u3', 'u4', 'u5']
+    delete item.id
+    if (item.value) {
+      const value = Util.parseJson(item.value)
+      delete item.value
+      item = { ...item, ...value }
+    }
+    for (const key in item) {
+      const v = item[key]
+      if (v === null) delete item[key]
+      else {
+        if (plist.indexOf(key) != -1) {
+          item.props || (item.props = {})
+          item.props[key] = v
+          delete item[key]
+        }
+      }
+    }
+    //handle props convertion
+    if (item.props) {
+      const defination = await this.readKey('_def.' + item.parent)//get defination of this level
+      if (defination) {
+        for (let k in defination.v) {
+          const df = defination.v[k].split(':')
+          if (df[1] && df[1].indexOf('i') != -1) { //integer
+            item.props[k] = +item.props[k]
+          }
+          Util.changeKeyname(item.props, k, df[0])
+        }
+      }
+    }
+    return item
+  }
+  runQuery(exp, para) {
+    try {
+      const ret = this.dmdb.prepare(exp).all(...para)
+      //const ret = this.dmdb.prepare(exp).all(...para)
+      return ret
+    } catch (e) {
+      console.error(e.message)
+    }
+    return []
+  }
+  async mangoQuery(q) {
     q = JSON.parse(q)
     const retCount = !!q.count
     if (q.count) q = q.count
@@ -677,6 +717,15 @@ class Database {
     const limit = q.limit
     delete q.limit
     let nokey = (Object.keys(q).length == 0)
+    if (q.parent) { //within parent, convert props
+      const defination = await this.readKey('_def.' + q.parent)//get defination of this level
+      if (defination) {
+        for (let k in defination.v) {
+          const df = defination.v[k].split(':')
+          Util.changeKeyname(q, df[0], k)
+        }
+      }
+    }
     const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
     try {
       let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
@@ -691,11 +740,8 @@ class Database {
         SQLQuery += " limit " + limit
       const ret = this.dmdb.prepare(SQLQuery).all()
       if (retCount) return ret.length
-      for (const item of ret) {
-        delete item.id
-        for (const key in item) {
-          if (item[key] === null) delete item[key]
-        }
+      for (let i = 0; i < ret.length; i++) {
+        ret[i] = await this.handleOneKeyItem(ret[i])
       }
       return ret
     } catch (e) {
@@ -703,48 +749,67 @@ class Database {
     }
   }
   async readChildrenKeys(parentKey) {
-    const sql = "select key,value,ts from keys where parent = ?"
-    return this.dmdb.prepare(sql).all(parentKey)
+    const sql = "select * from keys where parent = ?"
+    const ret = this.dmdb.prepare(sql).all(parentKey)
+    for (let i = 0; i < ret.length; i++) {
+      ret[i] = await this.handleOneKeyItem(ret[i])
+    }
+    return ret
   }
   async readKey(keyName) {
     try {
       if (!this.readKeyStmt)
         this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
-      const ret = this.readKeyStmt.get(keyName);
+      let ret = this.readKeyStmt.get(keyName);
       if (ret) {
         let value = JSON.parse(ret.value);
         if (value.__shash) { //big value saved to data db
           const value1 = this.readData(value.__shash).raw
           if (!value1) {
             const d = await this.indexers.Nodes.getData(value.__shash)
-            value = d.raw
-          } else value = value1
+            ret.value = d.raw
+          } else ret.value = value1
         }
-        for (let i = 1; i < 21; i++) {
-          if (ret['p' + i]) value['p' + i] = ret['p' + i]
-        }
-        return value;
+        ret = await this.handleOneKeyItem(ret)
+        //        delete ret.value
+        return ret;
       }
     } catch (e) {
       this.logger.error(e)
     }
     return null;
   }
-  getAllKeys(domain) {
+  async getAllKeys(domain) {
     const sql = 'select * from keys where domain= ?'
     const ret = this.dmdb.prepare(sql).all(domain)
     if (!ret) return {}
-    let retKeys = {}
-    for (const item of ret) {
-      const k = item.key.split('.')
-      k.pop(), k.pop()
-      const key = k.join('.')
-      retKeys[key] = Util.parseJson(item.value)
-      retKeys[key].ts = item.ts
+    for (let i = 0; i < ret.length; i++) {
+      ret[i] = await this.handleOneKeyItem(ret[i])
     }
-    return retKeys
+    return ret
   }
-
+  async delKey(key) {
+    const sql = "DELETE from keys where key = ?"
+    const res = this.dmdb.prepare(sql).run(key)
+    if (res.changes > 0) {
+      let domainHash = this.readConfig("dmdb", "domainHash") || ""
+      const strObj = "DelKey:" + key
+      domainHash = await Util.dataHash(strObj + domainHash)
+      this.writeConfig("dmdb", "domainHash", domainHash)
+      this.logger.logFile(":del_key=", key, " dmhash:", domainHash)
+    }
+  }
+  async delChild(parent) {
+    const sql = "DELETE from keys where parent = ?"
+    const res = this.dmdb.prepare(sql).run(parent)
+    if (res.changes > 0) {
+      let domainHash = this.readConfig("dmdb", "domainHash") || ""
+      const strObj = "delChild:" + parent
+      domainHash = await Util.dataHash(strObj + domainHash)
+      this.writeConfig("dmdb", "domainHash", domainHash)
+      this.logger.logFile(":del_child=", parent, " dmhash:", domainHash)
+    }
+  }
   async saveKey({ key, value, domain, props = {}, tags, ts }) {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
@@ -756,6 +821,7 @@ class Database {
           value = JSON.stringify({ __shash: hash })
         }
       }
+
       let sql = `Insert or Replace into keys (key,value,domain,ts,parent,
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
@@ -771,8 +837,7 @@ class Database {
         }
       }
       //update hash
-      let domainHash = this.readConfig("dmdb", "domainHash")
-      if (!domainHash) domainHash = ""
+      let domainHash = this.readConfig("dmdb", "domainHash") || ""
       const strObj = key + value + tags + ts
       domainHash = await Util.dataHash(strObj + domainHash)
       this.writeConfig("dmdb", "domainHash", domainHash)
@@ -792,7 +857,7 @@ class Database {
     }
 
   }
-  findDomains(option) {
+  async findDomains(option) {
     let sql = ""
     if (option.address) {
       sql = 'SELECT domain FROM nidobj WHERE owner = ? '
@@ -806,6 +871,9 @@ class Database {
       sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
       const ret = this.dmdb.prepare(sql).all(from, to);
       if (!ret) ret = []
+      for (let i = 0; i < ret.length; i++) {
+        ret[i] = await this.handleOneKeyItem(ret[i])
+      }
       return ret
     }
     return []
