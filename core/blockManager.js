@@ -120,7 +120,7 @@ class BlockMgr {
                         console.error("NBDomain system not in sync for:", span, "seconds")
                     } else {
                         console.log("restore last consensue db")
-                        logger.logFile("restore last consensue db")
+                        logger.info("restore last consensue db")
                         db.restoreLastGoodDomainDB()
                         this.noSyncStart = 0
                     }
@@ -147,6 +147,8 @@ class BlockMgr {
                                 console.error("failed to download good db")
                                 db.restoreLastGoodDomainDB()
                             }
+                            this.dmVerify = db.getDomainVerifyCode()
+                            console.log("dmVerify:", this.dmVerify, " maxVerify:", maxVerify)
                             this.downloading = false
                         }
                     }
@@ -241,34 +243,6 @@ class BlockMgr {
         this.hasNewTX = true
         this.uBlock = null
     }
-    /*    async syncDomainDB() {
-            const { db, Nodes } = this.indexers
-            if (Nodes.isProducer()) return
-            console.log("Syncing domain db ...")
-            if(Nodes.getConnectedClients()=={})return
-            const url = Nodes.getConnectedClients()[0].node.id
-            if (await Nodes.downloadAndUseDomainDB(url) == false) {
-                console.error("failed to download good db")
-            }
-        }
-        async isInSync(){
-            const { db, Nodes } = this.indexers
-            if (Nodes.isProducer()) return
-            if(Nodes.getConnectedClients()=={})return
-            const url = Nodes.getConnectedClients()[0].node.id
-            try{
-                const res = await axios.get(url + "/api/datacount")
-                if (res.data && res.data.dmHash) {
-                    const verify = db.getDomainVerifyCode()
-                    if (verify === res.data.dmHash) {
-                        console.log("In sync with:", url)
-                        return true
-                    }
-                }
-            }catch(e){}
-            
-            return false
-        }*/
     async run() {
         while (true) {
             const { Nodes, db, config } = this.indexers

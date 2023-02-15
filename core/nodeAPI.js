@@ -229,7 +229,7 @@ class NodeClient {
         this.socket.on('notify', async (arg) => {
             if (arg.id && self.handlingMap[arg.id])
                 return
-            //logger.logFile("handling:", arg.id)
+            //logger.info("handling:", arg.id)
             if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {

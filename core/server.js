@@ -159,12 +159,12 @@ class LocalServer {
       }
     } */
   async startProxyServer(app) {
-    const { config, CONSTS } = this.indexers
+    const { config, CONSTS, logger } = this.indexers
 
     return new Promise(resolve => {
       const self = this;
       this.listener = app.listen(config.server.port, async function () {
-        console.log(`NBnode server started on port ${config.server.port}...`);
+        logger.info(`NBnode server started on port ${config.server.port}...`);
 
         var proxyPassConfig = CONSTS.proxy_map;
 

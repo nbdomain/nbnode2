@@ -100,8 +100,11 @@ class Nodes {
     }
     async validatNode(url) {
         try {
+            const { config } = this.indexers
             const res = await axios.get(url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
+                if (!config.nodeIPs) config.nodeIPs = []
+                config.nodeIPs.push(res.request.socket.remoteAddress)
                 return res.data
             }
         } catch (e) {

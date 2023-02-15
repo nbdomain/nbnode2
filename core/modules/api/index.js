@@ -52,20 +52,13 @@ function getClientIp(req) {
 }
 app.use(function checkAccess(req, res, next) {
     const { config } = indexers
-    if (config.allowIPs.length != 0) {
+    if (config.allowIPs) {
         const IP = getClientIp(req)
-        if (config.allowIPs && config.allowIPs.length > 0 && config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
+        if (config.nodeIPs.indexOf(IP) === -1 && config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
             res.end("not allowed")
             return
         }
     }
-    /*if (config.apiKeys.length != 0) {
-        const apiKey = req.header('x-api-key');
-        if (config.apiKeys.indexOf(apiKey) == -1) {
-            res.end("not allowed")
-            return
-        }
-    }*/
     next()
 })
 app.get('/', async function (req, res, next) {

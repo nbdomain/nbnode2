@@ -24,7 +24,7 @@ class Logger {
                 info => `${info.timestamp} ${info.level}: ${info.message}`,
             ),);
         const transport = new DailyRotateFile({
-            filename: __dirname + '/logs/' + config.logfile || "nbnode-%DATE%.log",
+            filename: gl.dataFolder + '/logs/' + (config.logfile || "nbnode-%DATE%.log"),
             datePattern: 'YYYY-MM-DD',
             zippedArchive: true,
             //maxSize: '20m',

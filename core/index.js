@@ -90,6 +90,7 @@ class Indexers {
 
   static async init() {
     this.config = CONFIG
+    this.dataFolder = CONFIG.dataDir || Path.join(__dirname, "../data/")
     if (!this.config.chainid) this.config.chainid = 'main'
     if (this.config.tld) {
       CONSTS.tld_config = { ...this.config.tld, ...CONSTS.tld_config }
