@@ -16,12 +16,13 @@ const fs = require('fs')
 const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
 const Path = require('path')
+const Logger = require('./logger.js')
 let CONFIG = require('../data/config.js').CONFIG
 
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
-const today = new Date();
+/*const today = new Date();
 var dd = String(today.getMonth() + 1 + "-" + today.getDate());
 const logFolder = CONFIG?.path?.log || Path.join(__dirname, "../data/log")
 if (!fs.existsSync(logFolder)) {
@@ -50,15 +51,14 @@ class loggerPlus {
     console.error(...args);
   }
 }
+*/
 
-
-const logger = loggerPlus
+const logger = new Logger //loggerPlus
 
 var myArgs = process.argv.slice(2);
 if (myArgs) {
   var argv = parseArgs(myArgs, opts = {})
-  logger.info("cmd:", argv);
-  logger.logFile("----------------------Node Started----------------------------")
+  logger.console("cmd:", argv);
   if (argv.reorg) {
     REORG = argv.reorg
     fs.unlinkSync(Path.join(__dirname, "/db/" + CONSTS.DMDB))
@@ -97,6 +97,7 @@ class Indexers {
     this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger
+    logger.init(this)
     this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
     this.Parser = Parser
@@ -110,19 +111,19 @@ class Indexers {
   }
   static async start() {
     if (!await this.server.start()) {
-      console.error("server start failed")
+      this.logger.error("server start failed")
       return false
     }
     if (!await Nodes.start(this)) {
-      console.error("Nodes start failed")
+      this.logger.error("Nodes start failed")
       return false
     }
     if (!await this.indexer.start()) {
-      console.error("indexer start failed")
+      this.logger.error("indexer start failed")
       return false
     }
     if (!this.blockMgr.run()) {
-      console.error("blockMrg run failed")
+      this.logger.error("blockMrg run failed")
       return false
     }
     return true

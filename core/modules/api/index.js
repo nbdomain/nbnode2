@@ -164,9 +164,7 @@ app.get('/dbq', async (req, res) => {
     para = para.split('|')
     res.json(indexers.db.runQuery(exp, para))
 })
-app.get('/keys/:domains', async (req, res) => {
 
-})
 app.get('/user/:account', async function (req, res) {
     const account = req.params['account']
     const resolver = indexers.resolver
@@ -185,9 +183,11 @@ app.get('/deletetx/:txid', async (req, res) => {
 })
 
 app.post('/sendTx', async function (req, res) {
+    const { logger } = indexers
     const obj = req.body;
-    console.log("sendTx got:", obj)
+    logger.info("/sendTx: ", obj)
     const ret = await Nodes.sendNewTx(obj)
+    logger.info("/sendTx ret: ", ret)
     res.json(ret);
 });
 async function handleNewTx({ txid, force = false }) {

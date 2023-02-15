@@ -287,6 +287,10 @@ class Database {
     this.initdb('dmdb')
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
+    // remove tx that newer than maxResolvedTxTime
+    const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
+    const sql = 'delete from txs where txTime > ?'
+    this.txdb.prepare(sql).run(maxTime)
   }
   getResolvedFlag() {
     return this.txdb.prepare("select resolved from txs where resolved!=0").raw(true).get()

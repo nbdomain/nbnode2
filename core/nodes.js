@@ -273,7 +273,7 @@ class Nodes {
     }
     async downloadAndUseDomainDB(from, includingTxDB = true) {
         try {
-            const { db } = this.indexers
+            const { db, logger } = this.indexers
             this._canResolve = false
             if (!from) {
                 const clients = this.getConnectedClients()
@@ -283,7 +283,7 @@ class Nodes {
                 }
                 from = clients[0].node.id
             }
-            if (includingTxDB) {
+            /*if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
                 const filename = path.join(db.path, "d_txs.db")
                 console.log("Downloading txdb from:", url)
@@ -291,12 +291,12 @@ class Nodes {
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
                 fs.unlinkSync(filename)
-            }
+            }*/
             const url = from + "/files/bk_domains.db"
             const filename = path.join(db.path, "d_domains.db")
-            console.log("Downloading domain db from:", url)
+            logger.info("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
-            console.log("Download domain db successful")
+            logger.info("Download domain db successfully")
             this.indexers.resolver.abortResolve()
             this.indexers.db.restoreDomainDB(filename)
             fs.unlinkSync(filename)
