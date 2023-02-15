@@ -192,6 +192,7 @@ class LocalServer {
               target: localAddr,
               changeOrigin: true,
               pathRewrite: { [pa]: "" },
+              xfwd: true
             })
           );
         }

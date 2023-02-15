@@ -54,7 +54,7 @@ app.use(function checkAccess(req, res, next) {
     const { config } = indexers
     if (config.allowIPs.length != 0) {
         const IP = getClientIp(req)
-        if (config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
+        if (config.allowIPs && config.allowIPs.length > 0 && config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
             res.end("not allowed")
             return
         }
