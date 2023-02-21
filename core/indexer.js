@@ -53,8 +53,8 @@ class Indexer {
   async start() {
     const { config } = this.indexers
     this.resolver.start()
-    if (config.exit_count != 0)
-      this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * config.exit_count);
+    //if (config.exit_count != 0)
+    //  this.restartTimer = setTimeout(this.restart.bind(this), 60 * 1000 * config.exit_count);
     return true
   }
 

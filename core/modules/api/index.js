@@ -54,7 +54,8 @@ app.use(function checkAccess(req, res, next) {
     const { config } = indexers
     if (config.allowIPs) {
         const IP = getClientIp(req)
-        if (config.nodeIPs.indexOf(IP) === -1 && config.allowIPs.indexOf(IP) == -1 && IP !== "127.0.0.1") {
+        if (config.allowIPs.indexOf(IP) == -1 && config.nodeIPs.indexOf(IP) === -1 && IP !== "127.0.0.1" && IP != "172.21.0.1") {
+            console.error("not allowed:", IP)
             res.end("not allowed")
             return
         }
@@ -146,15 +147,14 @@ app.get('/qc/:q', function (req, res) {
     res.json(result);
     return;
 });
-app.get('/mq/:q', async function (req, res) {
-    const q = req.params['q']
+app.post('/mq/', async function (req, res) {
+    const q = req.body
     const result = await indexers.db.mangoQuery(q);
     res.json(result);
     return;
 });
-app.get('/dbq', async (req, res) => {
-    let { exp, para } = req.query
-    para = para.split('|')
+app.post('/dbq/', async (req, res) => {
+    let { exp, para } = req.body
     res.json(indexers.db.runQuery(exp, para))
 })
 

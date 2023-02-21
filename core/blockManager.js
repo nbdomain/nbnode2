@@ -91,12 +91,14 @@ class BlockMgr {
             //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
-            //console.log("receive:", nodeKey)
+            //            const n = Nodes.nodeFromKey(nodeKey)
+            //            console.log("receive:", n.id, " ", nodeKey)
             if (dmVerify && dmSig) {
                 if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
                 let hasNewVal = false
                 if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
-                    if (await Util.bitcoinVerify(nodeKey, dmVerify, dmSig)) {
+                    const v = await Util.bitcoinVerify(nodeKey, dmVerify, dmSig)
+                    if (v) {
                         this.dmVerifyMap[dmVerify][nodeKey] = dmSig
                         hasNewVal = true
                     }
@@ -245,7 +247,7 @@ class BlockMgr {
     }
     async run() {
         while (true) {
-            const { Nodes, db, config } = this.indexers
+            const { Nodes, db, config, logger } = this.indexers
             if (this.hasNewTX) {
                 this.hasNewTX = false
                 await wait(DEF.BLOCK_TIME)
@@ -293,6 +295,7 @@ class BlockMgr {
                     if (this.dmVerify != dmVerify || !this.dmSig) { //update my domain sig
                         this.dmSig = await Util.bitcoinSign(config.key, dmVerify)
                         this.dmVerify = dmVerify
+                        logger.info("BlockMgr: created new sig:", this.dmSig, " dmVerify:", dmVerify)
                     }
                     bcBlock.dmSig = this.dmSig
                     bcBlock.dmVerify = dmVerify

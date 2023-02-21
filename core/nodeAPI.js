@@ -112,8 +112,10 @@ class NodeServer {
             ret(await rpcHandler.handleNewTxFromApp({ indexers, obj }))
         })
         socket.on("disconnect", (reason) => {
+            const { Nodes } = indexers
             console.error("server disconnected:", reason, " :", socket.handshake.auth.serverUrl)
             socket.removeAllListeners()
+            Nodes.removeNode(socket.handshake.auth.serverUrl)
         })
         socket.onAny((event, ...args) => {
             console.log(`server got ${event}`);

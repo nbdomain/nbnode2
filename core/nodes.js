@@ -8,6 +8,9 @@ const { Util } = require('./util');
 const path = require('path')
 const fs = require('fs');
 const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
+dnsPromises = dns.promises;
+
+
 
 
 
@@ -22,15 +25,20 @@ class Nodes {
         //this.isProducer = config.server.producer
     }
     async checkTime() {
-        const timeSync = NtpTimeSync.getInstance({ replyTimeout: 10000 });
-        const result = await timeSync.getTime();
-        console.log("real time", result.now);
-        console.log("offset in milliseconds", result.offset);
-        if (Math.abs(result.offset) > 2000) {
-            console.error("OS time is not in sync with NTP, please resync")
-            return false
+        const { logger } = this.indexers
+        try {
+            const timeSync = NtpTimeSync.getInstance({ replyTimeout: 10000 });
+            const result = await timeSync.getTime();
+            console.log("real time", result.now);
+            console.log("offset in milliseconds", result.offset);
+            if (Math.abs(result.offset) > 2000) {
+                logger.error("OS time is not in sync with NTP, please resync")
+                return false
+            }
+            return true
+        } catch (e) {
+            logger.error("checkTime:", e.message)
         }
-        return true
     }
     async sleep(seconds) {
         return new Promise(resolve => {
@@ -59,15 +67,24 @@ class Nodes {
     }
     async start(indexers) {
         this.indexers = indexers
-        const { config } = indexers
+        const { config, dataFolder } = indexers
         indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
-        const pkey = config.key ? await lib.getPublicKey(config.key) : "NotSet"
+        let privateKey = config.key
+        if (!privateKey) {
+            try {
+                var data = fs.readFileSync(dataFolder + 'node.key', 'utf8');
+                privateKey = data.toString()
+            } catch (e) {
+                privateKey = await lib.createPrivateKey()
+                fs.writeFileSync(dataFolder + 'node.key', privateKey)
+            }
+            config.key = privateKey
+        }
+        const pkey = config.key ? await lib.getPublicKey(privateKey) : "NotSet"
         this.thisNode = { key: pkey }
         this._isProducer = this.isProducer(pkey)
-        if (this.isProducer() && !this.checkTime()) {
-            return false
-        }
+        this.checkTime()
         this.indexers = indexers
         this.nodeClient = new NodeClient()
         this.endpoint = config.server.publicUrl
@@ -101,10 +118,13 @@ class Nodes {
     async validatNode(url) {
         try {
             const { config } = this.indexers
+            if (!config.nodeIPs) config.nodeIPs = []
+            const pURL = new URL(url)
+            const IP = await dnsPromises.lookup(pURL.hostname);
+            IP && config.nodeIPs.push(IP.address)
+
             const res = await axios.get(url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
-                if (!config.nodeIPs) config.nodeIPs = []
-                config.nodeIPs.push(res.request.socket.remoteAddress)
                 return res.data
             }
         } catch (e) {
@@ -126,6 +146,7 @@ class Nodes {
         // const index = this.pnodes.findIndex(item => item.id == url)
         // if (index != -1) this.pnodes.splice(index, 1)
         // delete this.nodeClients[url]
+        delete this.handling[url]
     }
     async addNode({ url, isPublic = true }) {
         const { config } = this.indexers
@@ -195,6 +216,7 @@ class Nodes {
     }
     isProducer(pkey) {
         const { config, CONSTS } = this.indexers
+        if (config?.consensus?.mode === 'equal') return true
         if (!pkey) return this._isProducer
         if (config.disableProducer) return false
         return CONSTS.producers.indexOf(pkey) != -1
@@ -203,18 +225,18 @@ class Nodes {
         this.removeNode(node.id)
     }
     async connectAsClient(node) {
-        const { config } = this.indexers
+        const { config, logger } = this.indexers
 
         if (this.nodeClients[node.id]) {
             console.log("already connected, ignore:", node.id)
             return false
         }
-        if (!this.isProducer(node.pkey)) {
+        if (!this.isProducer(node.pkey) && objLen(this.nodeClients) > 0) {
             return false
         }
         const client = new NodeClient(this.indexers, config.server.publicUrl);
         if (await client.connect(node)) {
-            console.log("connected to:", node.id)
+            logger.info("connected to:", node.id)
             this.nodeClients[node.id] = client
             return true
         }
@@ -286,7 +308,7 @@ class Nodes {
                 }
                 from = clients[0].node.id
             }
-            /*if (includingTxDB) {
+            if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
                 const filename = path.join(db.path, "d_txs.db")
                 console.log("Downloading txdb from:", url)
@@ -294,7 +316,7 @@ class Nodes {
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
                 fs.unlinkSync(filename)
-            }*/
+            }
             const url = from + "/files/bk_domains.db"
             const filename = path.join(db.path, "d_domains.db")
             logger.info("Downloading domain db from:", url)

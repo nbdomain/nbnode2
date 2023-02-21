@@ -297,27 +297,37 @@ class Database {
   }
   restoreTxDB(filename) {
     console.log("Restoring tx DB from:", filename)
+    const { logger } = this.indexers
     this.txdb.close()
 
     try {
       fs.unlinkSync(this.txfile + '-shm')
-    } catch (e) { }
+    } catch (e) {
+      logger.error("restoreTxDB:", e.message)
+    }
     try {
       fs.unlinkSync(this.txfile + '-wal')
-    } catch (e) { }
+    } catch (e) {
+      logger.error("restoreTxDB:", e.message)
+    }
     try {
       fs.unlinkSync(this.txfile)
-    } catch (e) { }
+    } catch (e) {
+      logger.error("restoreTxDB:", e.message)
+    }
 
     let restoreFile = filename
     if (!fs.existsSync(filename)) {
       restoreFile = Path.join(__dirname, "/template/txs.db")
     }
-    console.log("restore:", restoreFile, "to:", this.txfile)
-    fs.copyFileSync(restoreFile, this.txfile)
-    this.txdb = null
-    this.initdb('txdb')
-
+    try {
+      console.log("restore:", restoreFile, "to:", this.txfile)
+      fs.copyFileSync(restoreFile, this.txfile)
+      this.txdb = null
+      this.initdb('txdb')
+    } catch (e) {
+      logger.error("restoreTxDB:", e.message)
+    }
   }
   restoreLastGoodDomainDB() {
     this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
@@ -713,25 +723,24 @@ class Database {
     return []
   }
   async mangoQuery(q) {
-    q = JSON.parse(q)
-    const retCount = !!q.count
-    if (q.count) q = q.count
-    const tags = q.tags
-    delete q.tags
-    const limit = q.limit
-    delete q.limit
-    let nokey = (Object.keys(q).length == 0)
-    if (q.parent) { //within parent, convert props
-      const defination = await this.readKey('_def.' + q.parent)//get defination of this level
-      if (defination) {
-        for (let k in defination.v) {
-          const df = defination.v[k].split(':')
-          Util.changeKeyname(q, df[0], k)
+    try {
+      const retCount = !!q.count
+      if (q.count) q = q.count
+      const tags = q.tags
+      delete q.tags
+      const limit = q.limit
+      delete q.limit
+      let nokey = (Object.keys(q).length == 0)
+      if (q.parent) { //within parent, convert props
+        const defination = await this.readKey('_def.' + q.parent)//get defination of this level
+        if (defination) {
+          for (let k in defination.v) {
+            const df = defination.v[k].split(':')
+            Util.changeKeyname(q, df[0], k)
+          }
         }
       }
-    }
-    const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
-    try {
+      const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
       let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
       SQLQuery = SQLQuery.slice(0, -1)
       if (tags) {
