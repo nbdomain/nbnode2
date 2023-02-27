@@ -189,6 +189,12 @@ class Database {
         this.txdb.prepare(sql).run()
       } catch (e) { }
 
+      try {
+        sql = `CREATE INDEX index_parent ON keys ( parent )`
+        this.dmdb.prepare(sql).run()
+      } catch (e) {
+        console.error(e.message)
+      }
 
       sql = `
       CREATE TABLE IF NOT EXISTS blocks (
@@ -699,6 +705,7 @@ class Database {
     }
     //handle props convertion
     if (item.props) {
+      //item.props_org = Object.assign({}, item.props)//structuredClone(item.props)
       const defination = await this.readKey('_def.' + item.parent)//get defination of this level
       if (defination) {
         for (let k in defination.v) {

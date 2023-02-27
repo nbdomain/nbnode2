@@ -54,7 +54,9 @@ app.use(function checkAccess(req, res, next) {
     const { config } = indexers
     if (config.allowIPs) {
         const IP = getClientIp(req)
-        if (config.allowIPs.indexOf(IP) == -1 && config.nodeIPs.indexOf(IP) === -1 && IP !== "127.0.0.1" && IP != "172.21.0.1") {
+        const ips = IP.split('.')
+        if (config.allowIPs.indexOf(IP) == -1 && config.nodeIPs.indexOf(IP) === -1
+            && ips[0] !== "127" && ips[0] !== "10" && !(ips[0] == "172" && +ips[1] >= 16 && +ips[1] <= 31) && !(ips[0] === "192" && ips[1] === "168")) {
             console.error("not allowed:", IP)
             res.end("not allowed")
             return

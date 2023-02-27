@@ -573,12 +573,7 @@ class CMD_KEY {
             let newValue = { v, id: output.txid }
             await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
-        /* for (const key in rtx.output.value) {
-             let newKey = key.toLowerCase()
-             if (output.pay) newValue.pay = output.pay
-             if (output.tags) newValue.tags = output.tags
-             //CMD_KEY.updateKey(nidObj, newKey, newValue, rtx.output)
-         } */
+        
         return nidObj
     }
 }
