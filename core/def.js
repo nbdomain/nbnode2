@@ -43,7 +43,7 @@ const DEF = {
     TX_FORMAT2: 2,
 
     BLOCK_VER: 14,       //block format
-    BLOCK_TIME: 5000,   //consense time
+    BLOCK_TIME: 10000,   //new block time
     CONSENSUE_COUNT: 3, //number of nodes needed a node connects to
     MAX_BLOCK_LENGTH: 100 //max transaction in a block
 }

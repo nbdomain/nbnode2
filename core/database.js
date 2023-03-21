@@ -717,6 +717,16 @@ class Database {
         }
       }
     }
+    if (item.__shash) { //big value saved to data db
+      let value = this.readData(item.__shash).raw
+      if (!value) {
+        const d = await this.indexers.Nodes.getData(item.__shash)
+        value = d.raw
+      }
+      if (value) value = Util.parseJson(value)
+      item.v = value?.v
+      delete item.__shash
+    }
     return item
   }
   runQuery(exp, para) {
@@ -782,14 +792,6 @@ class Database {
         this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
       let ret = this.readKeyStmt.get(keyName);
       if (ret) {
-        let value = JSON.parse(ret.value);
-        if (value.__shash) { //big value saved to data db
-          const value1 = this.readData(value.__shash).raw
-          if (!value1) {
-            const d = await this.indexers.Nodes.getData(value.__shash)
-            ret.value = d.raw
-          } else ret.value = value1
-        }
         ret = await this.handleOneKeyItem(ret)
         //        delete ret.value
         return ret;

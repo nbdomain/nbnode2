@@ -392,13 +392,16 @@ app.get('/admin', async (req, res) => {
             res.end(result)
             return
         }
+        case 'backup': {
+            db.backupDB(); break;
+        }
         case 'update': {
             const result = Util.runNodeUpdate(indexers)
             res.end(result)
             return;
         }
     }
-    db.delKey("kkk.users.test.pv")
+    //db.delKey("kkk.users.test.pv")
     // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })
     // await db.readKey("test.test.a")
     //await Util.downloadFile("https://api.nbdomain.com/files/bk_txs.db", Path.join(__dirname, "/test.db"))

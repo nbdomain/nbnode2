@@ -265,13 +265,8 @@ class NodeClient {
 
     }
 
-    async pullNewTxs(para = null) { //para = { from:12121233,to:-1}
+    async pullNewTxs(para = {}) { //para = { from:12121233,to:-1}
         const { db, indexer } = this.indexers
-        //const height = +db.readConfig("txdb", "height")
-        const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
-        if (para == null) {
-            para = { fromTime }
-        }
         para.v = 1
         para.from = this.from
         const self = this
@@ -384,7 +379,7 @@ class rpcHandler {
             if (await indexer.addTxFull({ txid: ret1.txid, sigs, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
                 db.addTransactionSigs(ret1.txid, sigs)
                 sigs = db.getTransactionSigs(ret1.txid)
-                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+                // Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
             }
         } else {
             console.log("send tx failed")

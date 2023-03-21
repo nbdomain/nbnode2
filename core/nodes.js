@@ -197,7 +197,7 @@ class Nodes {
                 const result = await self.addNode({ url })
                 if (!result)
                     self.incMistake(url)
-                if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
+                //if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }
         const requiredNode = this.isProducer() ? DEF.CONSENSUE_COUNT : 1
@@ -416,10 +416,11 @@ class Nodes {
         const { db } = this.indexers
         while (true) {
             const block = db.getLastBlock()
+            const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
             if (block && block.height > 100) {
                 for (const id in this.nodeClients) {
                     if (this.nodeClients[id].connected)
-                        this.nodeClients[id].pullNewTxs();
+                        this.nodeClients[id].pullNewTxs({ fromTime });
                 }
             }
             await wait(1000 * 10)

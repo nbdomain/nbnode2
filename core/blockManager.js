@@ -91,16 +91,19 @@ class BlockMgr {
             //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
-            //            const n = Nodes.nodeFromKey(nodeKey)
-            //            console.log("receive:", n.id, " ", nodeKey)
+            const n = Nodes.nodeFromKey(nodeKey)
+            console.log("receive:", n.id, " ", nodeKey, " dmVerify:", dmVerify)
             if (dmVerify && dmSig) {
                 if (!this.dmVerifyMap[dmVerify]) this.dmVerifyMap[dmVerify] = {}
+                if (objLen(this.dmVerifyMap) > 100) this.dmVerifyMap = {}
                 let hasNewVal = false
                 if (this.dmVerifyMap[dmVerify][nodeKey] != dmSig) {
                     const v = await Util.bitcoinVerify(nodeKey, dmVerify, dmSig)
                     if (v) {
                         this.dmVerifyMap[dmVerify][nodeKey] = dmSig
                         hasNewVal = true
+                    } else {
+                        console.log("found")
                     }
 
                 }
@@ -116,46 +119,55 @@ class BlockMgr {
                     maxLen++ //add my vote
                 }
                 if (maxLen < REQUIRE_CONSENSUE && objLen(this.dmVerifyMap) > REQUIRE_CONSENSUE) {//no consensue
-                    if (!this.noSyncStart) this.noSyncStart = Date.now()
-                    const span = (Date.now() - this.noSyncStart) / 1000
-                    if (span < 120) {
+                    if (!this.noSysSyncStart) this.noSysSyncStart = Date.now()
+                    const span = (Date.now() - this.noSysSyncStart) / 1000
+                    this.sysInConsens = false
+                    console.error("NBDomain system not in sync for:", span, "seconds")
+                    /*if (span < 120) {
                         console.error("NBDomain system not in sync for:", span, "seconds")
                     } else {
                         console.log("restore last consensue db")
                         logger.info("restore last consensue db")
                         db.restoreLastGoodDomainDB()
                         this.noSyncStart = 0
-                    }
+                    }*/
+                    this.dbInConsens = false
                 }
                 if ((maxLen >= REQUIRE_CONSENSUE || !Nodes.isProducer()) && !this.downloading) {//reach consense
+                    this.sysInConsens = true //nb sys has consens
+                    delete this.noSysSyncStart
                     if (maxVerify === this.dmVerify) { //I win, backup the good domain db
                         if (this.lastBackupHash != maxVerify) {
                             await db.backupDB()
                             this.lastBackupHash = maxVerify
                             this.dmVerifyMap = {}
                         }
+                        this.dbInConsens = true //my node has consens
+                        delete this.waitSyncStart
                     } else { //I lost, restore last good domain db
+                        this.dbInConsens = false
                         if (!this.waitSyncStart || this.waitSyncStart === 0) this.waitSyncStart = Date.now()
                         const span = (Date.now() - this.waitSyncStart) / 1000
                         const lb = db.getLastBlock()
-                        if (lb && block.height - lb.height < 20 && span < 120) {
+                        if (span < 120) {
                             console.error("found inconsistent domain db, waited:", span, " seconds")
                         } else {
                             this.waitSyncStart = 0
                             this.dmVerifyMap = {}
                             const node = this.db.getNode(maxNodeKey)
                             this.downloading = true
-                            if (await Nodes.downloadAndUseDomainDB(node.url, this.txConsensue == false) == false) {
+                            if (node && await Nodes.downloadAndUseDomainDB(node.url, this.txConsensue == false) == false) {
                                 console.error("failed to download good db")
-                                db.restoreLastGoodDomainDB()
+                                //db.restoreLastGoodDomainDB()
                             }
                             this.dmVerify = db.getDomainVerifyCode()
                             console.log("dmVerify:", this.dmVerify, " maxVerify:", maxVerify)
                             this.downloading = false
+                            this.dmSig = null
                         }
                     }
                 } else {
-                    this.waitSyncCount = 0
+                    this.waitSyncStart = 0
                 }
             }
             let poolNode = this.nodePool[nodeKey]
@@ -167,7 +179,11 @@ class BlockMgr {
                 block.hash = poolNode.hash = hash
                 //check sender's sig
                 const sigSender = sigs[nodeKey]
-                if (await Util.bitcoinVerify(nodeKey, hash, sigSender) == false) return
+                if (!sigSender) {
+                    console.log("found")
+                }
+                if (!sigSender || await Util.bitcoinVerify(nodeKey, hash, sigSender) == false)
+                    return
                 if (this.uBlock && this.uBlock.block.hash === hash) { //same as my block
 
                     if (!sigs[Nodes.thisNode.key]) { //add my sig
@@ -206,7 +222,7 @@ class BlockMgr {
                     if (merkel != block.merkel) { //refetch all txs in the block
                         const btx = await axios.get(url + "/api/queryTX?height=" + block.height)
                         if (btx.data) {
-                            tempBlock && this.db.deleteTxs(tempBlock.txs)
+                            //tempBlock && this.db.deleteTxs(tempBlock.txs)
                             for (const ftx of btx.data) {
                                 await indexer.addTxFull({ txid: ftx.txid, sigs: ftx.sigs, rawtx: ftx.rawtx, txTime: ftx.txTime, oDataRecord: ftx.oDataRecord, chain: ftx.chain, replace: true })
                                 const txItem = block.txs.find(item => item.txid === ftx.txid)
@@ -318,7 +334,7 @@ class BlockMgr {
                 if (height >= startHeight) { //download missing block
                     const n = Nodes.nodeFromKey(pkey)
                     const endHight = node.uBlock.block.height - startHeight > 500 ? startHeight + 500 : node.uBlock.block.height
-                    if (endHight - startHeight >= 200) continue
+                    if (endHight - startHeight >= 200 && this.sysInConsens) continue
                     if (await this.downloadBlocks(startHeight, endHight, n.id)) {
                         this.uBlock = null
                         this.hasNewTX = false
