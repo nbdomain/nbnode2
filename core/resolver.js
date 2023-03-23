@@ -220,13 +220,16 @@ class Resolver {
     async resolveNextBatch() {
         if (!this.started) return
         while (true) {
-            for (const controller of this.controllers) {
+            for (let i = 0; i < this.controllers.length; i++) {
+                const controller = this.controllers[i]
                 if (!controller.canResolve()) {
-                    //this.isBreak = new AbortController()
+                    console.log("still cannot resolve ...")
                     await sleep(3000)
+                    i = 0
                 }
             }
             try {
+                console.log("... can resolve")
                 this.abort = false
                 const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
                 //console.log("rtxArray:", rtxArray.length)

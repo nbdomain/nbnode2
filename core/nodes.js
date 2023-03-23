@@ -86,7 +86,6 @@ class Nodes {
         this._isProducer = this.isProducer(pkey)
         this.checkTime()
         this.indexers = indexers
-        this.nodeClient = new NodeClient()
         this.endpoint = config.server.publicUrl
         //if (!config.server.https) this.endpoint += ":" + config.server.port
 
@@ -276,25 +275,6 @@ class Nodes {
     }
     async sendNewTx(obj) {
         return await rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
-        /*const { Parser } = this.indexers
-        let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
-        if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
-            console.error("parseRaw error err:", ret)
-            return { code: -1, message: ret.msg }
-        }
-        if (this.nodeClients && Object.keys(this.nodeClients).length > 0) {
-            const clients = this.getConnectedClients()
-            if (clients.length > 0) {
-                const ret = await clients[0].sendNewTx(obj)
-                if (ret && clients.length > 1) { //one node return success, send through another node, make sure it's sent
-                    clients[1].sendNewTx(obj)
-                }
-                console.log(ret)
-                return ret
-            }
-        }
-        console.error("No Other nodes connected, cannot send tx. ", this.nodeClients)
-        return { code: 1, msg: "No Other nodes connected, cannot send tx" } */
     }
     async downloadAndUseDomainDB(from, includingTxDB = true) {
         try {
@@ -417,13 +397,15 @@ class Nodes {
         while (true) {
             const block = db.getLastBlock()
             const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
+            this._canResolve = false
             if (block && block.height > 100) {
                 for (const id in this.nodeClients) {
                     if (this.nodeClients[id].connected)
-                        this.nodeClients[id].pullNewTxs({ fromTime });
+                        await this.nodeClients[id].pullNewTxs({ fromTime });
                 }
             }
-            await wait(1000 * 10)
+            this._canResolve = true
+            await wait(1000 * 20)
         }
     }
     static inst() {

@@ -125,7 +125,7 @@ class Indexer {
         console.log("Added txid:", txid)
         const list = this.database.getUnresolvedTX(1)
         if (list && list.length > 0) {
-          resolver.resolveOneTX(list[0])
+          //resolver.resolveOneTX(list[0])
         }
       }
       else {

@@ -266,22 +266,40 @@ class NodeClient {
     }
 
     async pullNewTxs(para = {}) { //para = { from:12121233,to:-1}
-        const { db, indexer } = this.indexers
-        para.v = 1
-        para.from = this.from
-        const self = this
-        this.socket.volatile.emit("pullNewTx", para, async (res) => {
-            console.log("get reply from pullNewTx:", this.node.id)
-            if (!res) return
-            for (const tx of res) {
-                if (g_inAddTx) {
-                    console.error("pullNewtx re-entry, continue")
-                    continue
+        return new Promise(resolve => {
+            const { db, indexer } = this.indexers
+            para.v = 1
+            para.from = this.from
+            let lastTime = db.readConfig('txdb', this.node.id + "_lasttime") || 1679450149535
+            if (lastTime < 1679450149535) lastTime = 1679450149535
+            para.fromTime = lastTime
+            const self = this
+            let finish = false
+            setTimeout(() => {
+                if (!finish) resolve(-1) //timeout
+            }, 5000)
+            this.socket.volatile.emit("pullNewTx", para, async (res) => {
+                console.log("get reply from pullNewTx:", this.node.id)
+                if (!res) {
+                    resolve(null)
+                    finish = true
+                    return
                 }
-                g_inAddTx = true
-                await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
-                g_inAddTx = false
-            }
+                for (const tx of res) {
+                    if (g_inAddTx) {
+                        console.error("pullNewtx re-entry, continue")
+                        continue
+                    }
+                    g_inAddTx = true
+                    await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
+                    g_inAddTx = false
+                    this.maxTime = Math.max(this.maxTime || 0, tx.txTime)
+                }
+                if (this.maxTime)
+                    db.writeConfig('txdb', self.node.id + "_lasttime", this.maxTime + '')
+                finish = true
+                resolve(true)
+            })
         })
     }
     async sendNewTx(obj) {
@@ -379,7 +397,7 @@ class rpcHandler {
             if (await indexer.addTxFull({ txid: ret1.txid, sigs, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
                 db.addTransactionSigs(ret1.txid, sigs)
                 sigs = db.getTransactionSigs(ret1.txid)
-                // Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
             }
         } else {
             console.log("send tx failed")

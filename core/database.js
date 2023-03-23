@@ -21,7 +21,7 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
-let TXRESOLVED_FLAG = 1
+let TXRESOLVED_FLAG = 1, OTHER_RESOLVED_FLAG = 1
 const VER_DMDB = 12
 const VER_TXDB = 5
 
@@ -291,6 +291,7 @@ class Database {
     this.dmdb = null
     MemDomains.clearObj()
     this.initdb('dmdb')
+    OTHER_RESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG") || 1
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
     // remove tx that newer than maxResolvedTxTime
@@ -594,6 +595,8 @@ class Database {
       const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime') || 0
       const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
       const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
+      //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} ORDER BY txTime,txid ASC limit ${limit}`
+
       const list = this.txdb.prepare(sql).raw(false).all();
 
       /*if (list.length != 0) {
