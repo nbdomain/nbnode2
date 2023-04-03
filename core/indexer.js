@@ -90,7 +90,7 @@ class Indexer {
     try {
       //console.log("adding:", txid)
 
-      const { Nodes, resolver } = this.indexers
+      const { Nodes, resolver, config,db } = this.indexers
       if (!force && this.database.hasTransaction(txid) && !replace) {
         console.log("Skipping:", txid)
         if (sigs) {
@@ -121,11 +121,13 @@ class Indexer {
         if (sigs) {
           this.database.addTransactionSigs(txid, sigs)
         }
+        this.maxTime = Math.max(this.maxTime || 0, txTime)
+        db.writeConfig('txdb', config.server.publicUrl + "_lasttime", this.maxTime + '')
         this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
         const list = this.database.getUnresolvedTX(1)
         if (list && list.length > 0) {
-          //resolver.resolveOneTX(list[0])
+          resolver.resolveOneTX(list[0])
         }
       }
       else {

@@ -269,6 +269,7 @@ class Database {
     this.txdb.prepare(sql).run();
   }
   restoreDomainDB(filename) {
+    const { logger } = this.indexers
     console.log("Restoring domain DB from:", filename)
     this.dmdb.close()
     let isReset = false
@@ -294,10 +295,8 @@ class Database {
     OTHER_RESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG") || 1
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
-    // remove tx that newer than maxResolvedTxTime
-    const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
-    const sql = 'delete from txs where txTime > ?'
-    this.txdb.prepare(sql).run(maxTime)
+    const dmHash = this.readConfig('dmdb', 'domainHash')
+    logger.info("Domain DB Restored from:", filename, " DomainHash:", dmHash, " OTHER_RESOLVED_FLAG:", OTHER_RESOLVED_FLAG)
   }
   getResolvedFlag() {
     return this.txdb.prepare("select resolved from txs where resolved!=0").raw(true).get()
@@ -335,6 +334,8 @@ class Database {
     } catch (e) {
       logger.error("restoreTxDB:", e.message)
     }
+    const dmHash = this.readConfig('dmdb', 'domainHash')
+    logger.info("TX DB Restored from:", filename, " DomainHash:", dmHash)
   }
   restoreLastGoodDomainDB() {
     this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
@@ -346,13 +347,14 @@ class Database {
     try {
       let dbname = Path.join(this.bkPath, `bk_domains.db`)
 
-      if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
+      fs.rmSync(dbname, {force: true})
       let sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.dmdb.prepare(sql).run()
-
+      const checkpointTime = +this.readConfig("dmdb", "maxResolvedTxTime") || 0
+      this.writeConfig('dmdb', 'checkpointTime', checkpointTime + '')
       dbname = Path.join(this.bkPath, `/bk_txs.db`)
-      if (fs.existsSync(dbname)) fs.unlinkSync(dbname)
+      fs.rmSync(dbname, {force: true})
       sql = "VACUUM main INTO '" + dbname + "'"
       console.log("backup to:", dbname)
       this.txdb.prepare(sql).run()
@@ -447,12 +449,11 @@ class Database {
   setTransactionResolved(txid, time, resolved = true) {
     const resolvedString = resolved ? TXRESOLVED_FLAG : "1"
     this.txdb.prepare(`UPDATE txs set resolved = ${resolvedString} where txid=?`).run(txid)
-    const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime")
+    const maxTime = +this.readConfig("dmdb", "maxResolvedTxTime") || 0
     const maxResolvedTx = this.readConfig("dmdb", "maxResolvedTx")
     //console.log(maxTime, ":::", time)
-    if (maxTime < time || (maxTime === time && maxResolvedTx > txid) || isNaN(maxTime)) {
-      //console.log("here")
-      this.writeConfig("dmdb", "maxResolvedTxTime", time.toString())
+    if (maxTime < time || (maxTime === time && maxResolvedTx > txid)) {
+      this.writeConfig("dmdb", "maxResolvedTxTime", time + '')
       this.writeConfig("dmdb", "maxResolvedTx", txid)
     }
   }
@@ -590,19 +591,13 @@ class Database {
 
   getUnresolvedTX(limit = 100) {
     try {
-      //  let height = this.readConfig('dmdb', 'resolvingHeight')||0
-      //  height = +height
-      const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime') || 0
+      const checkpointTime = this.readConfig('dmdb', 'checkpointTime') || 0
       const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND txTime>=${maxResolvedTxTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
+      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} AND txTime>=${checkpointTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
       //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} ORDER BY txTime,txid ASC limit ${limit}`
 
       const list = this.txdb.prepare(sql).raw(false).all();
 
-      /*if (list.length != 0) {
-        height++
-        this.writeConfig('dmdb', 'resolvingHeight', height + '')
-      }*/
       return list
     } catch (e) {
       console.error(e)
@@ -646,15 +641,16 @@ class Database {
     if (res && res.attributes) res.attributes = Util.parseJson(res.attributes)
     return res
   }
-  getDataCount() {
+  getDataCount({ tx = true, domainKey = true, odata = true, hash = true } = {}) {
+    let { ret, ret1, ret2, ret3 } = {}
     let sql = `select (select count(*) from txs where status!=1) as txs`
-    const ret = this.txdb.prepare(sql).get()
+    tx && (ret = this.txdb.prepare(sql).get())
     sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
-    const ret1 = this.dmdb.prepare(sql).get()
+    domainKey && (ret1 = this.dmdb.prepare(sql).get())
     sql = "select (select count(*) from data) as odata"
-    const ret2 = this.dtdb.prepare(sql).get()
+    odata && (ret2 = this.dtdb.prepare(sql).get())
     sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
-    const ret3 = this.dmdb.prepare(sql).get()
+    hash && (ret3 = this.dmdb.prepare(sql).get())
 
     //count txs in blocks
     sql = "select body,height from blocks"
@@ -819,8 +815,9 @@ class Database {
     if (res.changes > 0) {
       let domainHash = this.readConfig("dmdb", "domainHash") || ""
       const strObj = "DelKey:" + key
-      domainHash = await Util.dataHash(strObj + domainHash)
-      this.writeConfig("dmdb", "domainHash", domainHash)
+      const hash = Util.fnv1aHash(strObj)
+      domainHash ^= hash
+      this.writeConfig("dmdb", "domainHash", domainHash + '')
       this.logger.info(":del_key=", key, " dmhash:", domainHash)
     }
   }
@@ -830,8 +827,9 @@ class Database {
     if (res.changes > 0) {
       let domainHash = this.readConfig("dmdb", "domainHash") || ""
       const strObj = "delChild:" + parent
-      domainHash = await Util.dataHash(strObj + domainHash)
-      this.writeConfig("dmdb", "domainHash", domainHash)
+      const hash = Util.fnv1aHash(strObj)
+      domainHash ^= hash
+      this.writeConfig("dmdb", "domainHash", domainHash + '')
       this.logger.info(":del_child=", parent, " dmhash:", domainHash)
     }
   }
@@ -862,12 +860,13 @@ class Database {
         }
       }
       //update hash
-      let domainHash = this.readConfig("dmdb", "domainHash") || ""
-      const strObj = key + value + tags + ts
-      domainHash = await Util.dataHash(strObj + domainHash)
-      this.writeConfig("dmdb", "domainHash", domainHash)
+      let domainHash = +this.readConfig("dmdb", "domainHash") || 0
+      const strObj = JSON.stringify({ key: fullKey, value, ...props })
+      const hash = Util.fnv1aHash(strObj)
+      domainHash ^= hash
+      this.writeConfig("dmdb", "domainHash", domainHash + '')
       this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
-
+      console.log("domainHash:", domainHash)
     } catch (e) {
       console.error(e)
     }
@@ -935,10 +934,9 @@ class Database {
         console.error("no owner, pass")
         return
       }
-      let domainHash = this.readConfig("dmdb", "domainHash")
-      if (!domainHash) domainHash = ""
+      let domainHash = +this.readConfig("dmdb", "domainHash") || 0
       const strObj = JSON.stringify(obj)
-      domainHash = await Util.dataHash(strObj + domainHash)
+      domainHash ^= Util.fnv1aHash(strObj)
 
       this.dm_transaction(() => {
         this.saveUsers(obj);
@@ -956,7 +954,7 @@ class Database {
         sql = "Update config set value = value+1 where key = 'domainUpdates'"
         this.dmdb.prepare(sql).run()
 
-        this.writeConfig("dmdb", "domainHash", domainHash)
+        this.writeConfig("dmdb", "domainHash", domainHash + '')
         this.logger.info(obj.domain, ":saveDomain dmhash:", domainHash)
         //if (obj.domain === "10200.test") {
         //  this.logger.info(strObj)
@@ -969,7 +967,7 @@ class Database {
       this.logger.error(e)
     }
   }
-  getDomainVerifyCode() {
+  getDomainHash() {
     return this.readConfig("dmdb", "domainHash")
   }
   saveDomainSigs(sigs) {
@@ -1078,6 +1076,8 @@ class Database {
         return
       }
       const ret = db.prepare(sql).get(key)
+      //const test = db.prepare('select * from config').all()
+      //console.log(test)
       return ret ? ret.value : ret
     } catch (e) {
       return null
@@ -1096,13 +1096,31 @@ class Database {
     }
     console.log("finish calculating. txHash:", this.readConfig('txdb', 'txHash'))
   }
-
+  updateAllDomainHashes() {
+    let dmHash = 0;
+    let sql = 'select key, value, p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5 from keys'
+    const objs = this.dmdb.prepare(sql).all()
+    for (const item of objs) {
+      for (const k in item) {
+        if (item[k] === null) delete item[k]
+      }
+      const hash = Util.fnv1aHash(JSON.stringify(item))
+      dmHash ^= hash
+    }
+    sql = 'select jsonString from nidobj'
+    const domains = this.dmdb.prepare(sql).all()
+    for (const str of domains) {
+      const hash = Util.fnv1aHash(str.jsonString)
+      dmHash ^= hash
+    }
+    this.writeConfig('dmdb', 'domainHash', dmHash + '') // 1039166988
+  }
   async verifyTxDB() {
     console.log("verifying...")
     await this.updaetAllTxHashes()
     console.log("verify finish")
   }
-  async pullNewTx({ afterHeight, fromTime }) {
+  async getNewTx({ afterHeight, fromTime }) {
     let time = +fromTime || 0
     if (afterHeight) {
       const uBlock = this.getBlock(afterHeight, true)
@@ -1112,7 +1130,11 @@ class Database {
         time = tx.txTime - 1
       }
     }
-    return await this.queryTX(time - 1, -1, 500)
+    const data = await this.queryTX(time - 1, -1, 500)
+    const sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
+    const ret1 = this.dmdb.prepare(sql).get()
+    const dmHash = this.readConfig('dmdb', 'domainHash')
+    return { data, dmHash, ...ret1 }
   }
   //------------------------------Blocks--------------------------------
   getLastBlock() {

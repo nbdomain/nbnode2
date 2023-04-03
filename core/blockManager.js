@@ -19,7 +19,7 @@ class BlockMgr {
         this.removeTX = new Set()
         this.indexers.resolver.addController(this)
         this.txConsensue = false
-        this.dmVerify = indexers.db.getDomainVerifyCode()
+        this.dmVerify = indexers.db.getDomainHash()
     }
     async createBlock(height, ntx = 10) {
         const db = this.db
@@ -88,6 +88,7 @@ class BlockMgr {
             const { block, sigs, dmVerify, dmSig } = uBlock
             if (Nodes.thisNode.key === nodeKey) return //myself
             if (block.version != DEF.BLOCK_VER) return
+            return
             //console.log("got block height:", block.height, " from:", nodeKey, "sigs:", sigs)
             if (!this.nodePool[nodeKey]) this.nodePool[nodeKey] = {}
 
@@ -160,7 +161,7 @@ class BlockMgr {
                                 console.error("failed to download good db")
                                 //db.restoreLastGoodDomainDB()
                             }
-                            this.dmVerify = db.getDomainVerifyCode()
+                            this.dmVerify = db.getDomainHash()
                             console.log("dmVerify:", this.dmVerify, " maxVerify:", maxVerify)
                             this.downloading = false
                             this.dmSig = null
@@ -262,6 +263,7 @@ class BlockMgr {
         this.uBlock = null
     }
     async run() {
+        return
         while (true) {
             const { Nodes, db, config, logger } = this.indexers
             if (this.hasNewTX) {
@@ -307,7 +309,7 @@ class BlockMgr {
                     if (bcBlock) bcBlock.confirmed = true
                 }
                 if (bcBlock) {
-                    const dmVerify = db.getDomainVerifyCode()
+                    const dmVerify = db.getDomainHash()
                     if (this.dmVerify != dmVerify || !this.dmSig) { //update my domain sig
                         this.dmSig = await Util.bitcoinSign(config.key, dmVerify)
                         this.dmVerify = dmVerify
@@ -321,7 +323,7 @@ class BlockMgr {
                     Nodes.notifyPeers({ cmd: "newBlock", data: bcBlock })
                 }
             } else {
-                this.dmVerify = db.getDomainVerifyCode()
+                this.dmVerify = db.getDomainHash()
                 console.log("dmVerify:", this.dmVerify)
             }
             //check other node

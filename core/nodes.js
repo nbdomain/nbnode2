@@ -7,6 +7,7 @@ const { DEF } = require('./def');
 const { Util } = require('./util');
 const path = require('path')
 const fs = require('fs');
+const { resourceLimits } = require('worker_threads');
 const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 dnsPromises = dns.promises;
 
@@ -277,26 +278,10 @@ class Nodes {
         return await rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
     }
     async downloadAndUseDomainDB(from, includingTxDB = true) {
+        const orgCanResolve = this._canResolve
         try {
             const { db, logger } = this.indexers
             this._canResolve = false
-            if (!from) {
-                const clients = this.getConnectedClients()
-                if (clients.length == 0) {
-                    console.error("no connected client")
-                    return false
-                }
-                from = clients[0].node.id
-            }
-            if (includingTxDB) {
-                const url = from + "/files/bk_txs.db"
-                const filename = path.join(db.path, "d_txs.db")
-                console.log("Downloading txdb from:", url)
-                await Util.downloadFile(url, filename)
-                console.log("Download txdb successful")
-                this.indexers.db.restoreTxDB(filename)
-                fs.unlinkSync(filename)
-            }
             const url = from + "/files/bk_domains.db"
             const filename = path.join(db.path, "d_domains.db")
             logger.info("Downloading domain db from:", url)
@@ -304,14 +289,22 @@ class Nodes {
             logger.info("Download domain db successfully")
             this.indexers.resolver.abortResolve()
             this.indexers.db.restoreDomainDB(filename)
-            fs.unlinkSync(filename)
-
-            this._canResolve = true
+            //fs.unlinkSync(filename)
+            if (includingTxDB) {
+                const url = from + "/files/bk_txs.db"
+                const filename = path.join(db.path, "d_txs.db")
+                console.log("Downloading txdb from:", url)
+                await Util.downloadFile(url, filename)
+                console.log("Download txdb successful")
+                this.indexers.db.restoreTxDB(filename)
+                //fs.unlinkSync(filename)
+            }
+            this._canResolve = orgCanResolve
             return true
         } catch (e) {
             console.error(e.message)
         }
-        this._canResolve = true
+        this._canResolve = orgCanResolve
         return false
     }
     async verifySigs({ txTime, txid, sigs }) {
@@ -392,20 +385,67 @@ class Nodes {
     canResolve() {
         return this._canResolve
     }
+    getConsenseResult({ dmHashMap, thisDmHash, thisKeyCount }) {
+        const { config } = this.indexers
+        const consenseStrategy = config.consensus.strategy || 'mostKeys'
+        for (const key in dmHashMap) {
+            if (dmHashMap[key].length > DEF.CONSENSUE_COUNT / 2) {
+                if (dmHashMap[key][0].keys >= thisKeyCount) {
+                    return { result: (key === thisDmHash) ? 'win' : 'lose', node: dmHashMap[key][0].id }
+                }
+            }
+        }
+        return { result: "none" }
+    }
     async pullNewTxs() {
         const { db } = this.indexers
         while (true) {
-            const block = db.getLastBlock()
-            const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
+            //const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
+            const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
             this._canResolve = false
-            if (block && block.height > 100) {
-                for (const id in this.nodeClients) {
-                    if (this.nodeClients[id].connected)
-                        await this.nodeClients[id].pullNewTxs({ fromTime });
+            const dmHashMap = {}
+            for (const id in this.nodeClients) {
+                if (this.nodeClients[id].connected) {
+                    console.log("==========>getNewTx from:", id)
+                    const { code, dmHash, keys, domains } = await this.nodeClients[id].pullNewTxs({ thisKeyCount });
+                    if (code === 2) { //too far away, download db file instead
+
+                    }
+                    if (dmHash) {
+                        if (!dmHashMap[dmHash]) dmHashMap[dmHash] = []
+                        dmHashMap[dmHash].push({ id, keys })
+                    }
+                    console.log("<==========getNewTx finish:", id)
+                }
+            }
+            const thisDmHash = db.getDomainHash()
+            !dmHashMap[thisDmHash] && (dmHashMap[thisDmHash] = [])
+            dmHashMap[thisDmHash].push({ id: 'myself', keys: thisKeyCount })
+            console.log("After update:", JSON.stringify(dmHashMap, undefined, 2))
+            const ret = this.getConsenseResult({ dmHashMap, thisDmHash, thisKeyCount })
+            const now = Date.now()
+            if (ret.result === 'win') { //got consens
+                if (!this.backupTime) this.backupTime = now
+                const span = now - this.backupTime || 0
+                console.log("I win, time:", span)
+                if (span > 60 * 1000) { //60 seconds
+                    db.backupDB()
+                    this.backupTime = Date.now()
+                }
+                this.loseTime = now
+            }
+            if (ret.result === 'lose') {
+                if (!this.loseTime) this.loseTime = now
+                const span = now - this.loseTime || 0
+                console.log("I lose, time:", span)
+                if (span > 120 * 1000) { //120 seconds
+                    await this.downloadAndUseDomainDB(ret.node)
+                    this.backupTime = Date.now()
+                    this.loseTime = Date.now()
                 }
             }
             this._canResolve = true
-            await wait(1000 * 20)
+            await wait(1000 * 10)
         }
     }
     static inst() {

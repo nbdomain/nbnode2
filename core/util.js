@@ -161,6 +161,16 @@ class Util {
         const hash = await blake3(buf, 128)
         return hash
     }
+    static fnv1aHash(str) {
+        const FNV_OFFSET = 0x811c9dc5;
+        const FNV_PRIME = 0x01000193;
+        let hash = FNV_OFFSET;
+        for (let i = 0; i < str.length; i++) {
+            hash ^= str.charCodeAt(i);
+            hash *= FNV_PRIME;
+        }
+        return hash >>> 0;
+    }
     static parseJson(str) {
         try {
             return JSON.parse(str)

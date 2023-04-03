@@ -97,10 +97,10 @@ class NodeServer {
             const { from, to } = para
             ret(await resolver.readNBTX(from ? from : 0, to ? to : -1))
         })
-        socket.on("pullNewTx", async (para, ret) => {
-            console.log("pullNewTx:", para)
+        socket.on("getNewTx", async (para, ret) => {
+            console.log("getNewTx:", para)
             const { db } = indexers
-            ret(await db.pullNewTx(para))
+            ret(await db.getNewTx(para))
         })
         socket.on("getConfirmations", (para, ret) => {
             console.log("getConfirmations:", para)
@@ -235,11 +235,9 @@ class NodeClient {
             if (objLen(self.handlingMap) > 1000) self.handlingMap = {}
             self.handlingMap[arg.id] = true
             if (arg.cmd === "newtx") {
-                if (!self.newtxQ) self.newtxQ = []
-                self.newtxQ.push(arg)
-                self.handleNewTx()
-                //const para = JSON.parse(arg.data)
-                //await rpcHandler.handleNewTxNotify({ indexers: this.indexers, para, socket: self.socket })
+                //if (!self.newtxQ) self.newtxQ = []
+                //self.newtxQ.push(arg)
+                //self.handleNewTx()
             }
             if (arg.cmd === "newNode") {
                 await self.indexers.Nodes.addNode({ url: arg.data.url })
@@ -265,29 +263,30 @@ class NodeClient {
 
     }
 
-    async pullNewTxs(para = {}) { //para = { from:12121233,to:-1}
+    async pullNewTxs({ thisKeyCount }) { //para = { from:12121233,to:-1}
         return new Promise(resolve => {
             const { db, indexer } = this.indexers
-            para.v = 1
-            para.from = this.from
-            let lastTime = db.readConfig('txdb', this.node.id + "_lasttime") || 1679450149535
-            if (lastTime < 1679450149535) lastTime = 1679450149535
-            para.fromTime = lastTime
+            let lastTime = db.readConfig('txdb', this.node.id + "_lasttime") || 1679550531480
+            if (lastTime < 1679550531480) lastTime = 1679550531480
             const self = this
             let finish = false
             setTimeout(() => {
-                if (!finish) resolve(-1) //timeout
+                if (!finish) resolve({}) //timeout
             }, 5000)
-            this.socket.volatile.emit("pullNewTx", para, async (res) => {
-                console.log("get reply from pullNewTx:", this.node.id)
-                if (!res) {
-                    resolve(null)
+            this.socket.volatile.emit("getNewTx", { v: 1, from: this.from, fromTime: lastTime }, async (res) => {
+                console.log("reply from:", this.node.id, "newtx:", res?.data?.length, " domains:", res.domains, " keys:", res.keys, " dmHash:", res.dmHash)
+                if (!res.data) {
+                    resolve(res)
                     finish = true
                     return
                 }
-                for (const tx of res) {
+                if (res.keys - thisKeyCount > 10000) {
+                    resolve({ code: 2, dmHash: res.dmHash, keys: res.keys, domains:res.domains })
+                    return
+                }
+                for (const tx of res.data) {
                     if (g_inAddTx) {
-                        console.error("pullNewtx re-entry, continue")
+                        console.error("getNewTx re-entry, continue")
                         continue
                     }
                     g_inAddTx = true
@@ -298,7 +297,8 @@ class NodeClient {
                 if (this.maxTime)
                     db.writeConfig('txdb', self.node.id + "_lasttime", this.maxTime + '')
                 finish = true
-                resolve(true)
+                delete res.data
+                resolve(res)
             })
         })
     }
@@ -397,7 +397,7 @@ class rpcHandler {
             if (await indexer.addTxFull({ txid: ret1.txid, sigs, rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
                 db.addTransactionSigs(ret1.txid, sigs)
                 sigs = db.getTransactionSigs(ret1.txid)
-                Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+                //Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
             }
         } else {
             console.log("send tx failed")

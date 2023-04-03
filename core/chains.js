@@ -46,6 +46,10 @@ class NOTChain {
                 oData = d.raw
             }
             cmds = Util.parseJson(oData)
+            if (!cmds) {
+                console.error("can't get cmds from odata:", oData)
+                return null
+            }
             rtx.command = cmds[2]
             const hash = await Util.dataHash(oData)
             if (hash !== attrib.hash) {

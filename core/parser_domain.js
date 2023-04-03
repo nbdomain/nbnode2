@@ -465,9 +465,9 @@ class CMD_KEY {
                     u_check.push(kd)
                     u_value.push(props[kd])
                 }
-                if (defs[1] && defs[1].indexOf('i') != -1) { //integer
-                    props[kd] = '' + props[kd]
-                }
+            }
+            for (const p in props) {
+                props[p] = '' + props[p] //convert all props to string
             }
             if (u_check.length > 0) {
                 let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
@@ -573,7 +573,7 @@ class CMD_KEY {
             let newValue = { v, id: output.txid }
             await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
-        
+
         return nidObj
     }
 }
