@@ -3,6 +3,7 @@
  *
  * Entry point
  */
+const dotenv = require("dotenv");
 
 const Indexer = require('./indexer')
 const LocalServer = require('./server')
@@ -91,10 +92,14 @@ class Indexers {
   static async init() {
     this.config = CONFIG
     this.dataFolder = CONFIG.dataDir || Path.join(__dirname, "../data/")
+    dotenv.config({ path: this.dataFolder + 'env' })
     if (!this.config.chainid) this.config.chainid = 'main'
     if (this.config.tld) {
       CONSTS.tld_config = { ...this.config.tld, ...CONSTS.tld_config }
     }
+    process.env.publicUrl && (this.config.server.publicUrl = process.env.publicUrl)
+    process.env.adminKey && (this.config.adminKey = process.env.adminKey)
+    process.env.chainid && (this.config.chainid = process.env.chainid)
     this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger
@@ -152,3 +157,5 @@ process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)
 
 main()
+
+module.exports = Indexers

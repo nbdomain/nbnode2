@@ -100,19 +100,11 @@ class Resolver {
             dd.pop(); dd.pop();
             subDomain = dd.join('.') + '.'; //incluses .
         }
-        const obj = this.db.loadDomain(baseDomain)
-        if (obj) {
-            if (history) {
-                const subObj = this.db.readKeyHistory(fullDomain, history)
-                return subObj ? { code: 0, domain: fullDomain, obj: subObj } : null
-            } else {
-                const children = fullDomain[0] === '.'
-                const subObj = children ? await this.db.readChildrenKeys(fullDomain.slice(1)) : await this.db.readKey(fullDomain)
-                if (subObj) {
-                    let retObj = { code: 0, domain: children ? fullDomain.slice(1) : fullDomain, obj: subObj }
-                    return retObj;
-                }
-            }
+        const children = fullDomain[0] === '.'
+        const subObj = children ? await this.db.readChildrenKeys(fullDomain.slice(1)) : await this.db.readKey(fullDomain)
+        if (subObj) {
+            let retObj = { code: 0, domain: children ? fullDomain.slice(1) : fullDomain, obj: subObj }
+            return retObj;
         }
         return null;
     }
@@ -190,7 +182,8 @@ class Resolver {
             }
             console.log("resolving:", item.txid)
             this.db.setTransactionResolved(item.txid, item.txTime)
-            const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, chain: item.chain })
+            const oDataRecord = Util.parseJson(item.odata)
+            const res = await Parser.parseTX({ rawtx, height: item.height, time: item.txTime, oData: oDataRecord?.raw, chain: item.chain })
             if (!res) return
             const rtx = { ...item, ...res.rtx }
             if (!rtx.output || rtx.output?.err) {

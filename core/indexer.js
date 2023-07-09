@@ -90,7 +90,7 @@ class Indexer {
     try {
       //console.log("adding:", txid)
 
-      const { Nodes, resolver, config,db } = this.indexers
+      const { Nodes, resolver, config, db } = this.indexers
       if (!force && this.database.hasTransaction(txid) && !replace) {
         console.log("Skipping:", txid)
         if (sigs) {
@@ -105,6 +105,10 @@ class Indexer {
       if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
         console.error("tx sigs verification failed. sigs:", sigs)
         return false
+      }
+      if (!oDataRecord.raw) {
+        const attrib = Parser.getAttrib({ rawtx, chain })
+        oDataRecord = await Nodes.getData(attrib.hash)
       }
       let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
 
@@ -122,7 +126,7 @@ class Indexer {
           this.database.addTransactionSigs(txid, sigs)
         }
         this.maxTime = Math.max(this.maxTime || 0, txTime)
-        db.writeConfig('txdb', config.server.publicUrl + "_lasttime", this.maxTime + '')
+        db.writeConfig('dmdb', config.server.publicUrl + "_lasttime", this.maxTime + '')
         this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
         const list = this.database.getUnresolvedTX(1)

@@ -18,7 +18,6 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const HEIGHT_MEMPOOL = 999999999999999
 const HEIGHT_UNKNOWN = null
 const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1, OTHER_RESOLVED_FLAG = 1
@@ -47,29 +46,37 @@ class Database {
     this.logger = logger
     this.txdb = null
     this.dmdb = null
+    const standalone = process.env.tld_standalone_db.split('&')
+    this.standAloneTld = {}
+    standalone.forEach(item => this.standAloneTld[item] = true)
+    this.tldDbs = {}
     this.tickerAll = createChannel()
     this.tickers = {}
     this.onAddTransaction = null
     this.onDeleteTransaction = null
     this.onResetDB = null
     this.indexers = indexers
+    this.regQueries = {}
+    this.queries = {}
   }
   initdb(dbname) {
+    const _initdbPara = (filename) => {
+      const db = new Sqlite3Database(filename, { fileMustExist: true })
+      // 100MB cache
+      db.pragma('cache_size = 6400')
+      db.pragma('page_size = 16384')
+      // WAL mode allows simultaneous readers
+      db.pragma('journal_mode = WAL')
+      // Synchronizes WAL at checkpoints
+      db.pragma('synchronous = NORMAL')
+      return db
+    }
     if (dbname === 'txdb') {
       //--------------------------------------------------------//
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = new Sqlite3Database(this.txfile, { fileMustExist: true })
-        // 100MB cache
-        this.txdb.pragma('cache_size = 6400')
-        this.txdb.pragma('page_size = 16384')
-
-        // WAL mode allows simultaneous readers
-        this.txdb.pragma('journal_mode = WAL')
-
-        // Synchronizes WAL at checkpoints
-        this.txdb.pragma('synchronous = NORMAL')
+        this.txdb = _initdbPara(this.txfile)
       }
     }
     if (dbname === 'dmdb') {
@@ -77,53 +84,31 @@ class Database {
       //  Domains DB
       //-------------------------------------------------------//
       if (!this.dmdb) {
-        this.dmdb = new Sqlite3Database(this.dmfile, { fileMustExist: true })
-        // 100MB cache
-        this.dmdb.pragma('cache_size = 6400')
-        this.dmdb.pragma('page_size = 16384')
-
-        // WAL mode allows simultaneous readers
-        this.dmdb.pragma('journal_mode = WAL')
-
-        // Synchronizes WAL at checkpoints
-        this.dmdb.pragma('synchronous = NORMAL')
-        this.readKeyStmt = null
+        this.dmdb = _initdbPara(this.dmfile)
       }
-
-      //this.saveKeysStmt = this.dmdb.prepare(saveKeysSql);
-      //this.saveTagStmt = this.dmdb.prepare(`INSERT INTO "tags" (tag, key) VALUES ( ?, ?)`)
-      //this.deleteTagStmt = this.dmdb.prepare('DELETE FROM tags where "key"= ?')
-      this.getDomainStmt = this.dmdb.prepare('SELECT * from nidObj where domain = ?')
-      //-------------------------------NFT-------------------------------------------
-      this.getNFTStmt = this.dmdb.prepare('SELECT * from nfts where symbol=?')
-      const addNFTsql = `
-    INSERT INTO "nfts" 
-                (symbol,attributes,data,log) 
-                VALUES ( ?,?,?,'')
-                ON CONFLICT( symbol ) DO UPDATE
-                SET attributes=?,data=?`
-      this.addNFTStmt = this.dmdb.prepare(addNFTsql)
-      this.deleteNFTStmt = this.dmdb.prepare("DELETE FROM nfts where symbol = ?")
-      this.NFTappendLogStmt = this.dmdb.prepare("UPDATE nfts SET log = log || ?  where symbol = ?")
-      this.NFTgetLogStmt = this.dmdb.prepare("SELECT log from nfts where symbol = ?")
-
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
       if (!TXRESOLVED_FLAG) {
         TXRESOLVED_FLAG = Date.now()
         this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
       }
+      //other standalone TLD db
+      for (const tld in this.standAloneTld) {
+        if (!this.tldDbs[tld]) this.tldDbs[tld] = _initdbPara(Path.join(this.path, "domains." + tld + ".db"))
+      }
     }
     if (dbname === 'dtdb') {
       //----------------------------DATA DB----------------------------------
-      this.dtdb = new Sqlite3Database(this.dtfile, { fileMustExist: true })
-      // 100MB cache
-      this.dtdb.pragma('cache_size = 6400')
-      this.dtdb.pragma('page_size = 16384')
-      // WAL mode allows simultaneous readers
-      this.dtdb.pragma('journal_mode = WAL')
-      // Synchronizes WAL at checkpoints
-      this.dtdb.pragma('synchronous = NORMAL')
+      this.dtdb = _initdbPara(this.dtfile)
     }
+  }
+  getDomainDB({ key, tld }) {
+    if (this.tldDbs == {} || (!key && !tld)) return { db: this.dmdb, tld: '' }
+    if (!tld) {
+      const dd = key.split('.')
+      tld = dd[dd.length - 1]
+    }
+    if (this.tldDbs[tld]) return { db: this.tldDbs[tld], tld }
+    return { db: this.dmdb, tld: '' }
   }
   open() {
     if (!this.txdb) {
@@ -142,8 +127,7 @@ class Database {
       }
 
       if (!fs.existsSync(this.txfile)) {
-        if (!fs.existsSync(this.txfile))
-          fs.copyFileSync(Path.join(__dirname, "/template/txs.db"), this.txfile);
+        fs.copyFileSync(Path.join(__dirname, "/template/txs.db"), this.txfile);
       }
       if (!fs.existsSync(this.dmfile)) {
         fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), this.dmfile);
@@ -151,8 +135,12 @@ class Database {
       if (!fs.existsSync(this.dtfile)) {
         fs.copyFileSync(Path.join(__dirname, "/template/odata.db"), this.dtfile);
       }
-      //const states = fs.statSync(this.dmfile + "." + VER_DMDB)
-      //TXRESOLVED_FLAG = states.birthtimeMs
+      for (const tld in this.standAloneTld) {
+        const filename = Path.join(this.path, "domains." + tld + ".db")
+        if (!fs.existsSync(filename)) {
+          fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), filename);
+        }
+      }
       this.initdb('txdb')
       this.initdb('dmdb')
       this.initdb('dtdb')
@@ -185,7 +173,7 @@ class Database {
 
 
       try {
-        sql = "ALTER TABLE txs RENAME COLUMN time TO status"
+        sql = "ALTER TABLE txs ADD odata TEXT"
         this.txdb.prepare(sql).run()
       } catch (e) { }
 
@@ -193,7 +181,13 @@ class Database {
         sql = `CREATE INDEX index_parent ON keys ( parent )`
         this.dmdb.prepare(sql).run()
       } catch (e) {
-        console.error(e.message)
+        //console.error(e.message)
+      }
+      try {
+        sql = `CREATE INDEX index_p1 ON keys ( p1 )`
+        this.dmdb.prepare(sql).run()
+      } catch (e) {
+        //console.error(e.message)
       }
 
       sql = `
@@ -224,6 +218,19 @@ class Database {
       console.log(e)
     }
   }
+  runPreparedSql({ name, db, method, sql, paras = [], update = false }) {
+    if (!this.queries[name] || update) {
+      this.queries[name] = db.prepare(sql)
+    }
+    let ret = null
+    switch (method) {
+      case 'get': ret = this.queries[name].get(...paras); break;
+      case 'all': ret = this.queries[name].all(...paras); break;
+      case 'run': ret = this.queries[name].run(...paras); break;
+    }
+    return ret
+  }
+
   dropTable(name) {
     try {
       let sql = "DROP table IF EXISTS " + name
@@ -244,6 +251,11 @@ class Database {
       console.log("closing dmdb...")
       this.dmdb.close()
       this.dmdb = null
+    }
+    if (this.tldDbs) {
+      for (const tld in this.tldDbs) {
+        this.tldDbs[tld].close()
+      }
     }
     if (this.dtdb) {
       console.log("closing dtdb...")
@@ -295,6 +307,8 @@ class Database {
     OTHER_RESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG") || 1
     TXRESOLVED_FLAG = Date.now()
     this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
+    const checkpointTime = +this.readConfig("dmdb", "maxResolvedTxTime") || 0
+    this.writeConfig('dmdb', 'checkpointTime', checkpointTime + '')
     const dmHash = this.readConfig('dmdb', 'domainHash')
     logger.info("Domain DB Restored from:", filename, " DomainHash:", dmHash, " OTHER_RESOLVED_FLAG:", OTHER_RESOLVED_FLAG)
   }
@@ -341,28 +355,42 @@ class Database {
     this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
   }
   async backupDB() {
-    //const { createGzip } = require('zlib');
-    //const { pipeline } = require('stream');
-
     try {
-      let dbname = Path.join(this.bkPath, `bk_domains.db`)
-
-      fs.rmSync(dbname, {force: true})
-      let sql = "VACUUM main INTO '" + dbname + "'"
-      console.log("backup to:", dbname)
-      this.dmdb.prepare(sql).run()
+      const self = this
+      const _backupDB = (db) => {
+        const dbfile = db.name.split(Path.sep).slice(-1)
+        const bkfile = Path.join(self.bkPath, dbfile[0] + ".bk")
+        fs.rmSync(bkfile, { force: true })
+        let sql = "VACUUM main INTO '" + bkfile + "'"
+        console.log("backup to:", bkfile)
+        db.prepare(sql).run()
+      }
       const checkpointTime = +this.readConfig("dmdb", "maxResolvedTxTime") || 0
       this.writeConfig('dmdb', 'checkpointTime', checkpointTime + '')
-      dbname = Path.join(this.bkPath, `/bk_txs.db`)
-      fs.rmSync(dbname, {force: true})
-      sql = "VACUUM main INTO '" + dbname + "'"
-      console.log("backup to:", dbname)
-      this.txdb.prepare(sql).run()
+      _backupDB(this.txdb)
+      _backupDB(this.dmdb)
+      for (const tld in this.tldDbs) {
+        _backupDB(this.tldDbs[tld])
+      }
 
+      /*  let dbname = Path.join(this.bkPath, `bk_domains.db`)
+  
+        fs.rmSync(dbname, { force: true })
+        let sql = "VACUUM main INTO '" + dbname + "'"
+        console.log("backup to:", dbname)
+        this.dmdb.prepare(sql).run()
+        const checkpointTime = +this.readConfig("dmdb", "maxResolvedTxTime") || 0
+        this.writeConfig('dmdb', 'checkpointTime', checkpointTime + '')
+        dbname = Path.join(this.bkPath, `/bk_txs.db`)
+        fs.rmSync(dbname, { force: true })
+        sql = "VACUUM main INTO '" + dbname + "'"
+        console.log("backup to:", dbname)
+        this.txdb.prepare(sql).run()*/
+      return { code: 0, msg: "success backup" }
     } catch (e) {
       console.error(e.message)
     }
-
+    return { code: 100, msg: "error happened" }
   }
 
   tx_transaction(f) {
@@ -381,7 +409,8 @@ class Database {
 
   getLatestTxTime() {
     const sql = `SELECT txTime from txs where status!=1 ORDER BY txTime DESC`
-    const res = this.txdb.prepare(sql).get()
+    //const res = this.txdb.prepare(sql).get()
+    const res = this.runPreparedSql({ name: 'getLatestTxTime', db: this.txdb, method: 'get', sql })
     return res ? res.txTime : -1
   }
 
@@ -394,7 +423,8 @@ class Database {
       tx: tx
     }
     ret.tx.rawtx = this.getRawTransaction(txid)
-    if (ret.tx.rawtx) {
+    ret.oDataRecord = tx.odata
+    if (!ret.oDataRecord && ret.tx.rawtx) {
       const attrib = Parser.getAttrib({ rawtx: ret.tx.rawtx, chain: tx.chain });
       if (attrib.hash) {
         ret.oDataRecord = this.readData(attrib.hash)
@@ -419,17 +449,19 @@ class Database {
         replace = this.hasTransaction(txid)
       }
       const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
-      const sql = replace ? `update txs set bytes=?,txTime=?,status = ?, chain=? where txid = ? ` : `insert into txs (txid,bytes,txTime,status,chain) VALUES(?,?,?,?,?) `
+      const sql = replace ? `update txs set bytes=?,txTime=?,status = ?, chain=?,odata=? where txid = ? ` : `insert into txs (txid,bytes,txTime,status,chain,odata) VALUES(?,?,?,?,?,?) `
       let ret = null
       if (replace) {
-        ret = this.txdb.prepare(sql).run(bytes, txTime, status, chain, txid)
+        ret = this.txdb.prepare(sql).run(bytes, txTime, status, chain, JSON.stringify(oDataRecord), txid)
       } else {
-        ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain)
+        ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain, JSON.stringify(oDataRecord))
       }
 
 
-      if (oDataRecord)
-        await this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts, from: "addFullTx" })
+      if (oDataRecord) {
+        //await this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts || txTime, from: "addFullTx" })
+
+      }
       await this.updateTxHash({ txid, rawtx, txTime, oDataRecord })
     } catch (e) {
       console.error(e.message)
@@ -469,7 +501,8 @@ class Database {
 
   getRawTransaction(txid) {
     const sql = `SELECT bytes AS raw,chain FROM txs WHERE txid = ?`
-    const row = this.txdb.prepare(sql).get(txid)
+    //const row = this.txdb.prepare(sql).get(txid)
+    const row = this.runPreparedSql({ name: "getRawTransaction", db: this.txdb, method: 'get', sql, paras: [txid] })
     const data = row && row.raw
     if (!data) return null
     if (row.chain == 'bsv') {
@@ -517,11 +550,12 @@ class Database {
   }
   getTransaction(txid) {
     const sql = `select * from txs WHERE txid = ?`
-    return this.txdb.prepare(sql).get(txid)
+    //return this.txdb.prepare(sql).get(txid)
+    return this.runPreparedSql({ name: 'getTransaction', db: this.txdb, method: 'get', sql, paras: [txid] })
   }
   hasTransaction(txid) {
-    const sql = `SELECT txid FROM txs WHERE txid = ?`
-    return !!this.txdb.prepare(sql).get(txid)
+    //const sql = `SELECT txid FROM txs WHERE txid = ?`
+    return !!this.getTransaction(txid)
   }
   isTransactionParsed(txid, andValid) {
     const sql = `SELECT txTime from txs WHERE txid = ?`
@@ -593,10 +627,10 @@ class Database {
     try {
       const checkpointTime = this.readConfig('dmdb', 'checkpointTime') || 0
       const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
-      const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} AND txTime>=${checkpointTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
-      //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} ORDER BY txTime,txid ASC limit ${limit}`
-
-      const list = this.txdb.prepare(sql).raw(false).all();
+      //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} AND txTime>=${checkpointTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
+      const sql = `SELECT * FROM txs WHERE status !=? AND resolved !=? AND resolved !=? AND txTime>=? AND txid !=? ORDER BY txTime,txid ASC limit ?`
+      const list = this.runPreparedSql({ name: "lhmoxguy", db: this.txdb, sql, method: "all", paras: [DEF.TX_INVALIDTX, TXRESOLVED_FLAG, OTHER_RESOLVED_FLAG, checkpointTime, maxResolvedTx, limit] })
+      //      const list = this.txdb.prepare(sql).raw(false).all();
 
       return list
     } catch (e) {
@@ -610,7 +644,9 @@ class Database {
       res = MemDomains.get(domain)
       if (res) return res
     }
-    res = this.getDomainStmt.get(domain);
+    //res = this.getDomainStmt.get(domain);
+    const { db, tld } = this.getDomainDB({ key: domain })
+    res = this.runPreparedSql({ name: "LoadDomain" + tld, db, method: 'get', sql: 'SELECT * from nidObj where domain = ?', paras: [domain] })
     if (res) {
       return JSON.parse(res.jsonString);
     }
@@ -629,7 +665,9 @@ class Database {
         const address = value.address
         const v1 = JSON.parse(JSON.stringify(value))
         delete v1.address
-        this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(v1))
+        const { db, tld } = this.getDomainDB({ key: nidObj.domain })
+        //this.dmdb.prepare(sql).run(name + "@" + nidObj.domain, address, JSON.stringify(v1))
+        this.runPreparedSql({ name: 'saveuser' + tld, db, method: 'run', sql, paras: [name + "@" + nidObj.domain, address, JSON.stringify(v1)] })
       } catch (e) {
         console.error("saveUsers:", e.message)
       }
@@ -637,7 +675,10 @@ class Database {
   }
   readUser(account) {
     const sql = "select * from users where account = ?"
-    const res = this.dmdb.prepare(sql).get(account)
+    //const res = this.dmdb.prepare(sql).get(account)
+    const { db, tld } = this.getDomainDB({ key: account })
+    const res = this.runPreparedSql({ name: 'readuser' + tld, db, method: 'get', sql, paras: [account] })
+
     if (res && res.attributes) res.attributes = Util.parseJson(res.attributes)
     return res
   }
@@ -666,22 +707,13 @@ class Database {
     const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
     return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx, maxResolvedTxTime }
   }
-  queryByTags(q) {
-    const MongoDBQuery = `db.tags.find(${q},{key:1})`
-    try {
-      let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
-      SQLQuery = SQLQuery.slice(0, -1)
-      const sql = `select key, value,ts from keys where key in(${SQLQuery})`
-      const ret = this.dmdb.prepare(sql).all()
-      return ret
-    } catch (e) {
-      return { code: 1, msg: e.message }
-    }
-  }
+
   queryChildCount(parent) {
     const sql = "select count(*) from keys where parent = ?"
-    const res = this.dmdb.prepare(sql).raw(true).get(parent)
-    return { [parent]: res[0] }
+    //const res = this.dmdb.prepare(sql).raw(true).get(parent)
+    const { db, tld } = this.getDomainDB({ key: parent })
+    const res = this.runPreparedSql({ name: 'queryChildCount' + tld, db, method: 'get', sql, paras: [parent] })
+    return { [parent]: Object.values(res)[0] }
   }
   async handleOneKeyItem(item) {
     const plist = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'u1', 'u2', 'u3', 'u4', 'u5']
@@ -728,9 +760,10 @@ class Database {
     }
     return item
   }
-  runQuery(exp, para) {
+  API_runQuery({ exp, para, tld }) {
     try {
-      const ret = this.dmdb.prepare(exp).all(...para)
+      const { db } = this.getDomainDB({ tld })
+      const ret = db.prepare(exp).all(...para)
       //const ret = this.dmdb.prepare(exp).all(...para)
       return ret
     } catch (e) {
@@ -738,7 +771,7 @@ class Database {
     }
     return []
   }
-  async mangoQuery(q) {
+  /*async mangoQuery(q) {
     try {
       const retCount = !!q.count
       if (q.count) q = q.count
@@ -746,6 +779,8 @@ class Database {
       delete q.tags
       const limit = q.limit
       delete q.limit
+      const orderby = q.orderby
+      delete q.orderby
       let nokey = (Object.keys(q).length == 0)
       if (q.parent) { //within parent, convert props
         const defination = await this.readKey('_def.' + q.parent)//get defination of this level
@@ -765,8 +800,12 @@ class Database {
         if (!nokey) SQLQuery += " AND "
         SQLQuery += "key in (" + tagsql + ")"
       }
+      if (orderby) {
+        SQLQuery += " ORDER BY " + orderby
+      }
       if (limit)
         SQLQuery += " limit " + limit
+
       const ret = this.dmdb.prepare(SQLQuery).all()
       if (retCount) return ret.length
       for (let i = 0; i < ret.length; i++) {
@@ -776,20 +815,23 @@ class Database {
     } catch (e) {
       return { code: 1, msg: e.message }
     }
-  }
-  async readChildrenKeys(parentKey) {
+  } */
+  async readChildrenKeys(parent) {
     const sql = "select * from keys where parent = ?"
-    const ret = this.dmdb.prepare(sql).all(parentKey)
+    //const ret = this.dmdb.prepare(sql).all(parentKey)
+    const { db, tld } = this.getDomainDB({ key: parent })
+    const ret = this.runPreparedSql({ name: 'queryChildCount' + tld, db, method: 'all', sql, paras: [parent] })
+
     for (let i = 0; i < ret.length; i++) {
       ret[i] = await this.handleOneKeyItem(ret[i])
     }
     return ret
   }
-  async readKey(keyName) {
+  async readKey(key) {
     try {
-      if (!this.readKeyStmt)
-        this.readKeyStmt = this.dmdb.prepare('SELECT * from keys where key=?')
-      let ret = this.readKeyStmt.get(keyName);
+      const { db, tld } = this.getDomainDB({ key })
+      const sql = 'SELECT * from keys where key=?'
+      let ret = this.runPreparedSql({ name: "readKeyStmt" + tld, db, method: 'get', sql, paras: [key] })
       if (ret) {
         ret = await this.handleOneKeyItem(ret)
         //        delete ret.value
@@ -811,25 +853,31 @@ class Database {
   }
   async delKey(key) {
     const sql = "DELETE from keys where key = ?"
-    const res = this.dmdb.prepare(sql).run(key)
+    //    const res = this.dmdb.prepare(sql).run(key)
+    const { db, tld } = this.getDomainDB({ key })
+    const res = this.runPreparedSql({ name: "delKey" + tld, db, method: 'run', sql, paras: [key] })
+
     if (res.changes > 0) {
-      let domainHash = this.readConfig("dmdb", "domainHash") || ""
+      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
       const strObj = "DelKey:" + key
-      const hash = Util.fnv1aHash(strObj)
+      const hash = +Util.fnv1aHash(strObj)
       domainHash ^= hash
-      this.writeConfig("dmdb", "domainHash", domainHash + '')
+      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
       this.logger.info(":del_key=", key, " dmhash:", domainHash)
     }
   }
   async delChild(parent) {
     const sql = "DELETE from keys where parent = ?"
-    const res = this.dmdb.prepare(sql).run(parent)
+    //const res = this.dmdb.prepare(sql).run(parent)
+    const { db, tld } = this.getDomainDB({ parent })
+    const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
+
     if (res.changes > 0) {
-      let domainHash = this.readConfig("dmdb", "domainHash") || ""
+      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
       const strObj = "delChild:" + parent
-      const hash = Util.fnv1aHash(strObj)
+      const hash = +Util.fnv1aHash(strObj)
       domainHash ^= hash
-      this.writeConfig("dmdb", "domainHash", domainHash + '')
+      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
       this.logger.info(":del_child=", parent, " dmhash:", domainHash)
     }
   }
@@ -837,18 +885,13 @@ class Database {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
-      //set key
-      if (value.length > DEF.MAX_VALUE_LEN) { //big value saved to data db
-        const hash = await this.saveData({ data: value, owner: key, from: "saveKey" })
-        if (hash) {
-          value = JSON.stringify({ __shash: hash })
-        }
-      }
-
       let sql = `Insert or Replace into keys (key,value,domain,ts,parent,
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
+      //this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
+      const { db, tld } = this.getDomainDB(key)
+      const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
+      this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
       //remove old tags
       sql = "delete from tags where key = ?"
       this.dmdb.prepare(sql).run(fullKey)
@@ -860,11 +903,11 @@ class Database {
         }
       }
       //update hash
-      let domainHash = +this.readConfig("dmdb", "domainHash") || 0
+      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
       const strObj = JSON.stringify({ key: fullKey, value, ...props })
-      const hash = Util.fnv1aHash(strObj)
+      const hash = +Util.fnv1aHash(strObj)
       domainHash ^= hash
-      this.writeConfig("dmdb", "domainHash", domainHash + '')
+      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
       this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
       console.log("domainHash:", domainHash)
     } catch (e) {
@@ -882,37 +925,53 @@ class Database {
 
   }
   async findDomains(option) {
-    let sql = ""
-    if (option.address) {
-      sql = 'SELECT domain FROM nidobj WHERE owner = ? '
-      let ret = this.dmdb.prepare(sql).all(option.address);
-      if (!ret) ret = []
-      sql = 'SELECT account FROM users WHERE address = ? '
-      return ret.concat(this.dmdb.prepare(sql).all(option.address));
-    } else if (option.time) {
-      const from = option.time.from ? option.time.from : 0
-      const to = option.time.to ? option.time.to : 9999999999
-      sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
-      const ret = this.dmdb.prepare(sql).all(from, to);
-      if (!ret) ret = []
-      for (let i = 0; i < ret.length; i++) {
-        ret[i] = await this.handleOneKeyItem(ret[i])
+    const _findDomains = async (db, option) => {
+      let sql = ""
+      if (option.address) {
+        sql = 'SELECT domain FROM nidobj WHERE owner = ? '
+        let ret = db.prepare(sql).all(option.address);
+        if (!ret) ret = []
+        sql = 'SELECT account FROM users WHERE address = ? '
+        return ret.concat(db.prepare(sql).all(option.address));
+      } else if (option.time) {
+        const from = option.time.from ? option.time.from : 0
+        const to = option.time.to ? option.time.to : 9999999999
+        sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
+        const ret = db.prepare(sql).all(from, to);
+        if (!ret) ret = []
+        for (let i = 0; i < ret.length; i++) {
+          ret[i] = await this.handleOneKeyItem(ret[i])
+        }
+        return ret
       }
-      return ret
+      return []
     }
-    return []
+    let ret = await _findDomains(this.dmdb, option)
+    for (const tld in this.tldDbs) {
+      const ret1 = await _findDomains(this.tldDbs[tld], option)
+      ret = ret.concat(ret1)
+    }
+    return ret
   }
   getSellDomains() {
-    const sql = "SELECT jsonString from nidobj where jsonString like '%sell_info%' "
-    const ret = this.dmdb.prepare(sql).all()
-    let res = []
-    for (const item of ret) {
-      const obj = JSON.parse(item.jsonString)
-      if (obj.sell_info.expire > Date.now()) {
-        res.push({ domain: obj.domain, sell_info: obj.sell_info })
+    const _getSellDomains = (db) => {
+      const sql = "SELECT jsonString from nidobj where jsonString like '%sell_info%' "
+      const ret = db.prepare(sql).all()
+      let res = []
+      for (const item of ret) {
+        const obj = JSON.parse(item.jsonString)
+        if (obj.sell_info.expire > Date.now()) {
+          res.push({ domain: obj.domain, sell_info: obj.sell_info })
+        }
       }
+      return res;
     }
-    return res;
+    let ret = _getSellDomains(this.dmdb, option)
+    for (const tld in this.tldDbs) {
+      const ret1 = _getSellDomains(this.tldDbs[tld], option)
+      ret = ret.concat(ret1)
+    }
+    return ret
   }
   nftCreate(nft) {
     this.addNFTStmt.run(nft.symbol, JSON.stringify(nft.attributes), JSON.stringify(nft.data), JSON.stringify(nft.attributes), JSON.stringify(nft.data))
@@ -934,7 +993,9 @@ class Database {
         console.error("no owner, pass")
         return
       }
-      let domainHash = +this.readConfig("dmdb", "domainHash") || 0
+      const { db, tld } = this.getDomainDB({ key: obj.domain })
+
+      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
       const strObj = JSON.stringify(obj)
       domainHash ^= Util.fnv1aHash(strObj)
 
@@ -948,13 +1009,17 @@ class Database {
                 SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?`
         const txUpdate = obj.last_ts
         const txCreate = obj.reg_ts
-        this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
-          txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
+        const paras = [obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
+          txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld]
+        this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
+
+        //        this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
+        //          txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
 
         sql = "Update config set value = value+1 where key = 'domainUpdates'"
-        this.dmdb.prepare(sql).run()
-
-        this.writeConfig("dmdb", "domainHash", domainHash + '')
+        //this.dmdb.prepare(sql).run()
+        this.runPreparedSql({ name: 'domainupdate', db: this.dmdb, method: 'run', sql })
+        this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
         this.logger.info(obj.domain, ":saveDomain dmhash:", domainHash)
         //if (obj.domain === "10200.test") {
         //  this.logger.info(strObj)
@@ -976,16 +1041,16 @@ class Database {
   async queryTX(fromTime, toTime, limit = -1) {
     try {
       if (toTime == -1) toTime = 9999999999999
-      let sql = `SELECT * from txs where (txTime > ? AND txTime < ? ) `
-      if (limit != -1) sql += "limit " + limit
-      //console.log(sql,fromTime,toTime)
-      const ret = this.txdb.prepare(sql).all(fromTime, toTime)
-      //console.log(ret)
+      let sql = `SELECT * from txs where (txTime > ? AND txTime < ? ) limit ?  `
+      //const ret = this.txdb.prepare(sql).all(fromTime, toTime, limit)
+      const ret = this.runPreparedSql({ name: 'queryTX', db: this.txdb, method: 'all', sql, paras: [fromTime, toTime, limit] })
       for (const item of ret) {
         const rawtx = item.bytes && (item.chain == 'bsv' ? item.bytes.toString('hex') : item.bytes.toString())
         item.rawtx = rawtx
-        if (rawtx) {
-          const attrib = await (Parser.getAttrib({ rawtx, chain: item.chain }));
+        item.oDataRecord = Util.parseJson(item.odata)
+        delete item.odata
+        if (rawtx && !item.oDataRecord) {
+          const attrib = (Parser.getAttrib({ rawtx, chain: item.chain }));
           if (attrib && attrib.hash) {
             item.oDataRecord = this.readData(attrib.hash)
           }
@@ -1014,6 +1079,7 @@ class Database {
   }
   async saveData({ data, owner, time, from }) {
     let hash = null
+    if (!data) return null
     try {
       hash = await Util.dataHash(data)
       const buf = Util.toBuffer(data)
@@ -1043,7 +1109,8 @@ class Database {
   }
   readData(hash, option = { string: true }) {
     let sql = 'SELECT * from data where hash = ?'
-    const ret = this.dtdb.prepare(sql).get(hash)
+    //const ret = this.dtdb.prepare(sql).get(hash)
+    const ret = this.runPreparedSql({ name: '', db: this.dtdb, method: 'get', sql, paras: [hash] })
     if (!ret) return {}
     if (ret.raw) {
       if (option.string) ret.raw = ret.raw.toString()
@@ -1054,11 +1121,19 @@ class Database {
   writeConfig(dbName, key, value) {
     try {
       let db = null
-      if (dbName == 'txdb') db = this.txdb
-      if (dbName === 'dmdb') db = this.dmdb
-      if (dbName === 'dtdb') db = this.dtdb
+      if (dbName === 'txdb') db = this.txdb
+      else if (dbName === 'dtdb') db = this.dtdb
+      else {
+        const tlds = dbName.split('-')
+        if (tlds[0] === 'dmdb') {
+          db = this.tldDbs[tlds[1]]
+          if (!db) db = this.dmdb
+        }
+      }
       const sql = 'insert or replace into config (key,value) values(?,?)'
-      const ret = db.prepare(sql).run(key, value)
+      //const ret = db.prepare(sql).run(key, value)
+      const ret = this.runPreparedSql({ name: 'writeconfig' + dbName, db, method: 'run', sql, paras: [key, value] })
+
       //console.log(ret)
     } catch (e) {
       console.log(e.message)
@@ -1068,20 +1143,73 @@ class Database {
     try {
       let sql = 'select value from config where key = ?'
       let db = null
-      if (dbName == 'txdb') db = this.txdb
-      if (dbName === 'dmdb') db = this.dmdb
-      if (dbName === 'dtdb') db = this.dtdb
+      if (dbName === 'txdb') db = this.txdb
+      else if (dbName === 'dtdb') db = this.dtdb
+      else {
+        const tlds = dbName.split('-')
+        if (tlds[0] === 'dmdb') {
+          db = this.tldDbs[tlds[1]]
+          if (!db) db = this.dmdb
+        }
+      }
+
       if (db === null) {
         throw "db.readConfig: Invalid dbName"
         return
       }
-      const ret = db.prepare(sql).get(key)
-      //const test = db.prepare('select * from config').all()
-      //console.log(test)
+      //const ret = db.prepare(sql).get(key)
+      const ret = this.runPreparedSql({ name: 'readconfig' + dbName, db, method: 'get', sql, paras: [key] })
+
       return ret ? ret.value : ret
     } catch (e) {
       return null
     }
+  }
+  compactTxDB() {
+    let ret = null
+    try {
+      const { config, logger } = this.indexers
+      const tmStart = Date.now()
+      logger.console("compactTxDB started...")
+      const daysToKeep = config?.txdb?.daysToKeep || 7
+      const daysAgo = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
+      let sql = "select txid, chain from txs where txTime<?"
+      const txs = this.txdb.prepare(sql).all(daysAgo.getTime())
+      const hashToDel = []
+      for (const tx of txs) {
+        const rawtx = this.getRawTransaction(tx.txid)
+        if (rawtx) {
+          const attrib = Parser.getAttrib({ rawtx, chain: tx.chain });
+          if (attrib.hash) {
+            hashToDel.push("'" + attrib.hash + "'")
+          }
+        }
+      }
+      for (let i = 0; i < hashToDel.length; i += 1000) {
+        const sub = hashToDel.slice(i, i + 1000)
+        sql = `delete from data where hash IN (${sub.join(', ')})`
+        ret = this.dtdb.prepare(sql).run()
+        console.log(ret)
+      }
+
+      sql = 'delete from txs where txTime < ?'
+      ret = this.txdb.prepare(sql).run(daysAgo.getTime())
+      const tmEnd = Date.now()
+      logger.console("compactTxDB ends.Deleted:", hashToDel.length, " time:", (tmEnd - tmStart) / 1000)
+    } catch (e) {
+      console.error(e.message)
+    }
+
+  }
+  async deleteData({ hash }) {
+    try {
+      const sql = 'delete from data where hash = ?'
+      const ret = this.dtdb.prepare(sql).run(hash)
+      return ret
+    } catch (e) {
+      console.log(e.message)
+    }
+
   }
   async updaetAllTxHashes() {
     console.log("calculating all tx hashes...")
@@ -1097,23 +1225,32 @@ class Database {
     console.log("finish calculating. txHash:", this.readConfig('txdb', 'txHash'))
   }
   updateAllDomainHashes() {
-    let dmHash = 0;
-    let sql = 'select key, value, p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5 from keys'
-    const objs = this.dmdb.prepare(sql).all()
-    for (const item of objs) {
-      for (const k in item) {
-        if (item[k] === null) delete item[k]
+    const _updateDBHash = (db, tld) => {
+      let dmHash = 0;
+      let sql = 'select key, value, p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5 from keys'
+      const objs = db.prepare(sql).all()
+      for (const item of objs) {
+        for (const k in item) {
+          if (item[k] === null) delete item[k]
+        }
+        const hash = Util.fnv1aHash(JSON.stringify(item))
+        dmHash ^= hash
       }
-      const hash = Util.fnv1aHash(JSON.stringify(item))
-      dmHash ^= hash
+      sql = 'select jsonString from nidobj'
+      const domains = db.prepare(sql).all()
+      for (const str of domains) {
+        const hash = Util.fnv1aHash(str.jsonString)
+        dmHash ^= hash
+      }
+      this.writeConfig('dmdb-' + tld, 'domainHash', dmHash + '') // 1039166988
+      console.log("updateAllDomainHashes finish dmHash:", dmHash)
+      return { keys: objs.length, domains: domains.length, dmHash }
     }
-    sql = 'select jsonString from nidobj'
-    const domains = this.dmdb.prepare(sql).all()
-    for (const str of domains) {
-      const hash = Util.fnv1aHash(str.jsonString)
-      dmHash ^= hash
+    const ret = _updateDBHash(this.dmdb)
+    for (const tld in this.tldDbs) {
+      ret[tld] = _updateDBHash(this.tldDbs[tld], tld)
     }
-    this.writeConfig('dmdb', 'domainHash', dmHash + '') // 1039166988
+    return ret
   }
   async verifyTxDB() {
     console.log("verifying...")
@@ -1132,9 +1269,66 @@ class Database {
     }
     const data = await this.queryTX(time - 1, -1, 500)
     const sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
-    const ret1 = this.dmdb.prepare(sql).get()
-    const dmHash = this.readConfig('dmdb', 'domainHash')
+    const { db, tld } = this.getDomainDB({ key })
+    const ret1 = this.runPreparedSql({ name: 'getNewTx1' + tld, db, method: 'get', sql })
+    const dmHash = this.readConfig('dmdb-' + tld, 'domainHash')
     return { data, dmHash, ...ret1 }
+  }
+  async mangoTosql(q) {
+    if (q.count) q = q.count
+    const tags = q.tags
+    delete q.tags
+    const limit = q.limit
+    delete q.limit
+    const orderby = q.orderby
+    delete q.orderby
+    let nokey = (Object.keys(q).length == 0)
+    if (q.parent) { //within parent, convert props
+      const defination = await this.readKey('_def.' + q.parent)//get defination of this level
+      if (defination) {
+        for (let k in defination.v) {
+          const df = defination.v[k].split(':')
+          Util.changeKeyname(q, df[0], k)
+        }
+      }
+    }
+    const MongoDBQuery = `db.keys.find(${JSON.stringify(q)})`
+    let SQLQuery = mongoToSqlConverter.convertToSQL(MongoDBQuery, true)
+    SQLQuery = SQLQuery.slice(0, -1)
+    if (tags) {
+      let tagsql = mongoToSqlConverter.convertToSQL(`db.tags.find(${JSON.stringify(tags)},{key:1})`, true)
+      tagsql = tagsql.slice(0, -1)
+      if (!nokey) SQLQuery += " AND "
+      SQLQuery += "key in (" + tagsql + ")"
+    }
+    if (orderby) {
+      SQLQuery += " ORDER BY " + orderby
+    }
+    if (limit)
+      SQLQuery += " limit " + limit
+    SQLQuery = SQLQuery.replaceAll("'?'", "?")
+    return SQLQuery
+  }
+
+  // select * from keys where parent = 'golds.mxback.pv' AND p1 = ? AND p3 = ? AND (p5>? AND p5<?) order by p5 DESC limit 50
+  async API_execPreparedQuery({ name, sql, paras, method = 'get', transform = true, update = false }) {
+    //const t1 = Date.now()
+    const tld1 = name.split('-')[1]
+    const { db, tld } = this.getDomainDB({ tld: tld1 })
+
+    let ret = this.runPreparedSql({ name: name + tld, db, method, sql, paras, update })
+    if (transform) {
+      if (Array.isArray(ret)) {
+        for (let i = 0; i < ret.length; i++) {
+          ret[i] = await this.handleOneKeyItem(ret[i])
+        }
+      } else {
+        method != 'run' && ret && (ret = await this.handleOneKeyItem(ret))
+      }
+    }
+    //const t2 = Date.now()
+    //console.log("execQuery:", (t2 - t1) / 1000)
+    return ret
   }
   //------------------------------Blocks--------------------------------
   getLastBlock() {
@@ -1190,7 +1384,7 @@ class Database {
     const ret = []
     if (block) {
       for (const tx of block.txs) {
-        const txitem = await this.getFullTx({ txid: tx.txid })
+        const txitem = this.getFullTx({ txid: tx.txid })
         txitem && ret.push(txitem.tx)
       }
     }
@@ -1283,7 +1477,8 @@ class Database {
   }
   //------------------------------NFT-----------------------------------
   getNFT(symbol) {
-    const res = this.getNFTStmt.get(symbol)
+    //const res = this.getNFTStmt.get(symbol)
+    const res = this.runPreparedSql({ name: "getNFT", db: this.dmdb, method: 'get', sql: 'SELECT * from nfts where symbol=?', paras: [symbol] })
     if (res) {
       res.attributes = JSON.parse(res.attributes)
       res.data = JSON.parse(res.data)
@@ -1294,7 +1489,6 @@ class Database {
 
 // ------------------------------------------------------------------------------------------------
 
-Database.HEIGHT_MEMPOOL = HEIGHT_MEMPOOL
 Database.HEIGHT_UNKNOWN = HEIGHT_UNKNOWN
 
 module.exports = Database

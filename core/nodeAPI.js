@@ -1,4 +1,7 @@
 const { Server } = require('socket.io')
+const { createAdapter } = require("@socket.io/cluster-adapter");
+const { setupWorker } = require("@socket.io/sticky");
+
 const axios = require('axios')
 const NBPeer = require('./nbpeer')
 
@@ -16,17 +19,18 @@ let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 class NodeServer {
     start(indexers) {
         this.indexers = indexers
-        const { config } = this.indexers
+        const { config, logger } = this.indexers
         this.nbpeer = new NBPeer()
         const self = this
         const io = new Server(indexers.server.listener, {
             cors: {
                 "origin": "*",
+                credentials: true,
                 "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
                 "preflightContinue": false,
                 "optionsSuccessStatus": 204
             },
-            //transports: ["websocket"]
+            //transports: ["websocket", "polling"]
         })
         /*io.attach(CONFIG.server.socketPort || 31415, {
             cors: {
@@ -36,6 +40,11 @@ class NodeServer {
                 "optionsSuccessStatus": 204
             }
         })*/
+        if (indexers.clusterNumber) { //cluster mode
+            //io.adapter(createAdapter());
+            //setupWorker(io);
+        }
+
         io.on("connection", (socket) => {
             console.log("socket id:", socket.id, socket.handshake.auth); //
             if (socket.handshake.auth.chainid != config.chainid) {
@@ -266,13 +275,14 @@ class NodeClient {
     async pullNewTxs({ thisKeyCount }) { //para = { from:12121233,to:-1}
         return new Promise(resolve => {
             const { db, indexer } = this.indexers
-            let lastTime = db.readConfig('txdb', this.node.id + "_lasttime") || 1679550531480
-            if (lastTime < 1679550531480) lastTime = 1679550531480
+            const checkpointTime = +db.readConfig("dmdb", "checkpointTime") || 1679550531480
+            let lastTime = +db.readConfig('dmdb', this.node.id + "_lasttime") || 1682151503790
+            //if (lastTime < checkpointTime) lastTime = checkpointTime
             const self = this
             let finish = false
             setTimeout(() => {
-                if (!finish) resolve({}) //timeout
-            }, 5000)
+                if (!finish) resolve({ code: 3 }) //timeout
+            }, 15000)
             this.socket.volatile.emit("getNewTx", { v: 1, from: this.from, fromTime: lastTime }, async (res) => {
                 console.log("reply from:", this.node.id, "newtx:", res?.data?.length, " domains:", res.domains, " keys:", res.keys, " dmHash:", res.dmHash)
                 if (!res.data) {
@@ -280,8 +290,8 @@ class NodeClient {
                     finish = true
                     return
                 }
-                if (res.keys - thisKeyCount > 10000) {
-                    resolve({ code: 2, dmHash: res.dmHash, keys: res.keys, domains:res.domains })
+                if (res.keys - thisKeyCount > 5000) {
+                    resolve({ code: 2, dmHash: res.dmHash, keys: res.keys, domains: res.domains })
                     return
                 }
                 for (const tx of res.data) {
@@ -290,12 +300,15 @@ class NodeClient {
                         continue
                     }
                     g_inAddTx = true
+                    if (!tx.oDataRecord.raw) {
+                        tx.oDataRecord = Util.parseJson(tx.odata)
+                    }
                     await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
                     g_inAddTx = false
                     this.maxTime = Math.max(this.maxTime || 0, tx.txTime)
                 }
                 if (this.maxTime)
-                    db.writeConfig('txdb', self.node.id + "_lasttime", this.maxTime + '')
+                    db.writeConfig('dmdb', self.node.id + "_lasttime", this.maxTime + '')
                 finish = true
                 delete res.data
                 resolve(res)
@@ -390,7 +403,7 @@ class rpcHandler {
             console.log("send tx successfully. txid:", ret1.txid)
             let oDataRecord = null
             if (ret.rtx && ret.rtx.oHash) {
-                oDataRecord = { raw: obj.oData, owner: ret.rtx.output.domain, time: ret.rtx.time }
+                oDataRecord = { raw: obj.oData }
             }
             const sig = await Util.bitcoinSign(config.key, ret1.txid)
             let sigs = { [Nodes.thisNode.key]: sig }

@@ -19,10 +19,10 @@ const CONSTS = {
         "02119cd2e3b480e0c95a330fa56ebea99191dca625387be880e0ade81b5c167b85",
         "02fc634b9a9d43141fb08d6d3365a1d4071ad7614b4076887eac092baf06b4698b"
     ],
-    "proxy_map": {
-        "/api/": "api",
-        '/web/': "web",
-        "/chain/": "chain"
+    "modules": {
+        "/api": "api",
+        //'/web': "web",
+        "/chain": "chain"
     },
     "admin": {
         "transfer_fee": 1000,

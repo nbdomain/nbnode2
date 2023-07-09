@@ -6,8 +6,8 @@ ADD package.json /tmp/package.json
 RUN npm install 
 
 FROM node:16-alpine
-
 ENV NODE_ENV production
+RUN npm install pm2 -g
 USER node
 #COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
 WORKDIR /home/node/app/
@@ -19,5 +19,7 @@ COPY --chown=node:node . /home/node/app
 #    ln -s /home/node/app/config/config.js /home/node/app/data/config.js
 
 EXPOSE 9000
+#CMD ["pm2-runtime","/home/node/app/core","-i max"]
+
 CMD ["node","core"]
 #ENTRYPOINT ["tail", "-f", "/dev/null"]

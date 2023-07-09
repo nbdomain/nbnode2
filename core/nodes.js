@@ -18,9 +18,72 @@ dnsPromises = dns.promises;
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 let g_node = null
+
+class Node {
+    constructor(url, indexers) {
+        this.url = url
+        this.indexers = indexers
+    }
+    async validate() {
+        try {
+            const { config } = this.indexers
+            if (!config.nodeIPs) config.nodeIPs = []
+            const pURL = new URL(this.url)
+            const IP = await dnsPromises.lookup(pURL.hostname);
+            IP && config.nodeIPs.push(IP.address)
+            const res = await axios.get(this.url + "/api/nodeinfo")
+            if (res.data && res.data.pkey) {
+                this.info = res.data
+                return res.data
+            }
+        } catch (e) {
+            console.error(this.url + ":" + e.message)
+        }
+        return false
+    }
+    getKey() {
+        return this.info ? this.info.pkey : null
+    }
+    async pullNewTxs({ thisKeyCount }) {
+        const { db, indexer, config } = this.indexers
+        const checkpointTime = +db.readConfig("dmdb", "checkpointTime") || 1679550531480
+        let lastTime = +db.readConfig('dmdb', this.url + "_lasttime") || 1682151503790
+        //if (lastTime < checkpointTime) lastTime = checkpointTime
+        const url = this.url + "/api/p2p/getNewTx/"
+        try {
+            const res = await axios.get(url, { params: { v: 1, from: config.server.publicUrl, fromTime: lastTime } })
+            if (res.data) {
+                const result = res.data
+                console.log("reply from:", url, "newtx:", result?.data?.length, " domains:", result.domains, " keys:", result.keys, " dmHash:", result.dmHash)
+                if (!result.data) {
+                    return result
+                }
+                if (res.keys - thisKeyCount > 5000) {
+                    return { code: 2, dmHash: res.dmHash, keys: res.keys, domains: res.domains }
+                }
+                for (const tx of result.data) {
+                    if (!tx.oDataRecord.raw) {
+                        tx.oDataRecord = Util.parseJson(tx.odata)
+                    }
+                    await indexer.addTxFull({ txid: tx.txid, sigs: tx.sigs, rawtx: tx.rawtx, oDataRecord: tx.oDataRecord, time: tx.time, txTime: tx.txTime, chain: tx.chain })
+                    this.maxTime = Math.max(this.maxTime || 0, tx.txTime)
+                }
+                if (this.maxTime)
+                    db.writeConfig('dmdb', this.url + "_lasttime", this.maxTime + '')
+                delete result.data
+                result.code = 0
+                return result
+            }
+        } catch (e) {
+            return { code: 4, msg: e.message }
+        }
+
+    }
+
+}
 class Nodes {
     constructor() {
-        this.pnodes = []
+        this.pnodes = {}
         this._canResolve = true
         this.nodeClients = {}
         //this.isProducer = config.server.producer
@@ -48,27 +111,12 @@ class Nodes {
     }
     nodeFromKey(key) {
         //        console.log(JSON.stringify(this.pnodes))
-        return this.pnodes.find(item => item.pkey === key)
+        return this.pnodes.find(item => item.getKey() === key)
     }
-    get({ retUrl = true }) {
-        const node = rwc(this.pnodes)
-        return retUrl ? node : this.pnodes.find(item => item.id === node)
-    }
-    cool(url) {
-        const node = this.pnodes.find(node => node.id == url)
-        if (node) {
-            node.weight--
-        }
-    }
-    warm(url) {
-        const node = this.pnodes.find(node => node.id == url)
-        if (node) {
-            node.weight++
-        }
-    }
+
     async start(indexers) {
         this.indexers = indexers
-        const { config, dataFolder } = indexers
+        const { config, dataFolder, logger } = indexers
         indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
         let privateKey = config.key
@@ -88,12 +136,10 @@ class Nodes {
         this.checkTime()
         this.indexers = indexers
         this.endpoint = config.server.publicUrl
-        //if (!config.server.https) this.endpoint += ":" + config.server.port
-
-        this.startNodeServer()
         await this.loadNodes(true)
-        this.pullNewTxs()
-        //await this.connectNodes()
+        if (!indexers.clusterNumber || indexers.clusterNumber === "0") {
+            this.startLoop()
+        }
 
         return true
     }
@@ -115,23 +161,6 @@ class Nodes {
             })
         })
     }
-    async validatNode(url) {
-        try {
-            const { config } = this.indexers
-            if (!config.nodeIPs) config.nodeIPs = []
-            const pURL = new URL(url)
-            const IP = await dnsPromises.lookup(pURL.hostname);
-            IP && config.nodeIPs.push(IP.address)
-
-            const res = await axios.get(url + "/api/nodeinfo")
-            if (res.data && res.data.pkey) {
-                return res.data
-            }
-        } catch (e) {
-            console.error(url + ":" + e.message)
-            return null
-        }
-    }
     incCorrect(url) {
         this.indexers.db.updateNodeScore(url, true)
     }
@@ -139,8 +168,7 @@ class Nodes {
         this.indexers.db.updateNodeScore(url, false)
     }
     hasNode(url) {
-        if (this.pnodes.find(item => item.id == url)) return true
-        return false
+        return this.pnodes[url] ? true : false
     }
     removeNode(url) {
         // const index = this.pnodes.findIndex(item => item.id == url)
@@ -151,6 +179,7 @@ class Nodes {
     async addNode({ url, isPublic = true }) {
         const { config } = this.indexers
         if (!this.handling) this.handling = {}
+        url = url.trim()
         if (this.handling[url]) {
             console.error("handled:", url)
             return false
@@ -160,31 +189,21 @@ class Nodes {
             console.error(url, "self")
             return true
         }
-        const info = await this.validatNode(url)
-        //console.log(5, url)
-        if (!info) {
-            console.error("can't get info from:", url)
-            return false
-        }
-        if (info.chainid != config.chainid) {
-            console.error('different chainId:', info.chainid)
-            return false
-        }
-        if (info.pkey === this.thisNode.key) { //self
-            return false
-        }
-        if (this.hasNode(url)) {
-            console.error(url, "exists")
-            return true
-        }
-        const node = { id: url, pkey: info.pkey, weight: 50, info: info }
-        this.pnodes.push(node)
-        console.log("added node:", url)
-        if (isPublic) {
-            this.notifyPeers({ cmd: "newNode", data: { url } })
-            this.indexers.db.addNode({ url, info })
-            await this.connectAsClient(node)
-        }
+        const node = new Node(url, this.indexers)
+        const self = this
+        node.validate().then((result) => {
+            if (!result) {
+                self.incMistake(url)
+            }
+            if (result && !self.pnodes[url]) {
+                console.log("added node:", url)
+                self.pnodes[url] = node
+                if (isPublic) {
+                    self.notifyPeers({ cmd: "newNode", data: { url } })
+                    self.indexers.db.addNode({ url, result })
+                }
+            }
+        })
         return true
     }
     async loadNodes() {
@@ -195,23 +214,15 @@ class Nodes {
             for (const node of nodes) {
                 const url = node.url ? node.url : node
                 const result = await self.addNode({ url })
-                if (!result)
-                    self.incMistake(url)
-                //if (self.pnodes.length >= DEF.CONSENSUE_COUNT) break;
             }
         }
-        const requiredNode = this.isProducer() ? DEF.CONSENSUE_COUNT : 1
         if (config.pnodes) {
             await _addFromArray(config.pnodes)
         }
-        if (objLen(this.nodeClients) < requiredNode) {
-            const nodes = this.indexers.db.loadNodes(true) //load from db
-            await _addFromArray(nodes)
-        }
-        if (objLen(this.nodeClients) < requiredNode) { //load from DNS
-            const p = await this._fromDNS()
-            await _addFromArray(p)
-        }
+        const nodes = this.indexers.db.loadNodes(true) //load from db
+        await _addFromArray(nodes)
+        const p = await this._fromDNS()
+        await _addFromArray(p)
 
     }
     isProducer(pkey) {
@@ -284,13 +295,18 @@ class Nodes {
             this._canResolve = false
             const url = from + "/files/bk_domains.db"
             const filename = path.join(db.path, "d_domains.db")
+            const res = await axios.get(from + "/api/p2p/backup") //ask node to backup the latest db
+            if (res.data.code !== 0) {
+                this._canResolve = orgCanResolve
+                return false
+            }
             logger.info("Downloading domain db from:", url)
             await Util.downloadFile(url, filename)
             logger.info("Download domain db successfully")
             this.indexers.resolver.abortResolve()
             this.indexers.db.restoreDomainDB(filename)
             //fs.unlinkSync(filename)
-            if (includingTxDB) {
+            /*if (includingTxDB) {
                 const url = from + "/files/bk_txs.db"
                 const filename = path.join(db.path, "d_txs.db")
                 console.log("Downloading txdb from:", url)
@@ -298,7 +314,7 @@ class Nodes {
                 console.log("Download txdb successful")
                 this.indexers.db.restoreTxDB(filename)
                 //fs.unlinkSync(filename)
-            }
+            }*/
             this._canResolve = orgCanResolve
             return true
         } catch (e) {
@@ -364,6 +380,7 @@ class Nodes {
     }
 
     async getData(hash, option = { string: true }) {
+        console.log("getting data, hash:", hash)
         for (const node of this.getNodes(false)) {
             const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
             try {
@@ -372,14 +389,16 @@ class Nodes {
                     const d = res.data
                     if (d.raw) {
                         //oData = d.raw
-                        await this.indexers.db.saveData({ data: d.raw, owner: d.owner, time: d.time, from: "nodes.js" })
+                        //await this.indexers.db.saveData({ data: d.raw, owner: d.owner, time: d.time, from: "nodes.js" })
                     }
+                    console.log("got data from:", url)
                     return res.data
                 }
             } catch (e) {
                 console.error("getData:err getting from:", url, e.code, e.message)
             }
         }
+        console.error("data not found, hash:", hash)
         return {}
     }
     canResolve() {
@@ -397,26 +416,38 @@ class Nodes {
         }
         return { result: "none" }
     }
-    async pullNewTxs() {
+    async startLoop() {
         const { db } = this.indexers
+        let counter = 0
         while (true) {
-            //const fromTime = db.readConfig('dmdb', 'maxResolvedTxTime')
             const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
             this._canResolve = false
             const dmHashMap = {}
-            for (const id in this.nodeClients) {
-                if (this.nodeClients[id].connected) {
-                    console.log("==========>getNewTx from:", id)
-                    const { code, dmHash, keys, domains } = await this.nodeClients[id].pullNewTxs({ thisKeyCount });
-                    if (code === 2) { //too far away, download db file instead
-
-                    }
-                    if (dmHash) {
-                        if (!dmHashMap[dmHash]) dmHashMap[dmHash] = []
-                        dmHashMap[dmHash].push({ id, keys })
-                    }
-                    console.log("<==========getNewTx finish:", id)
+            let needDownload = false, mostKey = 0, mostUrl = null
+            for (const url in this.pnodes) {
+                const node = this.pnodes[url]
+                const { code, dmHash, keys, domains, msg } = await node.pullNewTxs({ thisKeyCount });
+                if (code === 2) { //too far away, download db file instead
+                    needDownload = true
                 }
+                if (code === 3) {
+                    console.error(url, " timeout")
+                    continue; //timeout
+                }
+                if (dmHash) {
+                    if (!dmHashMap[dmHash]) dmHashMap[dmHash] = []
+                    dmHashMap[dmHash].push({ url, keys })
+                }
+                console.log("<==========getNewTx finish:", url, "code:", code, "msg:", msg)
+                if (keys > mostKey) {
+                    mostKey = keys, mostUrl = url
+                    console.log("mostKey:", mostKey, "mostUrl:", mostUrl)
+                }
+            }
+            if (needDownload) {
+                await this.downloadAndUseDomainDB(mostUrl)
+                this._canResolve = true
+                continue;
             }
             const thisDmHash = db.getDomainHash()
             !dmHashMap[thisDmHash] && (dmHashMap[thisDmHash] = [])
@@ -446,6 +477,13 @@ class Nodes {
             }
             this._canResolve = true
             await wait(1000 * 10)
+            counter++ > 10000 ? (counter = 0) : null
+            if (counter % 6 === 0) { //every 1 minute
+                db.compactTxDB()
+            }
+            if (counter % 60 === 0) { //every 10 minutes
+                db.backupDB()
+            }
         }
     }
     static inst() {

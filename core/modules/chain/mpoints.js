@@ -5,9 +5,6 @@ const CoinFly = require('coinfly');
 const axios = require('axios')
 const Arweave = require('arweave');
 const fs = require("fs");
-const express = require('express')
-const bodyParser = require('body-parser')
-const cors = require('cors')
 
 const PATH_ADDRESS = "/v1/address";
 const PATH_TX_ALL = "/v1/tx/all";
@@ -50,26 +47,27 @@ const crawler = new Crawler
 class mPoints {
   constructor() {
   }
-  start(cb) {
+  init(preFix, indexers) {
+    this.preFix = preFix
+    this.indexers = indexers
     arLib = Arweave.init({ host: "arweave.net", port: 443, protocol: "https" });
-    const app = express()
+  }
+  async regEndpoints(app) {
     const self = this;
-    app.use(cors());
-    app.use(bodyParser.json({ limit: '50mb' }));
-    app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-
-    app.get(PATH_ADDRESS, async (req, res) => {
+    const CONFIG = this.indexers.config
+    const PREFIX = this.preFix
+    app.get(PREFIX+PATH_ADDRESS, async (req, res) => {
       console.log("calling:", PATH_ADDRESS, "query:", req.query)
       var data = await mPoints.getAddressInfo(req.query.address, req.query.chain);
       res.json(data);
     })
-    app.get('/:chain/address/:address/balance', async (req, res) => {
+    app.get(PREFIX+'/:chain/address/:address/balance', async (req, res) => {
       const address = req.params['address']
       const chain = req.params['chain']
       const ret = await mPoints.getBalance(address, chain)
       res.json(ret)
     })
-    app.get(PATH_TX_ALL, async (req, res) => {
+    app.get(PREFIX+PATH_TX_ALL, async (req, res) => {
       console.log("calling:", PATH_TX_ALL, "query:", req.query)
       var data = await this.getAllTX({
         address: req.query.address,
@@ -82,13 +80,13 @@ class mPoints {
       });
       res.json(data);
     })
-    app.get("/:chain/address/:address/prefetch", (req, res) => {
+    app.get(PREFIX+"/:chain/address/:address/prefetch", (req, res) => {
       const address = req.params['address']
       const chain = req.params['chain']
       this.preFetchAddress({ address, chain })
       res.json({ code: 0, msg: "ok" })
     })
-    app.get("/:chain/address/:address/history", async (req, res) => {
+    app.get(PREFIX+"/:chain/address/:address/history", async (req, res) => {
       const address = req.params['address']
       const chain = req.query['chain']
       console.log("calling:", req.url, "query:", req.query)
@@ -103,18 +101,13 @@ class mPoints {
       });
       res.json(data)
     })
-    app.get('/test', async (req, res) => {
+    app.get(PREFIX+'/test', async (req, res) => {
       const lib = await CoinFly.create('ar')
       const pubKey = await lib.getPublicKey(process.env.arkey)
       const address = await lib.getAddress(pubKey)
       console.log(pubKey)
       console.log(address)
       res.end(address)
-    })
-    const server = app.listen(0, function () {
-      const port = server.address().port;
-      console.log(`chain service started on port:`, port);
-      cb(port)
     })
   }
   static async getBalance(address, chain) {

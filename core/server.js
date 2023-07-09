@@ -4,10 +4,15 @@
  * Express server that exposes the Indexer
  */
 
-const express = require('express')
-const morgan = require('morgan')
-const bodyParser = require('body-parser')
-const cors = require('cors')
+//const express = require('express')
+//const morgan = require('morgan')
+//const bodyParser = require('body-parser')
+//const cors = require('cors')
+const http = require('http')
+const fastifyModule = require('fastify')
+const cors = require('@fastify/cors')
+const httpProxy = require('@fastify/http-proxy')
+
 const URL = require('url')
 var dns = require("dns");
 var axios = require("axios");
@@ -98,26 +103,15 @@ class LocalServer {
 
   async start() {
 
-    const app = express()
-
-    if (this.logger) app.use(morgan('tiny'))
-
-
-    app.get("/", (req, res, next) => {
-      if (!isAPICall(req.get("host"))) {
-        next();
-        return;
-      }
-      res.sendFile(Path.join(__dirname, "/public/index.html"));
-    });
-    app.use('/files/', express.static(Path.join(__dirname, '../data/files')))
+    //const app = express()
 
     setInterval(() => {
       //console.log("clear domainMap cache");
       domainMap = []; //clear domainMap cache
     }, 60 * 1000);
 
-    await this.startProxyServer(app);
+    await this.startServer();
+
     return true
     //  this.startSSLServer(app);
   }
@@ -158,67 +152,82 @@ class LocalServer {
         green.serve(appSSL);
       }
     } */
-  async startProxyServer(app) {
+  async startServer() {
     const { config, CONSTS, logger } = this.indexers
-
-    return new Promise(resolve => {
-      const self = this;
-      this.listener = app.listen(config.server.port, async function () {
-        logger.info(`NBnode server started on port ${config.server.port}...`);
-
-        var proxyPassConfig = CONSTS.proxy_map;
-
-        for (let uri in proxyPassConfig) {
-          uri = uri.trim().toLowerCase();
-          console.log("uri", uri);
-          let env = config;
-          env.indexers = self.indexers;
-          let service_folder = proxyPassConfig[uri];
-          let port = 0;
-          try {
-            const service = require("./modules/" + service_folder + "/index.js");
-            port = await service(env);
-          } catch (e) {
-            console.error("Error loading service from: " + service_folder)
-            continue
-          }
-          const localAddr = "http://localhost:" + port;
-          const pa = "^" + uri;
-          if (uri === "/web/") localWebGateway = localAddr + "/";
-          if (uri === "/api/") localAPIGateway = localAddr + "/";
-          app.use(
-            uri,
-            createProxyMiddleware({
-              target: localAddr,
-              changeOrigin: true,
-              pathRewrite: { [pa]: "" },
-              xfwd: true
-            })
-          );
-        }
-        console.log(localWebGateway, localAPIGateway);
-        app.use(cors());
-
-        app.use(bodyParser.json({ limit: '50mb' }));
-        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-        app.use((err, req, res, next) => {
-          if (this.logger) this.logger.error(err.stack)
-          res.status(500).send('Something broke!')
-        })
-        resolve(true)
+    const serverFactory = (handler, opts) => {
+      this.listener = http.createServer((req, res) => {
+        handler(req, res)
       })
-      if (true) {
-        //console.log("Start PeerServer")
-        //peer server
-        //const peerServer = ExpressPeerServer(this.listener, { debug: true });
-        //app.use('/peerjs', peerServer);
-      }
+      return this.listener
+    }
+    const app = fastifyModule({ http2: false, caseSensitive: false })
+    this.listener = app.server
+    /* app.get("/", (req, res, next) => {
+       if (!isAPICall(req.get("host"))) {
+         next();
+         return;
+       }
+       res.sendFile(Path.join(__dirname, "/public/index.html"));
+     });*/
+    //app.use('/files/', express.static(Path.join(__dirname, '../data/files')))
+    app.register(require('@fastify/static'), {
+      root: Path.join(__dirname, '../data/files'),
+      prefix: '/files/', // optional: default '/'
+      //      constraints: { host: 'example.com' } // optional: default {}
     })
+
+    const self = this;
+
+    logger.info(`NBnode server started on port ${config.server.port}...`);
+
+    /*var proxyPassConfig = CONSTS.proxy_map;
+
+    for (let uri in proxyPassConfig) {
+      uri = uri.trim().toLowerCase();
+      console.log("uri", uri);
+      let env = config;
+      env.indexers = self.indexers;
+      let service_folder = proxyPassConfig[uri];
+      let port = 0;
+      try {
+        const service = require("./modules/" + service_folder + "/index.js");
+        port = await service(env);
+      } catch (e) {
+        console.error("Error loading service from: " + service_folder)
+        continue
+      }
+      const localAddr = "http://localhost:" + port;
+      //const pa = "^" + uri;
+      const pa = uri
+      if (uri === "/web/") localWebGateway = localAddr + "/";
+      if (uri === "/api/") localAPIGateway = localAddr + "/";
+    }*/
+    const moduleConfig = CONSTS.modules
+    let service_folder = ""
+    for (let uri in moduleConfig) {
+      uri = uri.trim().toLowerCase();
+      try {
+        service_folder = moduleConfig[uri];
+        const serviceClass = require("./modules/" + service_folder + "/index.js");
+        const service = new serviceClass
+        service.init(uri, this.indexers)
+        service.regEndpoints(app)
+      } catch (e) {
+        console.error("Error loading service from: " + service_folder)
+        continue
+      }
+    }
+    app.register(cors, { origin: true, credentials: true, allowedHeaders: ['apikey', 'content-type'] });
+
+    //        app.use(bodyParser.json({ limit: '50mb' }));
+    //        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
+    await app.listen({ host: "::", port: config.server.port })
+    return this.listener
   }
 
-  stop() {
+  async stop() {
     if (!this.listener) return
-    this.listener.close()
+    await this.listener.close()
     this.listener = null
   }
 
