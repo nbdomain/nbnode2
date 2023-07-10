@@ -1269,9 +1269,9 @@ class Database {
     }
     const data = await this.queryTX(time - 1, -1, 500)
     const sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
-    const { db, tld } = this.getDomainDB({ key })
-    const ret1 = this.runPreparedSql({ name: 'getNewTx1' + tld, db, method: 'get', sql })
-    const dmHash = this.readConfig('dmdb-' + tld, 'domainHash')
+    //const { db, tld } = this.getDomainDB({ key })
+    const ret1 = this.runPreparedSql({ name: 'getNewTx1', db:this.dmdb, method: 'get', sql })
+    const dmHash = this.readConfig('dmdb-', 'domainHash')
     return { data, dmHash, ...ret1 }
   }
   async mangoTosql(q) {
