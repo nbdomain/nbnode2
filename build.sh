@@ -1,4 +1,4 @@
-#docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 -t bloodchen/nbdb --push
+##docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 -t bloodchen/nbdb --push
 docker container stop nbdb
 docker container rm nbdb
 docker build -t nbdb .
