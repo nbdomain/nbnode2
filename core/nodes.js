@@ -255,7 +255,7 @@ class Nodes {
         return false
     }
     getNodes() {
-        return this.pnodes
+        return this.pnodes || []
     }
     async listAllNodes() {
         if (this.isProducer()) {
