@@ -11,7 +11,7 @@ RUN npm install pm2 -g
 USER node
 #COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
 WORKDIR /home/node/app/
-RUN chown -R node:node /home/node/app
+#RUN chown -R node:node /home/node/app
 COPY --chown=node:node --from=build /tmp/node_modules /home/node/app/node_modules
 COPY --chown=node:node . /home/node/app
 #RUN mkdir /home/node/app/config && \
