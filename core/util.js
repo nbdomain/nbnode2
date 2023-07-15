@@ -14,8 +14,8 @@ const stream = require('stream');
 const { promisify } = require('util');
 const NBLib = require("nblib2");
 const childProcess = require('child_process');
-const LocalStorage = require('node-localstorage').LocalStorage;
-Storage = new LocalStorage('./storage');
+//const LocalStorage = require('node-localstorage').LocalStorage;
+//Storage = new LocalStorage('./storage');
 nbpay.auto_config();
 let arLib = null, bsvLib = null;
 CoinFly.create('ar').then(lib => arLib = lib)
