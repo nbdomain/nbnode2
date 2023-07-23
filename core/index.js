@@ -18,41 +18,10 @@ const BlockMgr = require('./blockManager')
 const PubSub = require('./pubsub')
 const Path = require('path')
 const Logger = require('./logger.js')
-let CONFIG = require('../data/config.js').CONFIG
 
 // ------------------------------------------------------------------------------------------------
 // Globals
 // ------------------------------------------------------------------------------------------------
-/*const today = new Date();
-var dd = String(today.getMonth() + 1 + "-" + today.getDate());
-const logFolder = CONFIG?.path?.log || Path.join(__dirname, "../data/log")
-if (!fs.existsSync(logFolder)) {
-  fs.mkdirSync(logFolder);
-}
-var logStream = fs.createWriteStream(Path.join(logFolder, "/log_" + dd + ".txt"), { flags: "a" });
-class loggerPlus {
-  static logFile(...args) {
-    const da = new Date()
-    let time = da.getHours() + ":" + da.getMinutes();
-    let str = `[${time}] `;
-    for (let key of args) {
-      if (typeof key === "object" && key !== null) {
-        str += JSON.stringify(key) + " ";
-      } else str += key + " ";
-    }
-    logStream.write(str + "\n");
-  }
-  static log(...args) {
-    console.log(...args);
-  }
-  static info(...args) {
-    console.log(...args);
-  }
-  static error(...args) {
-    console.error(...args);
-  }
-}
-*/
 
 const logger = new Logger //loggerPlus
 
@@ -81,25 +50,27 @@ async function shutdown() {
 // main
 // ------------------------------------------------------------------------------------------------
 let server = null;
-
+let CONFIG = null
 class Indexers {
   static initDB() {
-    const dbPath = CONFIG?.path?.db || Path.join(__dirname, "../data/db")
+    const { config } = this
+    const dbPath = config?.path?.db || Path.join(__dirname, "../data/db")
     this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
 
   static async init() {
-    this.config = CONFIG
-    this.dataFolder = CONFIG.dataDir || Path.join(__dirname, "../data/")
-    dotenv.config({ path: this.dataFolder + 'env' })
-    if (!this.config.chainid) this.config.chainid = 'main'
-    if (this.config.tld) {
-      CONSTS.tld_config = { ...this.config.tld, ...CONSTS.tld_config }
-    }
-    process.env.publicUrl && (this.config.server.publicUrl = process.env.publicUrl)
-    process.env.adminKey && (this.config.adminKey = process.env.adminKey)
-    process.env.chainid && (this.config.chainid = process.env.chainid)
+    this.cfgFolder = Path.join(__dirname, "../cfg/")
+    dotenv.config({ path: this.cfgFolder + 'env' })
+    this.cfg_chain = Util.readJsonFile(Path.join(this.cfgFolder, "chains/" + process.env.chainid + ".json"))
+    this.config = this.cfg_chain
+    const { config } = this
+    this.dataFolder = config.dataDir || Path.join(__dirname, "../data/")
+    if (!config.chainid) config.chainid = 'main'
+
+    process.env.publicUrl && (config.server.publicUrl = process.env.publicUrl)
+    process.env.adminKey && (config.adminKey = process.env.adminKey)
+    
     this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger

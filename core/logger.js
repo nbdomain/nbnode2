@@ -14,7 +14,7 @@ const combineMessageAndSplat = () => {
 class Logger {
     init(gl) {
         //const __dirname = new URL('.', import.meta.url).pathname
-        const { config } = gl
+        const { cfg_chain } = gl
         const logFormat = winston.format.combine(
             winston.format.colorize(),
             winston.format.timestamp(),
@@ -24,13 +24,13 @@ class Logger {
                 info => `${info.timestamp} ${info.level}: ${info.message}`,
             ),);
         const transport = new DailyRotateFile({
-            filename: gl.dataFolder + '/logs/' + (config.logfile || "nbnode-%DATE%.log"),
+            filename: gl.dataFolder + '/logs/' + (cfg_chain.logfile || "nbnode-%DATE%.log"),
             datePattern: 'YYYY-MM-DD',
             zippedArchive: true,
             //maxSize: '20m',
             maxFiles: '5d',
             prepend: true,
-            level: config?.log?.level || 'info',
+            level: cfg_chain?.log?.level || 'info',
         });
         transport.on('rotate', function (oldFilename, newFilename) {
             // call function like upload to s3 or on cloud

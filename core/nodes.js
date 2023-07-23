@@ -26,11 +26,11 @@ class Node {
     }
     async validate() {
         try {
-            const { config } = this.indexers
-            if (!config.nodeIPs) config.nodeIPs = []
+            const { cfg_chain } = this.indexers
+            if (!cfg_chain.nodeIPs) cfg_chain.nodeIPs = []
             const pURL = new URL(this.url)
             const IP = await dnsPromises.lookup(pURL.hostname);
-            IP && config.nodeIPs.push(IP.address)
+            IP && cfg_chain.nodeIPs.push(IP.address)
             const res = await axios.get(this.url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
                 this.info = res.data
@@ -207,7 +207,7 @@ class Nodes {
         return true
     }
     async loadNodes() {
-        const { config } = this.indexers
+        const { cfg_chain } = this.indexers
         const self = this;
         const _addFromArray = async function (nodes) {
             if (!Array.isArray(nodes)) return
@@ -216,8 +216,8 @@ class Nodes {
                 const result = await self.addNode({ url })
             }
         }
-        if (config.pnodes) {
-            await _addFromArray(config.pnodes)
+        if (cfg_chain.pnodes) {
+            await _addFromArray(cfg_chain.pnodes)
         }
         const nodes = this.indexers.db.loadNodes(true) //load from db
         await _addFromArray(nodes)
@@ -226,11 +226,11 @@ class Nodes {
 
     }
     isProducer(pkey) {
-        const { config, CONSTS } = this.indexers
-        if (config?.consensus?.mode === 'equal') return true
+        const { cfg_chain } = this.indexers
+        if (cfg_chain?.consensus?.mode === 'equal') return true
         if (!pkey) return this._isProducer
-        if (config.disableProducer) return false
-        return CONSTS.producers.indexOf(pkey) != -1
+        if (cfg_chain.disableProducer) return false
+        return cfg_chain.producers.indexOf(pkey) != -1
     }
     onNodeDisconnect(node) {
         this.removeNode(node.id)
@@ -405,8 +405,8 @@ class Nodes {
         return this._canResolve
     }
     getConsenseResult({ dmHashMap, thisDmHash, thisKeyCount }) {
-        const { config } = this.indexers
-        const consenseStrategy = config.consensus.strategy || 'mostKeys'
+        const { cfg_chain } = this.indexers
+        const consenseStrategy = cfg_chain.consensus.strategy || 'mostKeys'
         for (const key in dmHashMap) {
             if (dmHashMap[key].length > DEF.CONSENSUE_COUNT / 2) {
                 if (dmHashMap[key][0].keys >= thisKeyCount) {

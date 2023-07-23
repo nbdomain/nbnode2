@@ -1,0 +1,49 @@
+{
+    "chainid": "maxthon",
+    "server": {},
+    "node_info": {
+        "contact": "bloodchen@gmail.com"
+    },
+    "tld": {
+        "pv": {
+            "chain": "not",
+            "address": {
+                "protocol": "notp1"
+            }
+        },
+        "pp": {
+            "chain": "not",
+            "address": {
+                "protocol": "notpp"
+            }
+        },
+        "px": {
+            "chain": "not",
+            "address": {
+                "protocol": "notpx"
+            }
+        }
+    },
+    "tld_standalone_db": "pp&px",
+    "consensus": {
+        "mode": "equal"
+    },
+    "allowIPs": [
+        "107.23.76.98"
+    ],
+    "pnodes": [
+        "http://pi.skyjeff.com:9001",
+        "http://pi.skyjeff.com:10001",
+        "http://143.198.66.116:9200",
+        "http://112.213.125.241:5000",
+        "http://34.195.2.150:19000",
+        "http://115.182.47.6:19000"
+    ],
+    "apikey": [
+        "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
+    ],
+    "txdb": {
+        "daysToKeep": 7
+    },
+    "logfile": "nbnode-%DATE%.log"
+}

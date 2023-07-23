@@ -76,25 +76,28 @@ class CMD_BASE {
 class Util {
     static init(indexers) {
         this.indexers = indexers
-        const { CONSTS } = this.indexers
-        SUB_PROTOCOL_MAP = CONSTS.tld_config
+        const { cfg_chain } = this.indexers
+        SUB_PROTOCOL_MAP = cfg_chain.tld
+    }
+    static readJsonFile(filename) {
+        return this.parseJson(fs.readFileSync(filename, 'utf8'));
     }
     static async initNBLib() {
-        const { config, CONSTS } = this.indexers
+        const { cfg_chain } = this.indexers
         await NBLib.init({
             API: "http://localhost:" + config.server.port + "/api/",
             debug: true, //enable debug or not. 
-            tld_config: CONSTS.tld_config,
+            tld_config: cfg_chain.tld,
             enable_write: false  //enable functions that can update and write value to NBdomain
         });
     }
     static async fetchDomainPrice(domain, db, newTx = false) {
         try {
-            const { config, CONSTS, Nodes } = this.indexers
+            const { cfg_chain, CONSTS, Nodes } = this.indexers
             await Util.initNBLib()
             const dd = domain.split('.')
             const tld = dd[dd.length - 1]
-            const check_url = CONSTS.tld_config[tld].price_url
+            const check_url = cfg_chain.tld[tld].price_url
             if (!check_url) return { code: 0, price: 0 }
             const key = domain + ".prices"
             const obj = await db.loadDomain("priceinfo.a")

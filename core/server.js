@@ -153,7 +153,7 @@ class LocalServer {
       }
     } */
   async startServer() {
-    const { config, CONSTS, logger } = this.indexers
+    const { cfg_chain, CONSTS, logger } = this.indexers
     const serverFactory = (handler, opts) => {
       this.listener = http.createServer((req, res) => {
         handler(req, res)
@@ -178,7 +178,7 @@ class LocalServer {
 
     const self = this;
 
-    logger.info(`NBnode server started on port ${config.server.port}...`);
+    logger.info(`NBnode server started on port ${cfg_chain.server.port}...`);
 
     /*var proxyPassConfig = CONSTS.proxy_map;
 
@@ -221,7 +221,7 @@ class LocalServer {
 
     //        app.use(bodyParser.json({ limit: '50mb' }));
     //        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-    await app.listen({ host: "::", port: config.server.port })
+    await app.listen({ host: "::", port: cfg_chain.server.port })
     return this.listener
   }
 

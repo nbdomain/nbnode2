@@ -31,7 +31,7 @@ const VER_TXDB = 5
 
 class Database {
   constructor(path, logger, indexers) {
-    //this.chain = chain
+    const { cfg_chain } = indexers
     this.path = path
     this.bkPath = Path.join(path, "../files")
     if (!fs.existsSync(path)) {
@@ -46,7 +46,7 @@ class Database {
     this.logger = logger
     this.txdb = null
     this.dmdb = null
-    const standalone = process.env.tld_standalone_db ? process.env.tld_standalone_db.split('&') : []
+    const standalone = cfg_chain.tld_standalone_db ? cfg_chain.tld_standalone_db.split('&') : []
     this.standAloneTld = {}
     standalone.forEach(item => this.standAloneTld[item] = true)
     this.tldDbs = {}

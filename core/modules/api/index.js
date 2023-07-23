@@ -24,7 +24,7 @@ const Parser = require('../../parser')
 const { Nodes } = require('../../nodes')
 const { createSession } = require("better-sse");
 const coinfly = require("coinfly");
-let indexers = null, CONFIG = null;
+let indexers = null, config = null;
 const today = new Date();
 
 const day = today.getDate();
@@ -50,15 +50,15 @@ class appModule {
         this.indexers = indexers
     }
     async regEndpoints(app) {
-        const CONFIG = this.indexers.config
+        const { config } = this.indexers
         const PREFIX = this.preFix
         const indexers = this.indexers
         const { db, Util } = indexers
         app.addHook("preHandler", function checkAccess(req, res, done) {
-            if (CONFIG.allowIPs) {
+            if (config.allowIPs) {
                 const IP = getClientIp(req)
                 const ips = IP.split('.')
-                if (CONFIG.allowIPs.indexOf(IP) == -1 && CONFIG?.nodeIPs.indexOf(IP) === -1 && IP != '1'
+                if (config.allowIPs.indexOf(IP) == -1 && config?.nodeIPs.indexOf(IP) === -1 && IP != '1'
                     && ips[0] !== "127" && ips[0] !== "10" && !(ips[0] == "172" && +ips[1] >= 16 && +ips[1] <= 31) && !(ips[0] === "192" && ips[1] === "168")) {
                     console.error("not allowed:", IP)
                     res.send("not allowed")
@@ -158,7 +158,7 @@ class appModule {
         });
         app.post(PREFIX + '/dbq/', async (req, res) => {
             const apikey = req.headers.apikey
-            if (CONFIG.apikey && CONFIG.apikey.indexOf(apikey) === -1) {
+            if (config.apikey && config.apikey.indexOf(apikey) === -1) {
                 return { code: 100, msg: "no access" }
             }
             let { exp, para, tld } = req.body
@@ -256,8 +256,8 @@ class appModule {
         })
         app.get(PREFIX + '/nodes', async (_, res) => {
             const lib = await coinfly.create('bsv')
-            const pkey = CONFIG.key ? await lib.getPublicKey(CONFIG.key) : "NotSet"
-            const s = CONFIG.server
+            const pkey = process.env.nodeKey ? await lib.getPublicKey(process.env.nodeKey) : "NotSet"
+            const s = config.server
             const serverUrl = s.publicUrl//(s.https ? "https://" : "http://") + s.domain + (s.https ? "" : ":" + s.port)
             const nodes = await Nodes.listAllNodes()
             return (!s.hideFromList ? nodes.concat([{ id: serverUrl, pkey, weight: 50 }]) : nodes)
@@ -344,21 +344,21 @@ class appModule {
 
 
         app.get(PREFIX + '/nodeinfo', async (req, res) => {
-            const { CONSTS } = this.indexers
-            let info = { ...CONFIG.server, ...CONFIG.node_info, ...CONSTS.payment };
+            const { CONSTS, config } = this.indexers
+            let info = { ...config.server, ...config.node_info, ...CONSTS.payment };
             info.version = "1.6." + fs.readFileSync(Path.join(__dirname, '/../../../build_number'), 'utf8').trim();
-            info.tld = CONSTS.tld_config
+            info.tld = config.tld
             const lib = await coinfly.create('bsv')
-            if (CONFIG.key)
-                info.pkey = await lib.getPublicKey(CONFIG.key)
-            info.statusHash = db.readConfig('txdb', 'statusHash')
-            info.height = db.readConfig('txdb', 'height')
-            info.chainid = CONFIG.chainid
+            if (config.key)
+                info.pkey = await lib.getPublicKey(config.key)
+            info.statusHash = db.readconfig('txdb', 'statusHash')
+            info.height = db.readconfig('txdb', 'height')
+            info.chainid = config.chainid
             return (info);
         })
         app.get(PREFIX + `/tld`, function (req, res) {
-            const { CONSTS } = indexers
-            return (CONSTS.tld_config);
+            const { config } = indexers
+            return (config.tld);
         });
         app.get(PREFIX + '/onSale', (req, res) => {
             return (db.getSellDomains())
@@ -384,7 +384,7 @@ class appModule {
 
         app.get(PREFIX + '/admin', async (req, res) => {
             const cmd = req.query['cmd']
-            if (!CONFIG.adminKey || CONFIG.adminKey != req.query['key']) {
+            if (!config.adminKey || config.adminKey != req.query['key']) {
                 return ('no access')
             }
             switch (cmd) {
@@ -432,7 +432,7 @@ class appModule {
         app.post(PREFIX + '/execPreparedQuery', async (req, res) => {
             const { name, sql, paras, method, transform } = req.body
             const { apikey } = req.headers
-            if (CONFIG.apikey && CONFIG.apikey.indexOf(apikey) === -1) {
+            if (config.apikey && config.apikey.indexOf(apikey) === -1) {
                 return { code: 100, msg: "no access" }
             }
             return await db.API_execPreparedQuery({ name, sql, paras, method, transform })

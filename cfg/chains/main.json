@@ -1,0 +1,64 @@
+{
+    "chainid": "main",
+    "server": {
+        "publicUrl": "http://pi.skyjeff.com:10000",
+        "port": 9001,
+        "socketPort": 8880,
+        "hideFromList": false
+    },
+    "node_info": {
+        "nbdomain": "107196.b",
+        "payment": {
+            "bsv": "1Bti24c8ZQLYMTaifVkiRwJ1cwT4K6ucJu",
+            "ar": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ"
+        },
+        "contact": "bloodchen@gmail.com"
+    },
+    "tld": {
+        "test": {
+            "testing": true,
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
+            "chain": "bsv",
+            "address": {
+                "payment": "19fLpT5LpaMGKuLfUVqmNdXkVceq2rbjyn",
+                "protocol": "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5",
+                "admin": "1KEjuiwj5LrUPCswJZDxfkZC8iKF4tLf9H",
+                "other_admins": [
+                    {
+                        "address": "1PuMeZswjsAM7DFHMSdmAGfQ8sGvEctiF5",
+                        "start_time": 0,
+                        "end_time": 1603775745
+                    }
+                ]
+            }
+        },
+        "b": {
+            "chain": "bsv",
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
+            "address": {
+                "payment": "15Cww7izEdyr8QskJmqwC5ETqWREZCjwz4",
+                "protocol": "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ",
+                "admin": "14PML1XzZqs5JvJCGy2AJ2ZAQzTEbnC6sZ",
+                "other_admins": []
+            }
+        },
+        "a": {
+            "chain": "ar",
+            "price_url": "https://util.nbsite.link/namecheck/v1/check/",
+            "address": {
+                "payment": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
+                "protocol": "ardomaina",
+                "admin": "gOyqCZBB-JmX1eDcYrIPPV71msTBBzPKwnEF3oEB-ZQ",
+                "other_admins": []
+            }
+        }
+    },
+    "adminKey": "123456",
+    "apikey": [
+        "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
+    ],
+    "txdb": {
+        "daysToKeep": 7
+    },
+    "logfile": "nbnode-%DATE%.log"
+}

@@ -109,7 +109,7 @@ class Resolver {
         return null;
     }
     async readDomain({ fullDomain, forceFull, history = null, price = true }) {
-        fullDomain = fullDomain.toLowerCase()
+        //fullDomain = fullDomain.toLowerCase()
         const dd = fullDomain.split('.')
         if (dd.length < 2) return null;
         let obj = null
