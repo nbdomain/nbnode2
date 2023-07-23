@@ -344,8 +344,8 @@ class appModule {
 
 
         app.get(PREFIX + '/nodeinfo', async (req, res) => {
-            const { CONSTS, config } = this.indexers
-            let info = { ...config.server, ...config.node_info, ...CONSTS.payment };
+            const { config } = this.indexers
+            let info = { ...config.server, ...config.node_info, ...config.payment };
             info.version = "1.6." + fs.readFileSync(Path.join(__dirname, '/../../../build_number'), 'utf8').trim();
             info.tld = config.tld
             const lib = await coinfly.create('bsv')
