@@ -119,7 +119,7 @@ class Nodes {
         const { config, dataFolder, logger } = indexers
         indexers.resolver.addController(this)
         const lib = await coinfly.create('bsv')
-        let privateKey = config.key
+        let privateKey = process.env.nodeKey
         if (!privateKey) {
             try {
                 var data = fs.readFileSync(dataFolder + 'node.key', 'utf8');

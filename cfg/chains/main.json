@@ -1,8 +1,7 @@
 {
     "chainid": "main",
     "server": {
-        "publicUrl": "http://pi.skyjeff.com:10000",
-        "port": 9001,
+        "port": 9000,
         "socketPort": 8880,
         "hideFromList": false
     },

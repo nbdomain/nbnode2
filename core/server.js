@@ -153,7 +153,7 @@ class LocalServer {
       }
     } */
   async startServer() {
-    const { cfg_chain, CONSTS, logger } = this.indexers
+    const { config, CONSTS, logger } = this.indexers
     const serverFactory = (handler, opts) => {
       this.listener = http.createServer((req, res) => {
         handler(req, res)
@@ -178,30 +178,7 @@ class LocalServer {
 
     const self = this;
 
-    logger.info(`NBnode server started on port ${cfg_chain.server.port}...`);
-
-    /*var proxyPassConfig = CONSTS.proxy_map;
-
-    for (let uri in proxyPassConfig) {
-      uri = uri.trim().toLowerCase();
-      console.log("uri", uri);
-      let env = config;
-      env.indexers = self.indexers;
-      let service_folder = proxyPassConfig[uri];
-      let port = 0;
-      try {
-        const service = require("./modules/" + service_folder + "/index.js");
-        port = await service(env);
-      } catch (e) {
-        console.error("Error loading service from: " + service_folder)
-        continue
-      }
-      const localAddr = "http://localhost:" + port;
-      //const pa = "^" + uri;
-      const pa = uri
-      if (uri === "/web/") localWebGateway = localAddr + "/";
-      if (uri === "/api/") localAPIGateway = localAddr + "/";
-    }*/
+    logger.info(`NBnode server started on port ${config.server.port}...`);
     const moduleConfig = CONSTS.modules
     let service_folder = ""
     for (let uri in moduleConfig) {
@@ -221,7 +198,7 @@ class LocalServer {
 
     //        app.use(bodyParser.json({ limit: '50mb' }));
     //        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-    await app.listen({ host: "::", port: cfg_chain.server.port })
+    await app.listen({ host: "::", port: config.server.port })
     return this.listener
   }
 
