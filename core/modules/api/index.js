@@ -351,8 +351,8 @@ class appModule {
             const lib = await coinfly.create('bsv')
             if (config.key)
                 info.pkey = await lib.getPublicKey(config.key)
-            info.statusHash = db.readconfig('txdb', 'statusHash')
-            info.height = db.readconfig('txdb', 'height')
+            info.statusHash = db.readConfig('txdb', 'statusHash')
+            info.height = db.readConfig('txdb', 'height')
             info.chainid = config.chainid
             return (info);
         })
