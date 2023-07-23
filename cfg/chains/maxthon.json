@@ -1,7 +1,7 @@
 {
     "chainid": "maxthon",
     "server": {
-        "port": 9000
+        "port": 9100
     },
     "node_info": {
         "contact": "bloodchen@gmail.com"
