@@ -177,8 +177,8 @@ class LocalServer {
     })
 
     const self = this;
-
-    logger.info(`NBnode server started on port ${config.server.port}...`);
+    const port = process.env.port ? process.env.port : config.server.port
+    logger.info(`NBnode server started on port ${port}...`);
     const moduleConfig = CONSTS.modules
     let service_folder = ""
     for (let uri in moduleConfig) {
@@ -198,7 +198,7 @@ class LocalServer {
 
     //        app.use(bodyParser.json({ limit: '50mb' }));
     //        app.use(bodyParser.urlencoded({ limit: '50mb', extended: false, parameterLimit: 50000 }));
-    await app.listen({ host: "::", port: config.server.port })
+    await app.listen({ host: "::", port })
     return this.listener
   }
 
