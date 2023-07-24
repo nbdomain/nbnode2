@@ -1,5 +1,6 @@
 {
     "chainid": "maxthon",
+    "tld_standalone_db": "pp&px",
     "server": {
         "port": 9000
     },
@@ -26,7 +27,6 @@
             }
         }
     },
-    "tld_standalone_db": "pp&px",
     "consensus": {
         "mode": "equal"
     },

@@ -869,7 +869,7 @@ class Database {
   async delChild(parent) {
     const sql = "DELETE from keys where parent = ?"
     //const res = this.dmdb.prepare(sql).run(parent)
-    const { db, tld } = this.getDomainDB({ parent })
+    const { db, tld } = this.getDomainDB({ key:parent })
     const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
 
     if (res.changes > 0) {
@@ -889,7 +889,7 @@ class Database {
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       //this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
-      const { db, tld } = this.getDomainDB(key)
+      const { db, tld } = this.getDomainDB({key:domain})
       const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
       this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
       //remove old tags

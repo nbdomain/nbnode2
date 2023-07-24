@@ -128,8 +128,8 @@ class Nodes {
                 privateKey = await lib.createPrivateKey()
                 fs.writeFileSync(dataFolder + 'node.key', privateKey)
             }
-            config.key = privateKey
         }
+        config.key = privateKey
         const pkey = config.key ? await lib.getPublicKey(privateKey) : "NotSet"
         this.thisNode = { key: pkey }
         this._isProducer = this.isProducer(pkey)
