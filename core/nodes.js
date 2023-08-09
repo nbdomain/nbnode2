@@ -219,8 +219,8 @@ class Nodes {
         if (cfg_chain.pnodes) {
             await _addFromArray(cfg_chain.pnodes)
         }
-        const nodes = this.indexers.db.loadNodes(true) //load from db
-        await _addFromArray(nodes)
+       // const nodes = this.indexers.db.loadNodes(true) //load from db
+       // await _addFromArray(nodes)
         const p = await this._fromDNS()
         await _addFromArray(p)
 
