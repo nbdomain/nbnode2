@@ -111,7 +111,7 @@ class Nodes {
     }
     nodeFromKey(key) {
         //        console.log(JSON.stringify(this.pnodes))
-        return this.pnodes.find(item => item.getKey() === key)
+        return this.pnodes[key]
     }
 
     async start(indexers) {
@@ -255,7 +255,7 @@ class Nodes {
         return false
     }
     getNodes() {
-        return this.pnodes || []
+        return this.pnodes || {}
     }
     async listAllNodes() {
         if (this.isProducer()) {
@@ -366,7 +366,8 @@ class Nodes {
                 }
             }
         } catch (e) { console.error("getTx:", e.message) }
-        for (const node of this.getNodes()) {
+        for (const url in this.pnodes) {
+            const node = this.pnodes[url]
             if (node.id == from) continue
             const url = node.id + "/api/p2p/gettx?txid=" + txid
             try {
@@ -381,8 +382,9 @@ class Nodes {
 
     async getData(hash, option = { string: true }) {
         console.log("getting data, hash:", hash)
-        for (const node of this.getNodes(false)) {
-            const url = node.id + "/api/p2p/getdata?hash=" + hash + "&string=" + option.string
+        for (const u in this.pnodes) {
+            const node = this.pnodes[u]
+            const url = node.url + "/api/p2p/getdata/?hash=" + hash + "&string=" + option.string
             try {
                 const res = await axios.get(url)
                 if (res.data && res.data.code == 0) {
