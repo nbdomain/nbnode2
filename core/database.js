@@ -1233,6 +1233,7 @@ class Database {
       let dmHash = 0;
       let sql = 'select key, value, p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5 from keys'
       const objs = db.prepare(sql).all()
+      let i = 0
       for (const item of objs) {
         for (const k in item) {
           if (item[k] === null) delete item[k]
@@ -1240,13 +1241,13 @@ class Database {
         const str = JSON.stringify(item)
         const hash = Util.fnv1aHash(str)
         dmHash ^= hash
-        console.log(str, hash, dmHash)
+        console.log(i++, str, hash, dmHash)
       }
       sql = 'select jsonString from nidobj'
       const domains = db.prepare(sql).all()
       for (const str of domains) {
         const hash = Util.fnv1aHash(str.jsonString)
-        console.log(str.jsonString, hash, dmHash)
+        //console.log(str.jsonString, hash, dmHash)
         dmHash ^= hash
       }
       this.writeConfig('dmdb-' + tld, 'domainHash', dmHash + '') // 1039166988
