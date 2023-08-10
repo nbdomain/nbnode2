@@ -422,6 +422,9 @@ class appModule {
                 case 'execPreparedQuery': {
                     return db.API_execPreparedQuery({ name: "test", paras: ['NFZxNUx3YVZGeUM4Z1UzMyAGb/6Wte0vj5dzYO5h54SayACyJ6whFG/NubzP73rS'] })
                 }
+                case 'deletedb': {
+                    return db.deleteDB({ type: 'tlddb', name: req.query['tld'] })
+                }
             }
             //db.delKey("kkk.users.test.pv")
             // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })

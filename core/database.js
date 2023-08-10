@@ -56,27 +56,26 @@ class Database {
     this.onDeleteTransaction = null
     this.onResetDB = null
     this.indexers = indexers
-    this.regQueries = {}
     this.queries = {}
   }
+  _initdbPara(filename) {
+    const db = new Sqlite3Database(filename, { fileMustExist: true })
+    // 100MB cache
+    db.pragma('cache_size = 6400')
+    db.pragma('page_size = 16384')
+    // WAL mode allows simultaneous readers
+    db.pragma('journal_mode = WAL')
+    // Synchronizes WAL at checkpoints
+    db.pragma('synchronous = NORMAL')
+    return db
+  }
   initdb(dbname) {
-    const _initdbPara = (filename) => {
-      const db = new Sqlite3Database(filename, { fileMustExist: true })
-      // 100MB cache
-      db.pragma('cache_size = 6400')
-      db.pragma('page_size = 16384')
-      // WAL mode allows simultaneous readers
-      db.pragma('journal_mode = WAL')
-      // Synchronizes WAL at checkpoints
-      db.pragma('synchronous = NORMAL')
-      return db
-    }
     if (dbname === 'txdb') {
       //--------------------------------------------------------//
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = _initdbPara(this.txfile)
+        this.txdb = this._initdbPara(this.txfile)
       }
     }
     if (dbname === 'dmdb') {
@@ -84,7 +83,7 @@ class Database {
       //  Domains DB
       //-------------------------------------------------------//
       if (!this.dmdb) {
-        this.dmdb = _initdbPara(this.dmfile)
+        this.dmdb = this._initdbPara(this.dmfile)
       }
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
       if (!TXRESOLVED_FLAG) {
@@ -93,12 +92,12 @@ class Database {
       }
       //other standalone TLD db
       for (const tld in this.standAloneTld) {
-        if (!this.tldDbs[tld]) this.tldDbs[tld] = _initdbPara(Path.join(this.path, "domains." + tld + ".db"))
+        if (!this.tldDbs[tld]) this.tldDbs[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"))
       }
     }
     if (dbname === 'dtdb') {
       //----------------------------DATA DB----------------------------------
-      this.dtdb = _initdbPara(this.dtfile)
+      this.dtdb = this._initdbPara(this.dtfile)
     }
   }
   getDomainDB({ key, tld }) {
@@ -157,6 +156,17 @@ class Database {
     }
     if (this.onResetDB) {
       this.onResetDB(type)
+    }
+  }
+  deleteDB({ type, name }) {
+    if (type === 'tlddb') {
+      let db = this.tldDbs[name]
+      if (db) {
+        db.close()
+        fs.unlinkSync(db.name)
+        fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), db.name);
+        this.tldDbs[name] = this._initdbPara(db.name)
+      }
     }
   }
   preDealData() {
@@ -856,7 +866,8 @@ class Database {
   }
   async getAllKeys(domain) {
     const sql = 'select * from keys where domain= ?'
-    const ret = this.dmdb.prepare(sql).all(domain)
+    const { db, tld } = this.getDomainDB({ key: domain })
+    const ret = db.prepare(sql).all(domain)
     if (!ret) return {}
     for (let i = 0; i < ret.length; i++) {
       ret[i] = await this.handleOneKeyItem(ret[i])
@@ -906,12 +917,12 @@ class Database {
       this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
       //remove old tags
       sql = "delete from tags where key = ?"
-      this.dmdb.prepare(sql).run(fullKey)
+      db.prepare(sql).run(fullKey)
       //save tags
       if (typeof (tags) === 'object') {
         for (const tagName in tags) {
           sql = "Insert into tags (tagName,tagValue,key,domain,ts) values (?,?,?,?,?)"
-          this.dmdb.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
+          db.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
         }
       }
       //update hash
@@ -1241,13 +1252,13 @@ class Database {
         const str = JSON.stringify(item)
         const hash = Util.fnv1aHash(str)
         dmHash ^= hash
-//        console.log(i++, str, hash, dmHash)
+        //        console.log(i++, str, hash, dmHash)
       }
       sql = 'select jsonString from nidobj'
       const domains = db.prepare(sql).all()
       for (const str of domains) {
         const hash = Util.fnv1aHash(str.jsonString)
-        console.log(i++,str.jsonString, hash, dmHash)
+        console.log(i++, str.jsonString, hash, dmHash)
         dmHash ^= hash
       }
       this.writeConfig('dmdb-' + tld, 'domainHash', dmHash + '') // 1039166988
