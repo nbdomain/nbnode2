@@ -386,7 +386,7 @@ class appModule {
         app.get(PREFIX + '/admin', async (req, res) => {
             const cmd = req.query['cmd']
             if (!config.adminKey || config.adminKey != req.query['key']) {
-                return ('no access')
+                return ('no access 1')
             }
             switch (cmd) {
                 case 'resetdb': db.resetDB(); break;
