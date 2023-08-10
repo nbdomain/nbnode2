@@ -685,27 +685,39 @@ class Database {
   getDataCount({ tx = true, domainKey = true, odata = true, hash = true } = {}) {
     let { ret, ret1, ret2, ret3 } = {}
     let sql = `select (select count(*) from txs where status!=1) as txs`
-    tx && (ret = this.txdb.prepare(sql).get())
-    sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
-    domainKey && (ret1 = this.dmdb.prepare(sql).get())
-    sql = "select (select count(*) from data) as odata"
-    odata && (ret2 = this.dtdb.prepare(sql).get())
-    sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
-    hash && (ret3 = this.dmdb.prepare(sql).get())
-
-    //count txs in blocks
-    sql = "select body,height from blocks"
-    let txsCount = 0
-    const ret4 = this.txdb.prepare(sql).all()
-    for (const item of ret4) {
-      const txs = JSON.parse(item.body).txs
-      txsCount += txs.length
+    if (tx) {
+      if (!this._getDataCountTxST) this._getDataCountTxST = this.txdb.prepare(sql)
+      ret = this._getDataCountTxST.get()
     }
+    sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
+    if (domainKey) {
+      if (!this._getDataDMST) {
+        this._getDataDMST = []
+        this._getDataDMST.push(this.dmdb.prepare(sql))
+        for (const tld in this.tldDbs) {
+          this._getDataDMST.push(this.tldDbs[tld].prepare(sql))
+        }
+      }
+      let keys = 0
+      for (const st of this._getDataDMST) {
+        keys += st.get().keys
+      }
+      ret1 = { keys }
+    }
+    // sql = "select (select count(*) from data) as odata"
+    // odata && (ret2 = this.dtdb.prepare(sql).get())
+    // sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
+    // hash && (ret3 = this.dmdb.prepare(sql).get())
+
     const txHash = this.readConfig('txdb', 'statusHash')
     const dmHash = this.readConfig('dmdb', 'domainHash')
     const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
     const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
-    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txsBlocks: txsCount, blocks: ret4.length - 1, txHash, dmHash, maxResolvedTx, maxResolvedTxTime }
+    const dmHashs = {}
+    for (const tld in this.tldDbs) {
+      dmHashs[tld] = this.readConfig('dmdb-' + tld, 'domainHash')
+    }
+    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txHash, dmHash, dmHashs, maxResolvedTx, maxResolvedTxTime }
   }
 
   queryChildCount(parent) {
@@ -869,7 +881,7 @@ class Database {
   async delChild(parent) {
     const sql = "DELETE from keys where parent = ?"
     //const res = this.dmdb.prepare(sql).run(parent)
-    const { db, tld } = this.getDomainDB({ key:parent })
+    const { db, tld } = this.getDomainDB({ key: parent })
     const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
 
     if (res.changes > 0) {
@@ -889,7 +901,7 @@ class Database {
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       //this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
-      const { db, tld } = this.getDomainDB({key:domain})
+      const { db, tld } = this.getDomainDB({ key: domain })
       const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
       this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
       //remove old tags
