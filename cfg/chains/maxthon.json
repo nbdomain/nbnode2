@@ -30,9 +30,6 @@
     "consensus": {
         "mode": "equal"
     },
-    "allowIPs": [
-        "107.23.76.98"
-    ],
     "pnodes": [
         "http://pi.skyjeff.com:9100",
         "http://pi.skyjeff.com:10001",
