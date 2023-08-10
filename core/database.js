@@ -1240,7 +1240,7 @@ class Database {
         const str = JSON.stringify(item)
         const hash = Util.fnv1aHash(str)
         dmHash ^= hash
-        console.log(hash, dmHash)
+        console.log(str, hash, dmHash)
       }
       sql = 'select jsonString from nidobj'
       const domains = db.prepare(sql).all()
