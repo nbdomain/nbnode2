@@ -870,12 +870,12 @@ class Database {
     const res = this.runPreparedSql({ name: "delKey" + tld, db, method: 'run', sql, paras: [key] })
 
     if (res.changes > 0) {
-      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-      const strObj = "DelKey:" + key
-      const hash = +Util.fnv1aHash(strObj)
-      domainHash ^= hash
-      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-      this.logger.info(":del_key=", key, " dmhash:", domainHash)
+      /*  let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
+        const strObj = "DelKey:" + key
+        const hash = +Util.fnv1aHash(strObj)
+        domainHash ^= hash
+        this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
+        this.logger.info(":del_key=", key, " dmhash:", domainHash)*/
     }
   }
   async delChild(parent) {
@@ -885,12 +885,12 @@ class Database {
     const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
 
     if (res.changes > 0) {
-      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-      const strObj = "delChild:" + parent
-      const hash = +Util.fnv1aHash(strObj)
-      domainHash ^= hash
-      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-      this.logger.info(":del_child=", parent, " dmhash:", domainHash)
+      /*  let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
+        const strObj = "delChild:" + parent
+        const hash = +Util.fnv1aHash(strObj)
+        domainHash ^= hash
+        this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
+        this.logger.info(":del_child=", parent, " dmhash:", domainHash)*/
     }
   }
   async saveKey({ key, value, domain, props = {}, tags, ts }) {
@@ -1025,18 +1025,10 @@ class Database {
           txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld]
         this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
 
-        //        this.dmdb.prepare(sql).run(obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
-        //          txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld)
-
         sql = "Update config set value = value+1 where key = 'domainUpdates'"
-        //this.dmdb.prepare(sql).run()
         this.runPreparedSql({ name: 'domainupdate', db: this.dmdb, method: 'run', sql })
         this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
         this.logger.info(obj.domain, ":saveDomain dmhash:", domainHash)
-        //if (obj.domain === "10200.test") {
-        //  this.logger.info(strObj)
-        //}
-
       })
       this.tickerAll.broadcast("key_update", obj)
     } catch (e) {
@@ -1258,7 +1250,7 @@ class Database {
       console.log("updateAllDomainHashes finish dmHash:", dmHash)
       return { keys: objs.length, domains: domains.length, dmHash }
     }
-    const ret = _updateDBHash(this.dmdb)
+    const ret = {}// _updateDBHash(this.dmdb)
     for (const tld in this.tldDbs) {
       ret[tld] = _updateDBHash(this.tldDbs[tld], tld)
     }
