@@ -1241,13 +1241,13 @@ class Database {
         const str = JSON.stringify(item)
         const hash = Util.fnv1aHash(str)
         dmHash ^= hash
-        console.log(i++, str, hash, dmHash)
+//        console.log(i++, str, hash, dmHash)
       }
       sql = 'select jsonString from nidobj'
       const domains = db.prepare(sql).all()
       for (const str of domains) {
         const hash = Util.fnv1aHash(str.jsonString)
-        //console.log(str.jsonString, hash, dmHash)
+        console.log(i++,str.jsonString, hash, dmHash)
         dmHash ^= hash
       }
       this.writeConfig('dmdb-' + tld, 'domainHash', dmHash + '') // 1039166988
