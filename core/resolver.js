@@ -225,7 +225,6 @@ class Resolver {
                 console.log("... can resolve")
                 this.abort = false
                 const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
-                //console.log("rtxArray:", rtxArray.length)
                 const nidObjMap = MemDomains.getMap()
                 if (rtxArray == null || rtxArray.length == 0) {
                     if (!this.resolveFinish) {
