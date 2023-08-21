@@ -366,8 +366,8 @@ class Nodes {
                 }
             }
         } catch (e) { console.error("getTx:", e.message) }
-        for (const url in this.pnodes) {
-            const node = this.pnodes[url]
+        for (const u in this.pnodes) {
+            const node = this.pnodes[u]
             if (node.id == from) continue
             const url = node.id + "/api/p2p/gettx?txid=" + txid
             try {
