@@ -2,7 +2,7 @@
     "chainid": "udomain",
     "tld_standalone_db": "um&up",
     "server": {
-        "port": 9301
+        "port": 9000
     },
     "node_info": {
         "contact": "bloodchen@gmail.com"
@@ -31,7 +31,7 @@
         "mode": "equal"
     },
     "pnodes": [
-        "http://pi.skyjeff.com:9301"
+        "http://pi.skyjeff.com:9300"
     ],
     "apikey": [
         "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
