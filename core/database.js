@@ -229,6 +229,7 @@ class Database {
     }
   }
   runPreparedSql({ name, db, method, sql, paras = [], update = false }) {
+    console.log("runPreparedSql:", sql, paras)
     if (!this.queries[name] || update) {
       this.queries[name] = db.prepare(sql)
     }
