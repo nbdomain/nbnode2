@@ -229,7 +229,7 @@ class Database {
     }
   }
   runPreparedSql({ name, db, method, sql, paras = [], update = false }) {
-    console.log("runPreparedSql:", sql, paras)
+    //console.log("runPreparedSql:", sql, paras)
     if (!this.queries[name] || update) {
       this.queries[name] = db.prepare(sql)
     }
@@ -641,9 +641,6 @@ class Database {
       //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} AND txTime>=${checkpointTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
       const sql = `SELECT * FROM txs WHERE status !=? AND resolved !=? AND resolved !=? AND txTime>=? AND txid !=? ORDER BY txTime,txid ASC limit ?`
       const list = this.runPreparedSql({ name: "lhmoxguy", db: this.txdb, sql, method: "all", paras: [DEF.TX_INVALIDTX, TXRESOLVED_FLAG, OTHER_RESOLVED_FLAG, checkpointTime, maxResolvedTx, limit] })
-      console.log("getUnresolvedTX:")
-      console.log(list)
-
       return list
     } catch (e) {
       console.error(e)
