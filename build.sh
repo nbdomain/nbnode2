@@ -1,6 +1,8 @@
 ##docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 -t bloodchen/nbdb --push
-docker container stop nbdb
-docker container rm nbdb
-docker build -t nbdb .
+source ./cfg/env
+NAME="nbdb_${chainid}"
+docker container stop NAME
+docker container rm NAME
+docker build -t NAME .
 mkdir data && chmod a+rw data
-docker run --name nbdb -p 9100:9000 -v $(pwd)/data:/home/node/app/data --restart=always -d nbdb
+docker run --name NAME -p 9100:9000 -v $(pwd)/data:/home/node/app/data --restart=always -d NAME
