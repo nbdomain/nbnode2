@@ -637,7 +637,7 @@ class Database {
   getUnresolvedTX(limit = 100) {
     try {
       const checkpointTime = this.readConfig('dmdb', 'checkpointTime') || 0
-      const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
+      const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx') || ""
       //const sql = `SELECT * FROM txs WHERE status !=${DEF.TX_INVALIDTX} AND resolved !=${TXRESOLVED_FLAG} AND resolved !=${OTHER_RESOLVED_FLAG} AND txTime>=${checkpointTime} AND txid !='${maxResolvedTx}' ORDER BY txTime,txid ASC limit ${limit}`
       const sql = `SELECT * FROM txs WHERE status !=? AND resolved !=? AND resolved !=? AND txTime>=? AND txid !=? ORDER BY txTime,txid ASC limit ?`
       const list = this.runPreparedSql({ name: "lhmoxguy", db: this.txdb, sql, method: "all", paras: [DEF.TX_INVALIDTX, TXRESOLVED_FLAG, OTHER_RESOLVED_FLAG, checkpointTime, maxResolvedTx, limit] })
