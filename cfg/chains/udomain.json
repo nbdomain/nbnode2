@@ -1,0 +1,43 @@
+{
+    "chainid": "udomain",
+    "tld_standalone_db": "um&up",
+    "server": {
+        "port": 9301
+    },
+    "node_info": {
+        "contact": "bloodchen@gmail.com"
+    },
+    "tld": {
+        "uu": {
+            "chain": "not",
+            "address": {
+                "protocol": "notuu"
+            }
+        },
+        "um": {
+            "chain": "not",
+            "address": {
+                "protocol": "notum"
+            }
+        },
+        "up": {
+            "chain": "not",
+            "address": {
+                "protocol": "notup"
+            }
+        }
+    },
+    "consensus": {
+        "mode": "equal"
+    },
+    "pnodes": [
+        "http://pi.skyjeff.com:9301"
+    ],
+    "apikey": [
+        "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
+    ],
+    "txdb": {
+        "daysToKeep": 7
+    },
+    "logfile": "nbnode-%DATE%.log"
+}

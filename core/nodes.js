@@ -26,11 +26,11 @@ class Node {
     }
     async validate() {
         try {
-            const { cfg_chain } = this.indexers
-            if (!cfg_chain.nodeIPs) cfg_chain.nodeIPs = []
+            const { config } = this.indexers
+            if (!config.nodeIPs) config.nodeIPs = []
             const pURL = new URL(this.url)
             const IP = await dnsPromises.lookup(pURL.hostname);
-            IP && cfg_chain.nodeIPs.push(IP.address)
+            IP && config.nodeIPs.push(IP.address)
             const res = await axios.get(this.url + "/api/nodeinfo")
             if (res.data && res.data.pkey) {
                 this.info = res.data
@@ -219,8 +219,8 @@ class Nodes {
         if (cfg_chain.pnodes) {
             await _addFromArray(cfg_chain.pnodes)
         }
-       // const nodes = this.indexers.db.loadNodes(true) //load from db
-       // await _addFromArray(nodes)
+        // const nodes = this.indexers.db.loadNodes(true) //load from db
+        // await _addFromArray(nodes)
         const p = await this._fromDNS()
         await _addFromArray(p)
 
