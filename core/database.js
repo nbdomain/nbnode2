@@ -1286,9 +1286,10 @@ class Database {
       }
     }
     const data = await this.queryTX(time - 1, -1, 500)
-    const sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
+    //const sql = "select (select count(*) from nidobj) as domains , (select count(*) from keys) as keys"
     //const { db, tld } = this.getDomainDB({ key })
-    const ret1 = this.runPreparedSql({ name: 'getNewTx1', db: this.dmdb, method: 'get', sql })
+    //const ret1 = this.runPreparedSql({ name: 'getNewTx1', db: this.dmdb, method: 'get', sql })
+    const ret1 = this.getDataCount({ domainKey: true })
     const dmHash = this.readConfig('dmdb-', 'domainHash')
     return { data, dmHash, ...ret1 }
   }
@@ -1334,7 +1335,7 @@ class Database {
     const tld1 = name.split('-')[1]
     const { db, tld } = this.getDomainDB({ tld: tld1 })
 
-    let ret = this.runPreparedSql({ name: name + tld, db, method, sql, paras, update })
+    let ret = this.runPreparedSql({ name, db, method, sql, paras, update })
     if (transform) {
       if (Array.isArray(ret)) {
         for (let i = 0; i < ret.length; i++) {
