@@ -903,6 +903,48 @@ class Database {
         this.logger.info(":del_child=", parent, " dmhash:", domainHash)*/
     }
   }
+  async updateKey({ key, value, domain, props = {}, tags, ts }) {
+    const fullKey = key + '.' + domain
+    const parent = fullKey.slice(fullKey.indexOf('.') + 1)
+    try {
+      const vv = Util.parseJson(value)
+      let sql = 'UPDATE keys set '
+      if (vv?.v) sql += "value = '" + value + "',"
+      for (let k in props) {
+        sql += `${k} = '${props[k]}',`
+      }
+      if (sql.at(-1) === ',') sql = sql.slice(0, -1)
+      sql += " where key = ?"
+      const { db, tld } = this.getDomainDB({ key: domain })
+      const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
+      //this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
+      db.prepare(sql).run(key)
+
+      //remove old tags
+      if (typeof (tags) === 'object' || tags === '$delete') {
+        sql = "delete from tags where key = ?"
+        db.prepare(sql).run(key)
+        //save tags
+        if (typeof (tags) === 'object') {
+          for (const tagName in tags) {
+            sql = "Insert into tags (tagName,tagValue,key,domain,ts) values (?,?,?,?,?)"
+            db.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
+          }
+        }
+      }
+
+      //update hash
+      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
+      const strObj = JSON.stringify({ key: fullKey, value, ...props })
+      const hash = +Util.fnv1aHash(strObj)
+      domainHash ^= hash
+      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
+      this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
+      console.log("domainHash:", domainHash)
+    } catch (e) {
+      console.error(e)
+    }
+  }
   async saveKey({ key, value, domain, props = {}, tags, ts }) {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
@@ -914,6 +956,7 @@ class Database {
       const { db, tld } = this.getDomainDB({ key: domain })
       const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
       this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
+
       //remove old tags
       sql = "delete from tags where key = ?"
       db.prepare(sql).run(fullKey)

@@ -527,51 +527,21 @@ class CMD_KEY {
         }
         return output;
     }
-    /*static updateKey(obj, key, newValue, output) {
-        if (key == "todomain") return false//'todomain' is not a key
-
-        let newKey = { value: newValue, txid: output.txid };
-        if (output.user) {
-            newKey.from = output.user
-            key = key + '.*' + output.user
-        }
-        if (output.ts) newKey.ts = output.ts;
-        if (output.pay) newKey.pay = output.pay;
-        if (output.tags) {
-            newKey.tags = output.tags
-            obj.tag_map[key + '.'] = output.tags;
-        }
-
-        obj.keys[key] = newKey;
-        return true
-    }*/
     static async fillObj(nidObj, rtx, objMap) {
         if (nidObj.owner_key == null) {
             rtx.output.err = "No owner"
             return null
         }
         if (this.verify(rtx, rtx.output) != 1) return null
-        /*if (rtx.output?.value?.toDomain) { //disable public domain feature
-            let obj = objMap[rtx.output.value.toDomain]
-            if (!obj) {
-                obj = this.parser.db.loadDomain(rtx.output.value.toDomain)
-                objMap[rtx.output.value.toDomain] = obj
-            }
-            if (obj && obj.status == DEF.STATUS_PUBLIC) {
-                for (const key in rtx.output.value) {
-                    let newKey = key.toLowerCase()
-                    let newValue = rtx.output.value[key]
-                    if (CMD_KEY.updateKey(obj, newKey, newValue, rtx.output))
-                        obj.keys[newKey].from = rtx.output.user ? rtx.output.user + "@" + nidObj.domain : nidObj.domain
-                }
-                obj.dirty = true
-            }
-        } */
+
         const output = rtx.output
         for (const item of output.values) {
-            const { k, v, tags, props } = item
+            const { k, v, tags, props, action } = item
             let newValue = { v, id: output.txid }
-            await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
+            if (action === 'update')
+                await this.parser.db.updateKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
+            else
+                await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
 
         return nidObj
