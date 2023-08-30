@@ -911,19 +911,24 @@ class Database {
       let sql = 'UPDATE keys set '
       if (vv?.v) sql += "value = '" + value + "',"
       for (let k in props) {
-        sql += `${k} = '${props[k]}',`
+        if (props[k].slice(0, 7) === '$append') {
+          const p = props[k].slice(8)
+          sql += `${k} = ${k}||'${p}',`
+        }
+        else
+          sql += `${k} = '${props[k]}',`
       }
       if (sql.at(-1) === ',') sql = sql.slice(0, -1)
       sql += " where key = ?"
       const { db, tld } = this.getDomainDB({ key: domain })
       const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
       //this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
-      db.prepare(sql).run(key)
+      db.prepare(sql).run(fullKey)
 
       //remove old tags
       if (typeof (tags) === 'object' || tags === '$delete') {
         sql = "delete from tags where key = ?"
-        db.prepare(sql).run(key)
+        db.prepare(sql).run(fullKey)
         //save tags
         if (typeof (tags) === 'object') {
           for (const tagName in tags) {
