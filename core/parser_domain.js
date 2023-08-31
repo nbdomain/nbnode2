@@ -538,10 +538,7 @@ class CMD_KEY {
         for (const item of output.values) {
             const { k, v, tags, props, action } = item
             let newValue = { v, id: output.txid }
-            if (action === 'update')
-                await this.parser.db.updateKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
-            else
-                await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
+            await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
 
         return nidObj

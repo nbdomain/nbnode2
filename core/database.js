@@ -903,63 +903,35 @@ class Database {
         this.logger.info(":del_child=", parent, " dmhash:", domainHash)*/
     }
   }
-  async updateKey({ key, value, domain, props = {}, tags, ts }) {
+  async saveKey({ key, value, domain, props = {}, tags, ts }) {
+    const tmstart = Date.now()
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
-      const vv = Util.parseJson(value)
-      let sql = 'UPDATE keys set '
-      if (vv?.v) sql += "value = '" + value + "',"
-      for (let k in props) {
-        if (props[k].slice(0, 7) === '$append') {
-          const p = props[k].slice(8)
-          sql += `${k} = ${k}||'${p}',`
-        }
-        else
-          sql += `${k} = '${props[k]}',`
-      }
-      if (sql.at(-1) === ',') sql = sql.slice(0, -1)
-      sql += " where key = ?"
       const { db, tld } = this.getDomainDB({ key: domain })
-      const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
-      //this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
-      db.prepare(sql).run(fullKey)
-
-      //remove old tags
-      if (typeof (tags) === 'object' || tags === '$delete') {
-        sql = "delete from tags where key = ?"
-        db.prepare(sql).run(fullKey)
-        //save tags
-        if (typeof (tags) === 'object') {
-          for (const tagName in tags) {
-            sql = "Insert into tags (tagName,tagValue,key,domain,ts) values (?,?,?,?,?)"
-            db.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
+      let sql = "select * from keys where key = ?"
+      let updateObj = this.runPreparedSql({ name: 'saveKey0' + tld, db, method: 'get', sql, paras: [fullKey] })
+      if (updateObj) {
+        for (let k in updateObj) {
+          if ((k.at(0) === 'p' || k.at(0) === 'u') && typeof (props[k]) != 'undefined') {
+            if (props[k].slice(0, 7) === '$append') {
+              const p = props[k].slice(8)
+              updateObj[k] += p
+            } else
+              updateObj[k] = props[k]
           }
         }
+        const vobj = Util.parseJson(value)
+        const oldv = Util.parseJson(updateObj.value)
+        updateObj.value = JSON.stringify({ v: vobj.v ? vobj.v : oldv.v, id: vobj.id })
+      } else {
+        updateObj = { fullKey, value, domain, ts, parent, ...props }
       }
-
-      //update hash
-      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-      const strObj = JSON.stringify({ key: fullKey, value, ...props })
-      const hash = +Util.fnv1aHash(strObj)
-      domainHash ^= hash
-      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-      this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
-      console.log("domainHash:", domainHash)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-  async saveKey({ key, value, domain, props = {}, tags, ts }) {
-    const fullKey = key + '.' + domain
-    const parent = fullKey.slice(fullKey.indexOf('.') + 1)
-    try {
-      let sql = `Insert or Replace into keys (key,value,domain,ts,parent,
+      sql = `Insert or Replace into keys (key,value,domain,ts,parent,
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       //this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
-      const { db, tld } = this.getDomainDB({ key: domain })
-      const paras = [fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5]
+      const paras = [fullKey, updateObj.value, domain, ts, parent, updateObj.p1, updateObj.p2, updateObj.p3, updateObj.p4, updateObj.p5, updateObj.p6, updateObj.p7, updateObj.p8, updateObj.p9, updateObj.p10, updateObj.p11, updateObj.p12, updateObj.p13, updateObj.p14, updateObj.p15, updateObj.p16, updateObj.p17, updateObj.p18, updateObj.p19, updateObj.p20, updateObj.u1, updateObj.u2, updateObj.u3, updateObj.u4, updateObj.u5]
       this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
 
       //remove old tags
@@ -983,7 +955,8 @@ class Database {
     } catch (e) {
       console.error(e)
     }
-
+    const tmend = Date.now()
+    console.log("savekey time:", (tmend - tmstart) / 1000)
   }
   subscribe(domain, session) {
     if (domain == "all") {
