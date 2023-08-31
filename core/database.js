@@ -779,6 +779,7 @@ class Database {
       item.v = value?.v
       delete item.__shash
     }
+    item.k = item.key
     return item
   }
   API_runQuery({ exp, para, tld }) {
