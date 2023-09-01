@@ -779,7 +779,7 @@ class Database {
       item.v = value?.v
       delete item.__shash
     }
-    item.k = item.key
+    item.k = item.key.slice(0, item.key.indexOf(item.domain) - 1)
     return item
   }
   API_runQuery({ exp, para, tld }) {
