@@ -928,6 +928,7 @@ class Database {
       } else {
         updateObj = { fullKey, value, domain, ts, parent, ...props }
       }
+      console.log(updateObj)
       sql = `Insert or Replace into keys (key,value,domain,ts,parent,
         p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
