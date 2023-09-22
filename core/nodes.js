@@ -421,72 +421,70 @@ class Nodes {
     async startLoop() {
         const { db } = this.indexers
         let counter = 0
-        while (true) {
-            const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
-            this._canResolve = false
-            const dmHashMap = {}
-            let needDownload = false, mostKey = 0, mostUrl = null
-            for (const url in this.pnodes) {
-                const node = this.pnodes[url]
-                const { code, dmHash, keys, domains, msg } = await node.pullNewTxs({ thisKeyCount });
-                if (code === 2) { //too far away, download db file instead
-                    needDownload = true
-                }
-                if (code === 3) {
-                    console.error(url, " timeout")
-                    continue; //timeout
-                }
-                if (dmHash) {
-                    if (!dmHashMap[dmHash]) dmHashMap[dmHash] = []
-                    dmHashMap[dmHash].push({ url, keys })
-                }
-                console.log("<==========getNewTx finish:", url, "code:", code, "msg:", msg)
-                if (keys > mostKey) {
-                    mostKey = keys, mostUrl = url
-                    console.log("mostKey:", mostKey, "mostUrl:", mostUrl)
-                }
+        const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
+        this._canResolve = false
+        const dmHashMap = {}
+        let needDownload = false, mostKey = 0, mostUrl = null
+        for (const url in this.pnodes) {
+            const node = this.pnodes[url]
+            const { code, dmHash, keys, domains, msg } = await node.pullNewTxs({ thisKeyCount });
+            if (code === 2) { //too far away, download db file instead
+                needDownload = true
             }
-            if (needDownload) {
-                await this.downloadAndUseDomainDB(mostUrl)
-                this._canResolve = true
-                continue;
+            if (code === 3) {
+                console.error(url, " timeout")
+                continue; //timeout
             }
-            const thisDmHash = db.getDomainHash()
-            !dmHashMap[thisDmHash] && (dmHashMap[thisDmHash] = [])
-            dmHashMap[thisDmHash].push({ id: 'myself', keys: thisKeyCount })
-            console.log("After update:", JSON.stringify(dmHashMap, undefined, 2))
-            const ret = this.getConsenseResult({ dmHashMap, thisDmHash, thisKeyCount })
-            const now = Date.now()
-            if (ret.result === 'win') { //got consens
-                if (!this.backupTime) this.backupTime = now
-                const span = now - this.backupTime || 0
-                console.log("I win, time:", span)
-                if (span > 60 * 1000) { //60 seconds
-                    db.backupDB()
-                    this.backupTime = Date.now()
-                }
-                this.loseTime = now
+            if (dmHash) {
+                if (!dmHashMap[dmHash]) dmHashMap[dmHash] = []
+                dmHashMap[dmHash].push({ url, keys })
             }
-            if (ret.result === 'lose') {
-                if (!this.loseTime) this.loseTime = now
-                const span = now - this.loseTime || 0
-                console.log("I lose, time:", span)
-                if (span > 120 * 1000) { //120 seconds
-                    await this.downloadAndUseDomainDB(ret.node)
-                    this.backupTime = Date.now()
-                    this.loseTime = Date.now()
-                }
-            }
-            this._canResolve = true
-            await wait(1000 * 10)
-            counter++ > 10000 ? (counter = 0) : null
-            if (counter % 6 === 0) { //every 1 minute
-                db.compactTxDB()
-            }
-            if (counter % 60 === 0) { //every 10 minutes
-                db.backupDB()
+            console.log("<==========getNewTx finish:", url, "code:", code, "msg:", msg)
+            if (keys > mostKey) {
+                mostKey = keys, mostUrl = url
+                console.log("mostKey:", mostKey, "mostUrl:", mostUrl)
             }
         }
+        if (needDownload) {
+            await this.downloadAndUseDomainDB(mostUrl)
+            this._canResolve = true
+        }
+        const thisDmHash = db.getDomainHash()
+        !dmHashMap[thisDmHash] && (dmHashMap[thisDmHash] = [])
+        dmHashMap[thisDmHash].push({ id: 'myself', keys: thisKeyCount })
+        console.log("After update:", JSON.stringify(dmHashMap, undefined, 2))
+        const ret = this.getConsenseResult({ dmHashMap, thisDmHash, thisKeyCount })
+        const now = Date.now()
+        if (ret.result === 'win') { //got consens
+            if (!this.backupTime) this.backupTime = now
+            const span = now - this.backupTime || 0
+            console.log("I win, time:", span)
+            if (span > 60 * 1000) { //60 seconds
+                db.backupDB()
+                this.backupTime = Date.now()
+            }
+            this.loseTime = now
+        }
+        if (ret.result === 'lose') {
+            if (!this.loseTime) this.loseTime = now
+            const span = now - this.loseTime || 0
+            console.log("I lose, time:", span)
+            if (span > 120 * 1000) { //120 seconds
+                await this.downloadAndUseDomainDB(ret.node)
+                this.backupTime = Date.now()
+                this.loseTime = Date.now()
+            }
+        }
+        this._canResolve = true
+        counter++ > 10000 ? (counter = 0) : null
+        if (counter % 6 === 0) { //every 1 minute
+            db.compactTxDB()
+        }
+        if (counter % 60 === 0) { //every 10 minutes
+            db.backupDB()
+        }
+        // await wait(1000 * 10)
+        setTimeout(this.startLoop.bind(this), 1000 * 5)
     }
     static inst() {
         if (g_node == null) {

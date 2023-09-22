@@ -74,7 +74,7 @@ class CMD_DEL_KEY {
     static fillObj(nidObj, rtx) {
         const output = rtx.output
         for (const key of output.keys) {
-            this.parser.db.delKey(key)
+            this.parser.db.delKey(key, rtx.ts, rtx.domain)
         }
         return nidObj
     }
@@ -100,7 +100,7 @@ class CMD_DEL_CHILD {
     static fillObj(nidObj, rtx) {
         const output = rtx.output
         for (const parent of output.parents) {
-            this.parser.db.delChild(parent)
+            this.parser.db.delChild(parent, rtx.ts)
         }
         return nidObj
     }

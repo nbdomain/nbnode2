@@ -425,6 +425,9 @@ class appModule {
                 case 'deletedb': {
                     return db.deleteDB({ type: 'tlddb', name: req.query['tld'] })
                 }
+                case 'verifyDB': {
+                    return db.verifyDBFromPeers()
+                }
             }
             //db.delKey("kkk.users.test.pv")
             // await db.saveKey({ key: "test", value: "11111111jjj111111111111", domain: "test.a", tags: { name: 'xx', cap: 123 }, ts: 123322222 })

@@ -18,8 +18,6 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const HEIGHT_UNKNOWN = null
-const HEIGHT_TMSTAMP = 720639
 let TXRESOLVED_FLAG = 1, OTHER_RESOLVED_FLAG = 1
 const VER_DMDB = 12
 const VER_TXDB = 5
@@ -58,7 +56,7 @@ class Database {
     this.indexers = indexers
     this.queries = {}
   }
-  _initdbPara(filename) {
+  _initdbPara(filename, type) {
     const db = new Sqlite3Database(filename, { fileMustExist: true })
     // 100MB cache
     db.pragma('cache_size = 6400')
@@ -67,6 +65,7 @@ class Database {
     db.pragma('journal_mode = WAL')
     // Synchronizes WAL at checkpoints
     db.pragma('synchronous = NORMAL')
+    this.preDealDB(db, type)
     return db
   }
   initdb(dbname) {
@@ -83,7 +82,7 @@ class Database {
       //  Domains DB
       //-------------------------------------------------------//
       if (!this.dmdb) {
-        this.dmdb = this._initdbPara(this.dmfile)
+        this.dmdb = this._initdbPara(this.dmfile, "domain")
       }
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
       if (!TXRESOLVED_FLAG) {
@@ -92,7 +91,7 @@ class Database {
       }
       //other standalone TLD db
       for (const tld in this.standAloneTld) {
-        if (!this.tldDbs[tld]) this.tldDbs[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"))
+        if (!this.tldDbs[tld]) this.tldDbs[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"), "domain")
       }
     }
     if (dbname === 'dtdb') {
@@ -144,7 +143,6 @@ class Database {
       this.initdb('dmdb')
       this.initdb('dtdb')
     }
-    this.preDealData()
   }
   resetDB(type = 'domain') {
     if (type === 'domain') {
@@ -169,9 +167,19 @@ class Database {
       }
     }
   }
+  preDealDB(db, type) {
+    let sql = ""
+    if (type === 'domain') {
+      try {
+        sql = 'ALTER TABLE keys ADD verified TEXT'
+        db.prepare(sql).run()
+        sql = `ALTER TABLE nidobj ADD verified TEXT`
+        db.prepare(sql).run()
+      } catch (e) { }
+    }
+  }
   preDealData() {
     try {
-      //this.combineTXDB();
       let sql = ""
 
       try {
@@ -230,16 +238,21 @@ class Database {
   }
   runPreparedSql({ name, db, method, sql, paras = [], update = false }) {
     //console.log("runPreparedSql:", sql, paras)
-    if (!this.queries[name] || update) {
-      this.queries[name] = db.prepare(sql)
+    try {
+      if (!this.queries[name] || update) {
+        this.queries[name] = db.prepare(sql)
+      }
+      let ret = null
+      switch (method) {
+        case 'get': ret = this.queries[name].get(...paras); break;
+        case 'all': ret = this.queries[name].all(...paras); break;
+        case 'run': ret = this.queries[name].run(...paras); break;
+      }
+      return ret
+    } catch (e) {
+      console.error(e.message)
     }
-    let ret = null
-    switch (method) {
-      case 'get': ret = this.queries[name].get(...paras); break;
-      case 'all': ret = this.queries[name].all(...paras); break;
-      case 'run': ret = this.queries[name].run(...paras); break;
-    }
-    return ret
+    return null
   }
 
   dropTable(name) {
@@ -739,6 +752,7 @@ class Database {
   async handleOneKeyItem(item) {
     const plist = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'u1', 'u2', 'u3', 'u4', 'u5']
     delete item.id
+    if (item.value === 'deleted') return null
     if (item.value) {
       const value = Util.parseJson(item.value)
       delete item.value
@@ -783,11 +797,14 @@ class Database {
       item.k = item.key.slice(0, item.key.indexOf(item.domain) - 1)
     return item
   }
-  API_runQuery({ exp, para, tld }) {
+  async API_runQuery({ exp, para, tld }) {
     try {
       const { db } = this.getDomainDB({ tld })
-      const ret = db.prepare(exp).all(...para)
-      //const ret = this.dmdb.prepare(exp).all(...para)
+      let ret = db.prepare(exp).all(...para)
+      if (!ret) return []
+      for (let i = 0; i < ret.length; i++) {
+        ret[i] = await this.handleOneKeyItem(ret[i])
+      }
       return ret
     } catch (e) {
       console.error(e.message)
@@ -875,20 +892,13 @@ class Database {
     }
     return ret
   }
-  async delKey(key) {
-    const sql = "DELETE from keys where key = ?"
+  async delKey(key, ts, domain) {
+    //const sql = "DELETE from keys where key = ?"
+    const sql = "replace into keys (key, value, ts, domain) values (?,'deleted',?,?)"
+
     //    const res = this.dmdb.prepare(sql).run(key)
     const { db, tld } = this.getDomainDB({ key })
-    const res = this.runPreparedSql({ name: "delKey" + tld, db, method: 'run', sql, paras: [key] })
-
-    if (res.changes > 0) {
-      /*  let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-        const strObj = "DelKey:" + key
-        const hash = +Util.fnv1aHash(strObj)
-        domainHash ^= hash
-        this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-        this.logger.info(":del_key=", key, " dmhash:", domainHash)*/
-    }
+    const res = this.runPreparedSql({ name: "delKey" + tld, db, method: 'run', sql, paras: [key, ts, domain] })
   }
   async delChild(parent) {
     const sql = "DELETE from keys where parent = ?"
@@ -947,13 +957,12 @@ class Database {
         }
       }
       //update hash
-      let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-      const strObj = JSON.stringify({ key: fullKey, value, ...props })
+      /*let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
       const hash = +Util.fnv1aHash(strObj)
       domainHash ^= hash
       this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
       this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
-      console.log("domainHash:", domainHash)
+      console.log("domainHash:", domainHash)*/
     } catch (e) {
       console.error(e)
     }
@@ -1527,10 +1536,27 @@ class Database {
     }
     return res
   }
+  // -----------------------------verify DB-------------------------------------------------------------------
+
+  async getUnverifiedItems({ db, count, table }) {
+    const now = Date.now()
+    const sql = `select * from ${table} where verified is NULL AND ts < ? limit ?`
+    const ret = db.prepare(sql).all(now - 10 * 1000, count)
+    if (!ret) return {}
+    const result = []
+    for (const item of ret) {
+      const str = JSON.stringify(item)
+      const hash = Util.fnv1aHash(str)
+      result.push({ key: item.key, hash, ts: item.ts })
+    }
+    return result
+  }
+  async verifyDBFromPeers() {
+    const res = this.getUnverifiedItems({ db: this.dmdb, count: 100, table: 'keys' })
+
+  }
 }
 
-// ------------------------------------------------------------------------------------------------
 
-Database.HEIGHT_UNKNOWN = HEIGHT_UNKNOWN
 
 module.exports = Database
