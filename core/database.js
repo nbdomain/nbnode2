@@ -1574,7 +1574,9 @@ class Database {
       for (let k in peers) {
         const peer = peers[k]
         try {
-          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: config.server.publicUrl })
+          const url = config.server.publicUrl
+          console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
+          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
           const diff_items = ret.data
           for (const key in items) {
             const item = items[key]
@@ -1636,7 +1638,7 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', key = 'domain'
     }
-    const ret = {}, missed = {}
+    const ret = { diff: {} }, missed = {}
     const sql = `select * from ${table} where ${key} = ?`
     for (const key in items) {
       const item = items[key]
@@ -1649,8 +1651,9 @@ class Database {
       delete item_my.verified, delete item_my.id
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
-      if (hash !== item.hash) ret[item_my.key] = item_my
+      if (hash !== item.hash) ret.diff[item_my.key] = item_my
     }
+    ret.miss = missed
     this.fetchMissedItems(missed, type, from)
     return ret
   }
