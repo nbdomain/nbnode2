@@ -470,7 +470,7 @@ class CMD_KEY {
                 props[p] = '' + props[p] //convert all props to string
             }
             if (u_check.length > 0) {
-                let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
+              /*  let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
                 u_check.shift()
                 for (const u of u_check) {
                     sql += "OR " + u + " = ?"
@@ -483,7 +483,7 @@ class CMD_KEY {
                     }
                 } catch (e) {
                     console.error(e.message)
-                }
+                } */
 
             }
         }

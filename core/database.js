@@ -976,8 +976,8 @@ class Database {
       if (!this.tickers[domain]) this.tickers[domain] = createChannel()
       this.tickers[domain].register(session)
     }
-
   }
+ 
   async findDomains(option) {
     const _findDomains = async (db, option) => {
       let sql = ""
