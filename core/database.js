@@ -464,33 +464,30 @@ class Database {
     this.writeConfig('txdb', 'txHash', newHash)
   }
   async addFullTx({ txid, rawtx, txTime, oDataRecord, status = 0, chain, replace = false }) {
+    let bytes = null
     try {
-
       if (!txTime) {
         console.error("ERROR: txTime is NULL txid:", txid)
       }
       if (replace) {
         replace = this.hasTransaction(txid)
       }
-      const bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
+      bytes = (chain == 'bsv' ? Buffer.from(rawtx, 'hex') : Buffer.from(rawtx))
       const sql = replace ? `update txs set bytes=?,txTime=?,status = ?, chain=?,odata=? where txid = ? ` : `insert into txs (txid,bytes,txTime,status,chain,odata) VALUES(?,?,?,?,?,?) `
       let ret = null
       if (replace) {
-        ret = this.txdb.prepare(sql).run(bytes, txTime, status, chain, JSON.stringify(oDataRecord), txid)
+        //ret = this.txdb.prepare(sql).run(bytes, txTime, status, chain, JSON.stringify(oDataRecord), txid)
+        ret = this.runPreparedSql({ name: "addFullTx_update", db: this.txdb, method: "run", sql, paras: [bytes, txTime, status, chain, JSON.stringify(oDataRecord), txid] })
       } else {
-        ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain, JSON.stringify(oDataRecord))
+        //ret = this.txdb.prepare(sql).run(txid, bytes, txTime, status, chain, JSON.stringify(oDataRecord))
+        ret = this.runPreparedSql({ name: "addFullTx", db: this.txdb, method: "run", sql, paras: [txid, bytes, txTime, status, chain, JSON.stringify(oDataRecord)] })
       }
 
-
-      if (oDataRecord) {
-        //await this.saveData({ data: oDataRecord.raw, owner: oDataRecord.owner, time: oDataRecord.ts || txTime, from: "addFullTx" })
-
-      }
       await this.updateTxHash({ txid, rawtx, txTime, oDataRecord })
     } catch (e) {
       console.error(e.message)
     }
-    return true
+    return { txid, txTime, bytes, chain, odata: JSON.stringify(oDataRecord) }
   }
 
   setTxTime(txid, txTime) {

@@ -123,24 +123,24 @@ class Indexer {
 
 
       if (txTime < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
-        await this.database.addFullTx({ txid, rawtx, txTime, status, oDataRecord, chain, replace: replace || force })
+        const tx = await this.database.addFullTx({ txid, rawtx, txTime, status, oDataRecord, chain, replace: replace || force })
         console.log("database.addFullTx time:", (Date.now() - tmstart) / 1000)
 
         if (sigs) {
-          this.database.addTransactionSigs(txid, sigs)
+          // this.database.addTransactionSigs(txid, sigs)
         }
         this.maxTime = Math.max(this.maxTime || 0, txTime)
         db.writeConfig('dmdb', config.server.publicUrl + "_lasttime", this.maxTime + '')
         console.log("Added txid:", txid)
-        console.log("addTxFull-0 time:", (Date.now() - tmstart) / 1000)
-        const list = this.database.getUnresolvedTX(1)
-        console.log("addTxFull-1 time:", (Date.now() - tmstart) / 1000)
-
-        if (list && list.length > 0) {
-          resolver.resolveOneTX(list[0])
-          console.log("addTxFull-2 time:", (Date.now() - tmstart) / 1000)
-
-        }
+        resolver.resolveOneTX(tx)
+        /* console.log("addTxFull-0 time:", (Date.now() - tmstart) / 1000)
+         const list = this.database.getUnresolvedTX(1)
+         console.log("addTxFull-1 time:", (Date.now() - tmstart) / 1000)
+ 
+         if (list && list.length > 0) {
+           resolver.resolveOneTX(list[0])
+           console.log("addTxFull-2 time:", (Date.now() - tmstart) / 1000)
+         }*/
       }
       else {
         console.error("Invalid tx:", ret, txid)
