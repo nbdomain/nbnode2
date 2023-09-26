@@ -933,14 +933,12 @@ class Database {
         const oldv = Util.parseJson(updateObj.value)
         updateObj.value = JSON.stringify({ v: vobj.v ? vobj.v : oldv.v, id: vobj.id })
       } else {
-        updateObj = { fullKey, value, domain, ts, parent, ...props }
+        updateObj = { key: fullKey, value, domain, ts, parent, ...props }
       }
-      sql = `Insert or Replace into keys (key,value,domain,ts,parent,
-        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
-        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      //this.dmdb.prepare(sql).run(fullKey, value, domain, ts, parent, props.p1, props.p2, props.p3, props.p4, props.p5, props.p6, props.p7, props.p8, props.p9, props.p10, props.p11, props.p12, props.p13, props.p14, props.p15, props.p16, props.p17, props.p18, props.p19, props.p20, props.u1, props.u2, props.u3, props.u4, props.u5)
-      const paras = [fullKey, updateObj.value, domain, ts, parent, updateObj.p1, updateObj.p2, updateObj.p3, updateObj.p4, updateObj.p5, updateObj.p6, updateObj.p7, updateObj.p8, updateObj.p9, updateObj.p10, updateObj.p11, updateObj.p12, updateObj.p13, updateObj.p14, updateObj.p15, updateObj.p16, updateObj.p17, updateObj.p18, updateObj.p19, updateObj.p20, updateObj.u1, updateObj.u2, updateObj.u3, updateObj.u4, updateObj.u5]
-      this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
+      updateObj.ts = ts, updateObj.domain = domain, updateObj.parent = parent
+      this.saveRawKeyItem(updateObj)
+      //const paras = [fullKey, updateObj.value, domain, ts, parent, updateObj.p1, updateObj.p2, updateObj.p3, updateObj.p4, updateObj.p5, updateObj.p6, updateObj.p7, updateObj.p8, updateObj.p9, updateObj.p10, updateObj.p11, updateObj.p12, updateObj.p13, updateObj.p14, updateObj.p15, updateObj.p16, updateObj.p17, updateObj.p18, updateObj.p19, updateObj.p20, updateObj.u1, updateObj.u2, updateObj.u3, updateObj.u4, updateObj.u5]
+      //this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
 
       //remove old tags
       sql = "delete from tags where key = ?"
@@ -1569,7 +1567,23 @@ class Database {
       }
     }
   }
-  async fetchMissedItems(items, type) {
+  async fetchMissedItems(items, type, url) {
+    const { axios } = this.indexers
+    const ret = await axios.post(url + "/api/readRawItems", { items, type })
+
+    for (const item of ret.data) {
+      this.saveRawKeyItem(item)
+    }
+  }
+  saveRawKeyItem(item) {
+    const sql = `Insert or Replace into keys (key,value,domain,ts,parent,
+      p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
+      values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    const { db, tld } = this.getDomainDB({ key: item.key })
+    const paras = [item.key, item.value, item.domain, item.ts, item.parent,
+    item.p1, item.p2, item.p3, item.p4, item.p5, item.p6, item.p7, item.p8, item.p9, item.p10, item.p11, item.p12, item.p13, item.p14
+      , item.p15, item.p16, item.p17, item.p18, item.p19, item.p20, item.u1, item.u2, item.u3, item.u4, item.u5]
+    this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
 
   }
   async readRawItems(items, type) {
@@ -1584,7 +1598,7 @@ class Database {
     }
     return ret
   }
-  async verifyIncomingItems(items, type) {
+  async verifyIncomingItems(items, type, from) {
     let table = 'keys', key = 'key'
     if (type === "domains") {
       table = 'nidobj', key = 'domain'
@@ -1603,7 +1617,7 @@ class Database {
       const hash = Util.fnv1aHash(str)
       if (hash !== item.hash) ret.push(item_my)
     }
-    this.fetchMissedItems(missed, type)
+    this.fetchMissedItems(missed, type, from)
     return ret
   }
 }
