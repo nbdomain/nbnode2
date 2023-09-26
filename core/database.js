@@ -171,12 +171,12 @@ class Database {
     let sql = ""
     if (type === 'domain') {
       try {
-        sql = 'ALTER TABLE keys DROP COLUMN verified'
-        db.prepare(sql).run()
+        //sql = 'ALTER TABLE keys DROP COLUMN verified'
+        //db.prepare(sql).run()
         sql = 'ALTER TABLE keys ADD verified TEXT DEFAULT (0)'
         db.prepare(sql).run()
-        sql = 'ALTER TABLE nidobj DROP COLUMN verified'
-        db.prepare(sql).run()
+        //sql = 'ALTER TABLE nidobj DROP COLUMN verified'
+        //db.prepare(sql).run()
         sql = `ALTER TABLE nidobj ADD verified TEXT DEFAULT (0)`
         db.prepare(sql).run()
       } catch (e) { }
