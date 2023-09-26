@@ -1577,10 +1577,11 @@ class Database {
           const url = config.server.publicUrl
           console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
           const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
-          const diff_items = ret.data
+          const { diff, miss } = ret.data
           for (const key in items) {
             const item = items[key]
-            const diff_item = diff_items[key]
+            const diff_item = diff[key]
+            if (miss[key]) continue
             if (!diff_item) {
               this.incVerifyCount(item)
             } else {
