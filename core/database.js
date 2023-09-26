@@ -1542,7 +1542,7 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'lastUpdate'
     }
-    const sql = `select * from ${table} where verified is NULL AND ${ts} < ? limit ?`
+    const sql = `select * from ${table} where verified ='0' AND ${ts} < ? limit ?`
     const ret = db.prepare(sql).all(now - 10 * 1000, count)
     if (!ret) return null
     const result = {}
@@ -1554,8 +1554,16 @@ class Database {
     }
     return result
   }
-  incVerifyCount(item) {
-
+  incVerifyCount(item, type) {
+    const { key } = item
+    let table = 'keys', keyname = 'key'
+    if (type === "domains") {
+      table = 'nidobj', keyname = 'domain'
+    }
+    const { db, tld } = this.getDomainDB({ key })
+    const sql = `update ${table} set verified = verified + 1 where ${keyname} = ?`
+    const ret = this.runPreparedSql({ name: "incVerifyCount", db, method: "run", sql, paras: [key] })
+    return ret
   }
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
@@ -1583,10 +1591,14 @@ class Database {
           console.error(e.message)
         }
       }
+    } else {
+      console.log("all items verified")
     }
+    setTimeout(this.verifyDBFromPeers.bind(this), 5);
   }
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
+    console.warn("fetchMissedItems count:", Object.keys(items).length, " from:", url)
     const ret = await axios.post(url + "/api/readRawItems", { items, type })
     for (const key in ret.data) {
       const item = ret.data[key]
