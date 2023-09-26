@@ -131,8 +131,8 @@ class Indexer {
         }
         this.maxTime = Math.max(this.maxTime || 0, txTime)
         db.writeConfig('dmdb', config.server.publicUrl + "_lasttime", this.maxTime + '')
-        this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
+        console.log("addTxFull-0 time:", (Date.now() - tmstart) / 1000)
         const list = this.database.getUnresolvedTX(1)
         console.log("addTxFull-1 time:", (Date.now() - tmstart) / 1000)
 
