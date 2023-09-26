@@ -112,6 +112,7 @@ class Indexer {
         oDataRecord = await Nodes.getData(attrib.hash)
       }
       let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
+      console.log("parseTX time:", (Date.now() - tmstart) / 1000)
 
       let ts = 0, status = 0
       if (ret.code != 0 || !ret.rtx) status = DEF.TX_INVALIDTX
@@ -123,6 +124,8 @@ class Indexer {
 
       if (txTime < 1652788076 || ret.code == 0) { //save old invalid tx and valid tx
         await this.database.addFullTx({ txid, rawtx, txTime, status, oDataRecord, chain, replace: replace || force })
+        console.log("database.addFullTx time:", (Date.now() - tmstart) / 1000)
+
         if (sigs) {
           this.database.addTransactionSigs(txid, sigs)
         }
@@ -133,6 +136,8 @@ class Indexer {
         const list = this.database.getUnresolvedTX(1)
         if (list && list.length > 0) {
           resolver.resolveOneTX(list[0])
+          console.log("resolveOneTX time:", (Date.now() - tmstart) / 1000)
+
         }
       }
       else {
