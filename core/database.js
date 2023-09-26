@@ -1588,7 +1588,7 @@ class Database {
   }
   async readRawItems(items, type) {
     const ret = []
-    for (const key of items) {
+    for (const key in items) {
       const item = items[key]
       if (type === 'keys') {
         ret.push(await this.readKey(item.key, false))
@@ -1606,7 +1606,7 @@ class Database {
     }
     const ret = {}, missed = {}
     const sql = `select * from ${table} where ${key} = ?`
-    for (const key of items) {
+    for (const key in items) {
       const item = items[key]
       const { db } = this.getDomainDB({ key: item.key })
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [item.key] })
