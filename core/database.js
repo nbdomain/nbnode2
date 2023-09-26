@@ -1541,12 +1541,12 @@ class Database {
     const sql = `select * from ${table} where verified is NULL AND ${ts} < ? limit ?`
     const ret = db.prepare(sql).all(now - 10 * 1000, count)
     if (!ret) return null
-    const result = []
+    const result = {}
     for (const item of ret) {
       delete item.verified
       const str = JSON.stringify(item)
       const hash = Util.fnv1aHash(str)
-      result.push({ key: item.key, hash, ts: item.ts })
+      result[item.key] = { key: item.key, hash, ts: item.ts }
     }
     return result
   }
@@ -1588,7 +1588,8 @@ class Database {
   }
   async readRawItems(items, type) {
     const ret = []
-    for (const item of items) {
+    for (const key of items) {
+      const item = items[key]
       if (type === 'keys') {
         ret.push(await this.readKey(item.key, false))
       }
@@ -1603,19 +1604,20 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', key = 'domain'
     }
-    const ret = [], missed = []
+    const ret = {}, missed = {}
     const sql = `select * from ${table} where ${key} = ?`
-    for (const item of items) {
+    for (const key of items) {
+      const item = items[key]
       const { db } = this.getDomainDB({ key: item.key })
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [item.key] })
       if (!item_my) {
-        missed.push(item)
+        missed[item.key] = item
         continue
       }
       delete item_my.verified
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
-      if (hash !== item.hash) ret.push(item_my)
+      if (hash !== item.hash) ret[item_my.key] = item_my
     }
     this.fetchMissedItems(missed, type, from)
     return ret
