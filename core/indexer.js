@@ -99,21 +99,20 @@ class Indexer {
         }
         return false
       }
-      console.log("1 time:", (Date.now() - tmstart) / 1000)
 
       if (!await Util.verifyRaw({ expectedId: txid, rawtx, chain })) {
         console.error("rawtx verify error:", txid)
         return false
       }
-      console.log("2 time:", (Date.now() - tmstart) / 1000)
+      console.log("1 time:", (Date.now() - tmstart) / 1000)
 
       /*if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
         console.error("tx sigs verification failed. sigs:", sigs)
         return false
       } */
-      console.log("3 time:", (Date.now() - tmstart) / 1000)
 
       if (!oDataRecord.raw) {
+        console.log("getting raw data...")
         const attrib = Parser.getAttrib({ rawtx, chain })
         oDataRecord = await Nodes.getData(attrib.hash)
       }
