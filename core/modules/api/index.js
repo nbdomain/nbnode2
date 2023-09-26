@@ -195,8 +195,8 @@ class appModule {
         });
         app.post(PREFIX + '/verifyDMs', async function (req, res) {
             const { logger, db } = indexers
-            const { items, type } = req.body;
-            return await db.verifyIncomingItems(items, type);
+            const { items, type, from } = req.body;
+            return await db.verifyIncomingItems(items, type, from);
         });
         app.post(PREFIX + '/readRawItems', async function (req, res) {
             const { logger, db } = indexers
