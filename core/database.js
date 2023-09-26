@@ -1570,8 +1570,8 @@ class Database {
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
     const ret = await axios.post(url + "/api/readRawItems", { items, type })
-
-    for (const item of ret.data) {
+    for (const key in ret.data) {
+      const item = ret.data[key]
       this.saveRawKeyItem(item)
     }
   }
@@ -1587,14 +1587,14 @@ class Database {
 
   }
   async readRawItems(items, type) {
-    const ret = []
+    const ret = {}
     for (const key in items) {
       const item = items[key]
       if (type === 'keys') {
-        ret.push(await this.readKey(item.key, false))
+        ret[item.key] = await this.readKey(item.key, false)
       }
       if (type === 'domains') {
-        ret.push(await this.loadDomain(item.domain, true, true))
+        ret[item.key] = await this.loadDomain(item.domain, true, true)
       }
     }
     return ret
