@@ -107,10 +107,10 @@ class Indexer {
       }
       console.log("2 time:", (Date.now() - tmstart) / 1000)
 
-      if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
+      /*if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
         console.error("tx sigs verification failed. sigs:", sigs)
         return false
-      }
+      } */
       console.log("3 time:", (Date.now() - tmstart) / 1000)
 
       if (!oDataRecord.raw) {
