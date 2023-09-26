@@ -99,13 +99,10 @@ class Indexer {
         }
         return false
       }
-
       if (!await Util.verifyRaw({ expectedId: txid, rawtx, chain })) {
         console.error("rawtx verify error:", txid)
         return false
       }
-      console.log("1 time:", (Date.now() - tmstart) / 1000)
-
       /*if (!await Nodes.verifySigs({ txTime, txid, sigs })) {
         console.error("tx sigs verification failed. sigs:", sigs)
         return false
@@ -116,11 +113,7 @@ class Indexer {
         const attrib = Parser.getAttrib({ rawtx, chain })
         oDataRecord = await Nodes.getData(attrib.hash)
       }
-      console.log("before parseTX time:", (Date.now() - tmstart) / 1000)
-
       let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
-      console.log("parseTX time:", (Date.now() - tmstart) / 1000)
-
       let ts = 0, status = 0
       if (ret.code != 0 || !ret.rtx) status = DEF.TX_INVALIDTX
       else {

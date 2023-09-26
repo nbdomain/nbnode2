@@ -31,7 +31,6 @@ class Parser {
     static async parseTX({ rawtx, oData, height, time, chain, newTx = false }) {
         const tmstart = Date.now()
         const ret = await this.parse({ rawtx, oData, height, time, chain })
-        console.log("parseTX-1 time:", (Date.now() - tmstart) / 1000)
 
         if (ret.code != 0) {
             console.error("invalid rawtx format.rawtx:", rawtx, "oData:", oData, "ret:", ret)
@@ -54,7 +53,6 @@ class Parser {
                 }
             }
             if (rtx.ts) rtx.time = rtx.ts
-            console.log("parseTX-2 time:", (Date.now() - tmstart) / 1000)
 
             let handler = this.domainParser().getHandler(rtx.command)
             //if (!handler) handler = this.nftParser().getHandler(rtx.command)
@@ -62,7 +60,6 @@ class Parser {
             if (!handler) {
                 console.error("no handler for command:", rtx.command)
             }
-            console.log("parseTX-3 time:", (Date.now() - tmstart) / 1000, "command:", rtx.command)
 
             delete rtx.in
             delete rtx.out
