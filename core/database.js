@@ -1543,7 +1543,7 @@ class Database {
     if (!ret) return null
     const result = {}
     for (const item of ret) {
-      delete item.verified
+      delete item.verified, delete item.id
       const str = JSON.stringify(item)
       const hash = Util.fnv1aHash(str)
       result[item.key] = { key: item.key, hash, ts: item.ts }
@@ -1614,7 +1614,7 @@ class Database {
         missed[item.key] = item
         continue
       }
-      delete item_my.verified
+      delete item_my.verified, delete item_my.id
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
       if (hash !== item.hash) ret[item_my.key] = item_my
