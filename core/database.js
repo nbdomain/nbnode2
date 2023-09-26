@@ -1583,7 +1583,9 @@ class Database {
               this.incVerifyCount(item)
             } else {
               if (diff_item.ts > item.ts) {
+                console.warn("found outdated item:", item[key])
                 this.saveRawKeyItem(item)
+                console.warn("fixed")
               }
             }
           }
