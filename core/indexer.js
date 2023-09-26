@@ -134,9 +134,11 @@ class Indexer {
         this.indexers.blockMgr.onNewTx(txid)
         console.log("Added txid:", txid)
         const list = this.database.getUnresolvedTX(1)
+        console.log("addTxFull-1 time:", (Date.now() - tmstart) / 1000)
+
         if (list && list.length > 0) {
           resolver.resolveOneTX(list[0])
-          console.log("resolveOneTX time:", (Date.now() - tmstart) / 1000)
+          console.log("addTxFull-2 time:", (Date.now() - tmstart) / 1000)
 
         }
       }

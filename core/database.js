@@ -660,7 +660,7 @@ class Database {
       return []
     }
   }
-  loadDomain(domain, onlyDB = false) {
+  loadDomain(domain, onlyDB = false, raw = false) {
     let res = null
     if (!onlyDB) {
       res = MemDomains.get(domain)
@@ -669,10 +669,9 @@ class Database {
     //res = this.getDomainStmt.get(domain);
     const { db, tld } = this.getDomainDB({ key: domain })
     res = this.runPreparedSql({ name: "LoadDomain" + tld, db, method: 'get', sql: 'SELECT * from nidObj where domain = ?', paras: [domain] })
-    if (res) {
-      return JSON.parse(res.jsonString);
-    }
-    return null;
+    if (!res) return null
+    if (raw) return res
+    return JSON.parse(res.jsonString);
   }
   queryTags(expression) {
 
@@ -749,7 +748,7 @@ class Database {
     const res = this.runPreparedSql({ name: 'queryChildCount' + tld, db, method: 'get', sql, paras: [parent] })
     return { [parent]: Object.values(res)[0] }
   }
-  async handleOneKeyItem(item) {
+  async TransformOneKeyItem(item) {
     const plist = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'u1', 'u2', 'u3', 'u4', 'u5']
     delete item.id
     if (item.value === 'deleted') return null
@@ -803,7 +802,7 @@ class Database {
       let ret = db.prepare(exp).all(...para)
       if (!ret) return []
       for (let i = 0; i < ret.length; i++) {
-        ret[i] = await this.handleOneKeyItem(ret[i])
+        ret[i] = await this.TransformOneKeyItem(ret[i])
       }
       return ret
     } catch (e) {
@@ -863,20 +862,20 @@ class Database {
     const ret = this.runPreparedSql({ name: 'readChildrenKeys' + tld, db, method: 'all', sql, paras: [parent] })
 
     for (let i = 0; i < ret.length; i++) {
-      ret[i] = await this.handleOneKeyItem(ret[i])
+      ret[i] = await this.TransformOneKeyItem(ret[i])
     }
     return ret
   }
-  async readKey(key) {
+  async readKey(key, transform = true) {
     try {
       const { db, tld } = this.getDomainDB({ key })
       const sql = 'SELECT * from keys where key=?'
       let ret = this.runPreparedSql({ name: "readKeyStmt" + tld, db, method: 'get', sql, paras: [key] })
-      if (ret) {
-        ret = await this.handleOneKeyItem(ret)
-        //        delete ret.value
-        return ret;
-      }
+      if (!ret) return null
+      if (transform)
+        ret = await this.TransformOneKeyItem(ret)
+      //        delete ret.value
+      return ret;
     } catch (e) {
       this.logger.error(e)
     }
@@ -888,7 +887,7 @@ class Database {
     const ret = db.prepare(sql).all(domain)
     if (!ret) return {}
     for (let i = 0; i < ret.length; i++) {
-      ret[i] = await this.handleOneKeyItem(ret[i])
+      ret[i] = await this.TransformOneKeyItem(ret[i])
     }
     return ret
   }
@@ -977,7 +976,7 @@ class Database {
       this.tickers[domain].register(session)
     }
   }
- 
+
   async findDomains(option) {
     const _findDomains = async (db, option) => {
       let sql = ""
@@ -994,7 +993,7 @@ class Database {
         const ret = db.prepare(sql).all(from, to);
         if (!ret) ret = []
         for (let i = 0; i < ret.length; i++) {
-          ret[i] = await this.handleOneKeyItem(ret[i])
+          ret[i] = await this.TransformOneKeyItem(ret[i])
         }
         return ret
       }
@@ -1371,10 +1370,10 @@ class Database {
     if (transform) {
       if (Array.isArray(ret)) {
         for (let i = 0; i < ret.length; i++) {
-          ret[i] = await this.handleOneKeyItem(ret[i])
+          ret[i] = await this.TransformOneKeyItem(ret[i])
         }
       } else {
-        method != 'run' && ret && (ret = await this.handleOneKeyItem(ret))
+        method != 'run' && ret && (ret = await this.TransformOneKeyItem(ret))
       }
     }
     //const t2 = Date.now()
@@ -1557,7 +1556,7 @@ class Database {
     return result
   }
   async verifyDBFromPeers() {
-    const { Nodes, axios } = this.indexers
+    const { Nodes, axios, config } = this.indexers
     const type = 'keys'
     const items = await this.getUnverifiedItems({ db: this.dmdb, count: 100, type })
     if (items) {
@@ -1565,7 +1564,7 @@ class Database {
       for (let k in peers) {
         const peer = peers[k]
         try {
-          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type })
+          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: config.server.publicUrl })
           console.log(ret.data)
         } catch (e) {
           console.error(e.message)
@@ -1573,22 +1572,41 @@ class Database {
       }
     }
   }
+  async fetchMissedItems(items, type) {
+
+  }
+  async readRawItems(items, type) {
+    const ret = []
+    for (const item of items) {
+      if (type === 'keys') {
+        ret.push(await this.readKey(item.key, false))
+      }
+      if (type === 'domains') {
+        ret.push(await this.loadDomain(item.domain, true, true))
+      }
+    }
+    return ret
+  }
   async verifyIncomingItems(items, type) {
     let table = 'keys', key = 'key'
     if (type === "domains") {
       table = 'nidobj', key = 'domain'
     }
-    const ret = []
+    const ret = [], missed = []
     const sql = `select * from ${table} where ${key} = ?`
     for (const item of items) {
-      const db = this.getDomainDB({ key: item.key })
+      const { db } = this.getDomainDB({ key: item.key })
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [item.key] })
-      if (!item_my) continue
+      if (!item_my) {
+        missed.push(item)
+        continue
+      }
       delete item_my.verified
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
       if (hash !== item.hash) ret.push(item_my)
     }
+    this.fetchMissedItems(missed, type)
     return ret
   }
 }

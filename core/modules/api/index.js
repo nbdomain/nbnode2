@@ -198,6 +198,11 @@ class appModule {
             const { items, type } = req.body;
             return await db.verifyIncomingItems(items, type);
         });
+        app.post(PREFIX + '/readRawItems', async function (req, res) {
+            const { logger, db } = indexers
+            const { items, type } = req.body;
+            return await db.readRawItems(items, type);
+        });
         async function handleNewTx({ txid, force = false }) {
             if (!db.hasTransaction(txid) || force) {
                 const data = await Nodes.getTx(txid)
