@@ -860,7 +860,7 @@ class Database {
     const sql = "select * from keys where parent = ?"
     //const ret = this.dmdb.prepare(sql).all(parentKey)
     const { db, tld } = this.getDomainDB({ key: parent })
-    const ret = this.runPreparedSql({ name: 'queryChildCount' + tld, db, method: 'all', sql, paras: [parent] })
+    const ret = this.runPreparedSql({ name: 'readChildrenKeys' + tld, db, method: 'all', sql, paras: [parent] })
 
     for (let i = 0; i < ret.length; i++) {
       ret[i] = await this.handleOneKeyItem(ret[i])
@@ -1538,13 +1538,18 @@ class Database {
   }
   // -----------------------------verify DB-------------------------------------------------------------------
 
-  async getUnverifiedItems({ db, count, table }) {
+  async getUnverifiedItems({ db, count, type }) {
     const now = Date.now()
-    const sql = `select * from ${table} where verified is NULL AND ts < ? limit ?`
+    let table = 'keys', ts = 'ts'
+    if (type === "domains") {
+      table = 'nidobj', ts = 'lastUpdate'
+    }
+    const sql = `select * from ${table} where verified is NULL AND ${ts} < ? limit ?`
     const ret = db.prepare(sql).all(now - 10 * 1000, count)
-    if (!ret) return {}
+    if (!ret) return null
     const result = []
     for (const item of ret) {
+      delete item.verified
       const str = JSON.stringify(item)
       const hash = Util.fnv1aHash(str)
       result.push({ key: item.key, hash, ts: item.ts })
@@ -1552,8 +1557,39 @@ class Database {
     return result
   }
   async verifyDBFromPeers() {
-    const res = this.getUnverifiedItems({ db: this.dmdb, count: 100, table: 'keys' })
-
+    const { Nodes, axios } = this.indexers
+    const type = 'keys'
+    const items = await this.getUnverifiedItems({ db: this.dmdb, count: 100, type })
+    if (items) {
+      const peers = Nodes.getNodes()
+      for (let k in peers) {
+        const peer = peers[k]
+        try {
+          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type })
+          console.log(ret.data)
+        } catch (e) {
+          console.error(e.message)
+        }
+      }
+    }
+  }
+  async verifyIncomingItems(items, type) {
+    let table = 'keys', key = 'key'
+    if (type === "domains") {
+      table = 'nidobj', key = 'domain'
+    }
+    const ret = []
+    const sql = `select * from ${table} where ${key} = ?`
+    for (const item of items) {
+      const db = this.getDomainDB({ key: item.key })
+      const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [item.key] })
+      if (!item_my) continue
+      delete item_my.verified
+      const str = JSON.stringify(item_my)
+      const hash = Util.fnv1aHash(str)
+      if (hash !== item.hash) ret.push(item_my)
+    }
+    return ret
   }
 }
 

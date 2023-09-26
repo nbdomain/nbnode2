@@ -88,7 +88,8 @@ class Indexer {
 
   async addTxFull({ txid, sigs, rawtx, txTime, oDataRecord, force = false, chain, replace = false }) {
     try {
-      //console.log("adding:", txid)
+      const tmstart = Date.now()
+      console.log("adding:", txid)
 
       const { Nodes, resolver, config, db } = this.indexers
       if (!force && this.database.hasTransaction(txid) && !replace) {
@@ -137,6 +138,8 @@ class Indexer {
       else {
         console.error("Invalid tx:", ret, txid)
       }
+      console.log("added time:", (Date.now() - tmstart) / 1000)
+
       return ret.code == 0;
     } catch (e) {
       console.error("Invalid tx:", txid, e.message)

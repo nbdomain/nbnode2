@@ -4,6 +4,8 @@
  * Entry point
  */
 const dotenv = require("dotenv");
+const axios = require('axios')
+
 
 const Indexer = require('./indexer')
 const LocalServer = require('./server')
@@ -70,13 +72,14 @@ class Indexers {
 
     process.env.publicUrl && (config.server.publicUrl = process.env.publicUrl)
     process.env.adminKey && (config.adminKey = process.env.adminKey)
-    
+
     this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger
     logger.init(this)
     this.indexer = new Indexer(this.db, this, logger)
     this.Nodes = Nodes
+    this.axios = axios
     this.Parser = Parser
     Util.init(this)
     this.Util = Util

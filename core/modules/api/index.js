@@ -193,6 +193,11 @@ class appModule {
             logger.info("/sendTx ret: ", ret)
             return (ret);
         });
+        app.post(PREFIX + '/verifyDMs', async function (req, res) {
+            const { logger, db } = indexers
+            const { items, type } = req.body;
+            return await db.verifyIncomingItems(items, type);
+        });
         async function handleNewTx({ txid, force = false }) {
             if (!db.hasTransaction(txid) || force) {
                 const data = await Nodes.getTx(txid)
