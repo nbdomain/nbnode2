@@ -111,6 +111,8 @@ class Indexer {
         const attrib = Parser.getAttrib({ rawtx, chain })
         oDataRecord = await Nodes.getData(attrib.hash)
       }
+      console.log("before parseTX time:", (Date.now() - tmstart) / 1000)
+
       let ret = await (Parser.parseTX({ rawtx: rawtx, oData: oDataRecord?.raw, time: txTime, chain }));
       console.log("parseTX time:", (Date.now() - tmstart) / 1000)
 
