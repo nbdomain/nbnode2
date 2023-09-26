@@ -62,7 +62,7 @@ class Parser {
             if (!handler) {
                 console.error("no handler for command:", rtx.command)
             }
-            console.log("parseTX-3 time:", (Date.now() - tmstart) / 1000)
+            console.log("parseTX-3 time:", (Date.now() - tmstart) / 1000, "command:", rtx.command)
 
             delete rtx.in
             delete rtx.out
