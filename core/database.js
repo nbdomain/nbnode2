@@ -13,6 +13,7 @@ const { DEF, MemDomains } = require('./def')
 
 var Path = require('path');
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+let objLen = obj => { return obj ? Object.keys(obj).length : 0 }
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -1579,6 +1580,7 @@ class Database {
             console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
             const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
             const { diff, miss } = ret.data
+            console.log('got diff:', objLen(diff), " miss:", objLen(miss))
             for (const key in items) {
               const item = items[key]
               const diff_item = diff[key]
@@ -1587,8 +1589,8 @@ class Database {
                 this.incVerifyCount(item, type)
               } else {
                 if (diff_item.ts > item.ts) {
-                  console.log(JSON.stringify(diff_item))
-                  console.log(JSON.stringify(await this.readKey(item.key, false)))
+                  //console.log(JSON.stringify(diff_item))
+                  //console.log(JSON.stringify(await this.readKey(item.key, false)))
                   console.warn("found outdated item:", item.key)
                   this.saveRawItem(diff_item, type)
                   console.warn("fixed")
