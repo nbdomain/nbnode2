@@ -1568,7 +1568,7 @@ class Database {
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
     const type = 'keys'
-    const items = await this.getUnverifiedItems({ db: this.dmdb, count: 100, type })
+    const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
     if (items) {
       const peers = Nodes.getNodes()
       for (let k in peers) {
@@ -1586,8 +1586,10 @@ class Database {
               this.incVerifyCount(item)
             } else {
               if (diff_item.ts > item.ts) {
-                console.warn("found outdated item:", item[key])
-                this.saveRawKeyItem(item)
+                console.log(JSON.stringify(diff_item))
+                console.log(JSON.stringify(await this.readKey(item.key, false)))
+                console.warn("found outdated item:", item.key)
+                this.saveRawKeyItem(diff_item)
                 console.warn("fixed")
               }
             }
@@ -1653,6 +1655,9 @@ class Database {
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
       if (hash !== item.hash) ret.diff[item_my.key] = item_my
+      else {
+        this.incVerifyCount(item, type)
+      }
     }
     ret.miss = missed
     if (Object.keys(missed).length > 0)
