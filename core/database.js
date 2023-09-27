@@ -1552,14 +1552,14 @@ class Database {
       const hash = Util.fnv1aHash(str)
       result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
     }
-    return result
+    return Object.keys(result).length == 0 ? null : result
   }
   incVerifyCount(item, type) {
-    const { key } = item
     let table = 'keys', keyname = 'key'
     if (type === "domains") {
       table = 'nidobj', keyname = 'domain'
     }
+    const key = item[keyname]
     const { db, tld } = this.getDomainDB({ key })
     const sql = `update ${table} set verified = verified + 1 where ${keyname} = ?`
     const ret = this.runPreparedSql({ name: "incVerifyCount" + type, db, method: "run", sql, paras: [key] })
@@ -1567,39 +1567,41 @@ class Database {
   }
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
-    const type = 'domains'
-    const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
-    if (items) {
-      const peers = Nodes.getNodes()
-      for (let k in peers) {
-        const peer = peers[k]
-        try {
-          const url = config.server.publicUrl
-          console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
-          const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
-          const { diff, miss } = ret.data
-          for (const key in items) {
-            const item = items[key]
-            const diff_item = diff[key]
-            if (miss[key]) continue
-            if (!diff_item) {
-              this.incVerifyCount(item, type)
-            } else {
-              if (diff_item.ts > item.ts) {
-                console.log(JSON.stringify(diff_item))
-                console.log(JSON.stringify(await this.readKey(item.key, false)))
-                console.warn("found outdated item:", item.key)
-                this.saveRawItem(diff_item, type)
-                console.warn("fixed")
+    const types = ['domains', 'keys']
+    for (const type of types) {
+      const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
+      if (items) {
+        const peers = Nodes.getNodes()
+        for (let k in peers) {
+          const peer = peers[k]
+          try {
+            const url = config.server.publicUrl
+            console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
+            const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
+            const { diff, miss } = ret.data
+            for (const key in items) {
+              const item = items[key]
+              const diff_item = diff[key]
+              if (miss[key]) continue
+              if (!diff_item) {
+                this.incVerifyCount(item, type)
+              } else {
+                if (diff_item.ts > item.ts) {
+                  console.log(JSON.stringify(diff_item))
+                  console.log(JSON.stringify(await this.readKey(item.key, false)))
+                  console.warn("found outdated item:", item.key)
+                  this.saveRawItem(diff_item, type)
+                  console.warn("fixed")
+                }
               }
             }
+          } catch (e) {
+            console.error(e.message)
           }
-        } catch (e) {
-          console.error(e.message)
         }
+      } else {
+        console.log("all items verified:", type)
       }
-    } else {
-      console.log("all items verified")
     }
     setTimeout(this.verifyDBFromPeers.bind(this), 5000);
   }
