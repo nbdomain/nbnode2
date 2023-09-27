@@ -1599,7 +1599,7 @@ class Database {
     } else {
       console.log("all items verified")
     }
-    setTimeout(this.verifyDBFromPeers.bind(this), 5);
+    setTimeout(this.verifyDBFromPeers.bind(this), 5000);
   }
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
@@ -1655,7 +1655,8 @@ class Database {
       if (hash !== item.hash) ret.diff[item_my.key] = item_my
     }
     ret.miss = missed
-    this.fetchMissedItems(missed, type, from)
+    if (Object.keys(missed).length > 0)
+      this.fetchMissedItems(missed, type, from)
     return ret
   }
 }
