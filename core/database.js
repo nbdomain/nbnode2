@@ -940,7 +940,7 @@ class Database {
         updateObj = { key: fullKey, value, domain, ts, parent, ...props }
       }
       updateObj.ts = ts, updateObj.domain = domain, updateObj.parent = parent
-      this.saveRawKeyItem(updateObj)
+      this.saveRawItem(updateObj, 'keys')
       //const paras = [fullKey, updateObj.value, domain, ts, parent, updateObj.p1, updateObj.p2, updateObj.p3, updateObj.p4, updateObj.p5, updateObj.p6, updateObj.p7, updateObj.p8, updateObj.p9, updateObj.p10, updateObj.p11, updateObj.p12, updateObj.p13, updateObj.p14, updateObj.p15, updateObj.p16, updateObj.p17, updateObj.p18, updateObj.p19, updateObj.p20, updateObj.u1, updateObj.u2, updateObj.u3, updateObj.u4, updateObj.u5]
       //this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
 
@@ -1562,12 +1562,12 @@ class Database {
     }
     const { db, tld } = this.getDomainDB({ key })
     const sql = `update ${table} set verified = verified + 1 where ${keyname} = ?`
-    const ret = this.runPreparedSql({ name: "incVerifyCount", db, method: "run", sql, paras: [key] })
+    const ret = this.runPreparedSql({ name: "incVerifyCount" + type, db, method: "run", sql, paras: [key] })
     return ret
   }
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
-    const type = 'keys'
+    const type = 'domains'
     const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
     if (items) {
       const peers = Nodes.getNodes()
@@ -1583,13 +1583,13 @@ class Database {
             const diff_item = diff[key]
             if (miss[key]) continue
             if (!diff_item) {
-              this.incVerifyCount(item)
+              this.incVerifyCount(item, type)
             } else {
               if (diff_item.ts > item.ts) {
                 console.log(JSON.stringify(diff_item))
                 console.log(JSON.stringify(await this.readKey(item.key, false)))
                 console.warn("found outdated item:", item.key)
-                this.saveRawKeyItem(diff_item)
+                this.saveRawItem(diff_item, type)
                 console.warn("fixed")
               }
             }
@@ -1609,19 +1609,35 @@ class Database {
     const ret = await axios.post(url + "/api/readRawItems", { items, type })
     for (const key in ret.data) {
       const item = ret.data[key]
-      this.saveRawKeyItem(item)
+      this.saveRawItem(item, type)
     }
   }
-  saveRawKeyItem(item) {
-    const sql = `Insert or Replace into keys (key,value,domain,ts,parent,
-      p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
-      values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-    const { db, tld } = this.getDomainDB({ key: item.key })
-    const paras = [item.key, item.value, item.domain, item.ts, item.parent,
-    item.p1, item.p2, item.p3, item.p4, item.p5, item.p6, item.p7, item.p8, item.p9, item.p10, item.p11, item.p12, item.p13, item.p14
-      , item.p15, item.p16, item.p17, item.p18, item.p19, item.p20, item.u1, item.u2, item.u3, item.u4, item.u5]
-    this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
-
+  saveRawItem(item, type = 'keys') {
+    if (type === 'keys') {
+      const sql = `Insert or Replace into keys (key,value,domain,ts,parent,
+        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
+        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      const { db, tld } = this.getDomainDB({ key: item.key })
+      const paras = [item.key, item.value, item.domain, item.ts, item.parent,
+      item.p1, item.p2, item.p3, item.p4, item.p5, item.p6, item.p7, item.p8, item.p9, item.p10, item.p11, item.p12, item.p13, item.p14
+        , item.p15, item.p16, item.p17, item.p18, item.p19, item.p20, item.u1, item.u2, item.u3, item.u4, item.u5]
+      return this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
+    }
+    if (type === 'domains') {
+      const obj = item
+      const { db, tld } = this.getDomainDB({ key: obj.domain })
+      this.saveUsers(obj);
+      let sql = `INSERT INTO "nidobj" 
+                (domain, txCreate,txUpdate,owner, owner_key, status, last_txid, jsonString, tld) 
+                VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
+                ON CONFLICT( domain ) DO UPDATE
+                SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?`
+      const txUpdate = obj.last_ts
+      const txCreate = obj.reg_ts
+      const paras = [obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
+        txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld]
+      return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
+    }
   }
   async readRawItems(items, type) {
     const ret = {}
