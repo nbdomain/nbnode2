@@ -1538,9 +1538,9 @@ class Database {
 
   async getUnverifiedItems({ db, count, type }) {
     const now = Date.now()
-    let table = 'keys', ts = 'ts'
+    let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
-      table = 'nidobj', ts = 'lastUpdate'
+      table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
     const sql = `select * from ${table} where verified ='0' AND ${ts} < ? limit ?`
     const ret = db.prepare(sql).all(now - 10 * 1000, count)
@@ -1550,7 +1550,7 @@ class Database {
       delete item.verified, delete item.id
       const str = JSON.stringify(item)
       const hash = Util.fnv1aHash(str)
-      result[item.key] = { key: item.key, hash, ts: item.ts }
+      result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
     }
     return result
   }
@@ -1567,7 +1567,7 @@ class Database {
   }
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
-    const type = 'keys'
+    const type = 'domains'
     const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
     if (items) {
       const peers = Nodes.getNodes()
