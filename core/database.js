@@ -1567,7 +1567,7 @@ class Database {
   }
   async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
-    const type = 'domains'
+    const type = 'keys'
     const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
     if (items) {
       const peers = Nodes.getNodes()
@@ -1653,24 +1653,24 @@ class Database {
     return ret
   }
   async verifyIncomingItems(items, type, from) {
-    let table = 'keys', key = 'key'
+    let table = 'keys', colname = 'key'
     if (type === "domains") {
-      table = 'nidobj', key = 'domain'
+      table = 'nidobj', colname = 'domain'
     }
     const ret = { diff: {} }, missed = {}
-    const sql = `select * from ${table} where ${key} = ?`
-    for (const key in items) {
-      const item = items[key]
-      const { db } = this.getDomainDB({ key: item.key })
-      const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [item.key] })
+    const sql = `select * from ${table} where ${colname} = ?`
+    for (const kk in items) {
+      const item = items[kk]
+      const { db } = this.getDomainDB({ key: kk })
+      const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [kk] })
       if (!item_my) {
-        missed[item.key] = item
+        missed[kk] = item
         continue
       }
       delete item_my.verified, delete item_my.id
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
-      if (hash !== item.hash) ret.diff[item_my.key] = item_my
+      if (hash !== item.hash) ret.diff[kk] = item_my
       else {
         this.incVerifyCount(item, type)
       }
