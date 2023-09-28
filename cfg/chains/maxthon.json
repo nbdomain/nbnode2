@@ -28,7 +28,7 @@
         }
     },
     "consensus": {
-        "mode": "equal"
+        "mode": "trust_all"
     },
     "pnodes": [
         "http://pi.skyjeff.com:9100",

@@ -227,7 +227,7 @@ class Nodes {
     }
     isProducer(pkey) {
         const { cfg_chain } = this.indexers
-        if (cfg_chain?.consensus?.mode === 'equal') return true
+        if (cfg_chain?.consensus?.mode === 'trust_all') return true
         if (!pkey) return this._isProducer
         if (cfg_chain.disableProducer) return false
         return cfg_chain.producers.indexOf(pkey) != -1
@@ -419,6 +419,14 @@ class Nodes {
         return { result: "none" }
     }
     async startLoop() {
+        const { config, db } = this.indexers
+        if (config.consensus.mode === 'trust_all') {
+            //db.verifyDBFromPeers()
+        }
+        else
+            this.pullNewTx()
+    }
+    async pullNewTx() {
         const { db } = this.indexers
         let counter = 0
         const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
@@ -484,7 +492,7 @@ class Nodes {
             db.backupDB()
         }
         // await wait(1000 * 10)
-        setTimeout(this.startLoop.bind(this), 1000 * 5)
+        setTimeout(this.pullNewTx.bind(this), 1000 * 5)
     }
     static inst() {
         if (g_node == null) {
