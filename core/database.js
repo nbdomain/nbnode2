@@ -1572,7 +1572,7 @@ class Database {
     const key = item[keyname]
     const { db, tld } = this.getDomainDB({ key })
     const sql = `update ${table} set verified = verified + 1 where ${keyname} = ?`
-    const ret = this.runPreparedSql({ name: "incVerifyCount" + type, db, method: "run", sql, paras: [key] })
+    const ret = this.runPreparedSql({ name: "incVerifyCount1" + type + tld, db, method: "run", sql, paras: [key] })
     return ret
   }
   async verifyDBFromPeers() {
