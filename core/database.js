@@ -1607,7 +1607,7 @@ class Database {
               }
             }
           } catch (e) {
-            console.error(e.message)
+            console.error("verifyDBFromPeers:", e.message)
           }
         }
       } else {
@@ -1619,10 +1619,14 @@ class Database {
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
     console.warn("fetchMissedItems count:", Object.keys(items).length, " from:", url)
-    const ret = await axios.post(url + "/api/readRawItems", { items, type })
-    for (const key in ret.data) {
-      const item = ret.data[key]
-      this.saveRawItem(item, type)
+    try {
+      const ret = await axios.post(url + "/api/readRawItems", { items, type })
+      for (const key in ret.data) {
+        const item = ret.data[key]
+        this.saveRawItem(item, type)
+      }
+    } catch (e) {
+      console.error("fetchMissedItems:", e.message)
     }
   }
   saveRawItem(item, type = 'keys') {
