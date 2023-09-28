@@ -1537,22 +1537,31 @@ class Database {
   }
   // -----------------------------verify DB-------------------------------------------------------------------
 
-  async getUnverifiedItems({ db, count, type }) {
+  async getUnverifiedItems({ count, type }) {
     const now = Date.now()
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
     const sql = `select * from ${table} where verified ='0' AND ${ts} < ? limit ?`
-    const ret = db.prepare(sql).all(now - 10 * 1000, count)
-    if (!ret) return null
     const result = {}
-    for (const item of ret) {
-      delete item.verified, delete item.id
-      const str = JSON.stringify(item)
-      const hash = Util.fnv1aHash(str)
-      result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
+
+    const _inner = async (db, tld = '') => {
+      //const ret = db.prepare(sql).all(now - 10 * 1000, count)
+      const ret = this.runPreparedSql({ name: "getUnverifiedItems" + type + tld, db, method: "all", sql, paras: [now - 10 * 1000, count] })
+      if (!ret) return null
+      for (const item of ret) {
+        delete item.verified, delete item.id
+        const str = JSON.stringify(item)
+        const hash = Util.fnv1aHash(str)
+        result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
+      }
     }
+    await _inner(this.dmdb)
+    for (const tld in this.tldDbs) {
+      await _inner(this.tldDbs[tld], tld)
+    }
+
     return Object.keys(result).length == 0 ? null : result
   }
   incVerifyCount(item, type) {
@@ -1657,9 +1666,9 @@ class Database {
     return ret
   }
   async verifyIncomingItems(items, type, from) {
-    let table = 'keys', colname = 'key'
+    let table = 'keys', colname = 'key', ts = 'ts'
     if (type === "domains") {
-      table = 'nidobj', colname = 'domain'
+      table = 'nidobj', colname = 'domain', ts = 'txUpdate'
     }
     const ret = { diff: {} }, missed = {}
     const sql = `select * from ${table} where ${colname} = ?`
@@ -1674,7 +1683,10 @@ class Database {
       delete item_my.verified, delete item_my.id
       const str = JSON.stringify(item_my)
       const hash = Util.fnv1aHash(str)
-      if (hash !== item.hash) ret.diff[kk] = item_my
+      if (hash !== item.hash) {
+        if (item.ts < item_my[ts]) ret.diff[kk] = item_my //incoming is older
+        else missed[kk] = item //incoming is newer, add to fetch list
+      }
       else {
         this.incVerifyCount(item, type)
       }
