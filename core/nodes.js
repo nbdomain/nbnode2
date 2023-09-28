@@ -421,7 +421,7 @@ class Nodes {
     async startLoop() {
         const { config, db } = this.indexers
         if (config.consensus.mode === 'trust_all') {
-            //db.verifyDBFromPeers()
+            db.verifyDBFromPeers()
         }
         else
             this.pullNewTx()

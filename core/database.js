@@ -1591,7 +1591,7 @@ class Database {
             const { diff, miss, keys } = ret.data
             console.log('got diff:', objLen(diff), " miss:", objLen(miss))
             if (keys)
-              console.log(peer.url, " keys", keys)
+              console.log('---------------', peer.url, " keys", keys)
             for (const key in items) {
               const item = items[key]
               const diff_item = diff[key]
