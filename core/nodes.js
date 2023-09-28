@@ -420,16 +420,16 @@ class Nodes {
     }
     async startLoop() {
         const { config, db } = this.indexers
-        if (config.consensus.mode === 'trust_all') {
-            //db.verifyDBFromPeers()
-        }
-        else
-            this.pullNewTx()
+        /* if (config.consensus.mode === 'trust_all') {
+             //db.verifyDBFromPeers()
+         }
+         else */
+        this.pullNewTx()
     }
     async pullNewTx() {
         const { db } = this.indexers
         let counter = 0
-        const thisKeyCount = db.getDataCount({ tx: false, domainKey: true, key: false, hash: false }).keys
+        const thisKeyCount = db.getDataCount({ tx: false, domainKey: true }).keys
         this._canResolve = false
         const dmHashMap = {}
         let needDownload = false, mostKey = 0, mostUrl = null

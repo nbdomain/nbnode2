@@ -705,7 +705,7 @@ class Database {
     if (res && res.attributes) res.attributes = Util.parseJson(res.attributes)
     return res
   }
-  getDataCount({ tx = true, domainKey = true, odata = true, hash = true } = {}) {
+  getDataCount({ tx = true, domainKey = true } = {}) {
     let { ret, ret1, ret2, ret3 } = {}
     let sql = `select (select count(*) from txs where status!=1) as txs`
     if (tx) {
@@ -1587,9 +1587,11 @@ class Database {
           try {
             const url = config.server.publicUrl
             console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
-            const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url })
-            const { diff, miss } = ret.data
+            const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url, info: "keycount" })
+            const { diff, miss, keys } = ret.data
             console.log('got diff:', objLen(diff), " miss:", objLen(miss))
+            if (keys)
+              console.log(peer.url, " keys", keys)
             for (const key in items) {
               const item = items[key]
               const diff_item = diff[key]
@@ -1669,7 +1671,7 @@ class Database {
     }
     return ret
   }
-  async verifyIncomingItems(items, type, from) {
+  async verifyIncomingItems({ items, type, from, info }) {
     let table = 'keys', colname = 'key', ts = 'ts'
     if (type === "domains") {
       table = 'nidobj', colname = 'domain', ts = 'txUpdate'
@@ -1696,6 +1698,9 @@ class Database {
       }
     }
     ret.miss = missed
+    if (info === 'keycount') {
+      ret.keys = this.getDataCount({ domainKey: true }).keys
+    }
     if (Object.keys(missed).length > 0)
       this.fetchMissedItems(missed, type, from)
     return ret
