@@ -1623,6 +1623,7 @@ class Database {
     console.warn("fetchMissedItems count:", Object.keys(items).length, " from:", url)
     try {
       const ret = await axios.post(url + "/api/readRawItems", { items, type })
+      console.warn("got:", objLen(ret.data))
       for (const key in ret.data) {
         const item = ret.data[key]
         this.saveRawItem(item, type)
