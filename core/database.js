@@ -1660,13 +1660,17 @@ class Database {
   }
   async readRawItems(items, type) {
     const ret = {}
+    let table = 'keys', keyname = 'key'
+    if (type === "domains") {
+      table = 'nidobj', keyname = 'domain'
+    }
     for (const key in items) {
       const item = items[key]
       if (type === 'keys') {
-        ret[item.key] = await this.readKey(item.key, false)
+        ret[item[key]] = await this.readKey(item.key, false)
       }
       if (type === 'domains') {
-        ret[item.key] = await this.loadDomain(item.domain, true, true)
+        ret[item[key]] = await this.loadDomain(item.domain, true, true)
       }
     }
     return ret
