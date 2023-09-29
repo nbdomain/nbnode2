@@ -1627,8 +1627,8 @@ class Database {
         const peer = peers[k]
         try {
           const url = config.server.publicUrl
-          let lastTime = +db.readConfig('dmdb', this.url + "_lasttm") || 0
-          const res = await axios.post(peer.url + "/api/pullNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
+          let lastTime = +this.readConfig('dmdb', this.url + "_lasttm") || 0
+          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
           const { result, keys } = res?.data
           if (!result || !items.data) continue
           console.log("--------got data from ", peer.url, " Count:", objLen(result), "Keys:", keys)
@@ -1637,7 +1637,7 @@ class Database {
           if (ret.maxTime)
             this.writeConfig('dmdb', peer.url + "_lasttm", ret.maxTime + '')
         } catch (e) {
-
+          console.error(e.message)
         }
       }
     }
@@ -1693,7 +1693,7 @@ class Database {
 
     const _inner = async (db, tld = '') => {
       //const ret = db.prepare(sql).all(now - 10 * 1000, count)
-      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart, count] })
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart] })
       if (!ret) return null
       for (const item of ret) {
         delete item.verified, delete item.id
