@@ -1629,7 +1629,7 @@ class Database {
           const url = config.server.publicUrl
           const lastTimeKey = peer.url + "_lasttm3_" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 500 })
+          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 100 })
           const { result, keys, maxTime } = res?.data
           if (!result) continue
           console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
