@@ -1688,7 +1688,7 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where ${ts} < ? limit 500`
+    const sql = `select * from ${table} where ${ts} > ? limit 500`
     const result = {}
 
     const _inner = async (db, tld = '') => {
