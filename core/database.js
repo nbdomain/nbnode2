@@ -1629,7 +1629,7 @@ class Database {
           const url = config.server.publicUrl
           const lastTimeKey = peer.url + "_lasttm3_" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
+          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 500 })
           const { result, keys, maxTime } = res?.data
           if (!result) continue
           console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
@@ -1690,12 +1690,11 @@ class Database {
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
     }
   }
-  async getNewDm({ tmstart, type, info }) {
+  async getNewDm({ tmstart, type, info, MaxCount = 500 }) {
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const MaxCount = 500
     const sql = `select * from ${table} where ${ts} > ? ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
 
