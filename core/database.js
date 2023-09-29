@@ -1630,7 +1630,7 @@ class Database {
           let lastTime = +this.readConfig('dmdb', this.url + "_lasttm") || 0
           const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
           const { result, keys } = res?.data
-          if (!result || !items.data) continue
+          if (!result) continue
           console.log("--------got data from ", peer.url, " Count:", objLen(result), "Keys:", keys)
           if (objLen(result) === 0) continue
           const ret = this.verifyIncomingItems({ items: result, type, from: peer.url })
@@ -1697,9 +1697,7 @@ class Database {
       if (!ret) return null
       for (const item of ret) {
         delete item.verified, delete item.id
-        const str = JSON.stringify(item)
-        const hash = Util.fnv1aHash(str)
-        result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
+        result[item[colname]] = item
       }
     }
     await _inner(this.dmdb)
