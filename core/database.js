@@ -1632,7 +1632,7 @@ class Database {
           const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
           const { result, keys, maxTime } = res?.data
           if (!result) continue
-          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(lastTime / 1000))
+          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
           if (objLen(result) === 0) continue
           const ret = await this.verifyIncomingItems({ items: result, type, from: peer.url })
           if (maxTime)
@@ -1690,11 +1690,11 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where ${ts} >= ? ORDER BY ${ts} ASC limit 500`
+    const MaxCount = 500
+    const sql = `select * from ${table} where ${ts} > ? ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
 
     const _inner = async ({ db, tld = '' }) => {
-      //const ret = db.prepare(sql).all(now - 10 * 1000, count)
       const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart] })
       if (!ret) return null
       let maxTime = 0
@@ -1707,17 +1707,18 @@ class Database {
     }
     const { maxTime, count } = await _inner({ db: this.dmdb, end: 9999999999999 })
     let retMaxTime = maxTime
+    const tldMaxTime = []
     for (const tld in this.tldDbs) {
       const ret1 = await _inner({ db: this.tldDbs[tld], tld, end: maxTime })
       if (ret1.maxTime != 0)
-        retMaxTime = Math.min(retMaxTime, ret1.maxTime)
+        tldMaxTime.push(ret1.maxTime)
     }
     let ret = {}
     if (info === 'keycount') {
       ret.keys = this.getDataCount({ domainKey: true }).keys
     }
     ret.result = result
-    ret.maxTime = retMaxTime
+    ret.maxTime = objLen(result) < MaxCount ? Math.max(maxTime, ...tldMaxTime) : Math.min(maxTime, ...tldMaxTime)
     return ret
   }
   async readRawItems(items, type) {
