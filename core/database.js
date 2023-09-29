@@ -1627,9 +1627,9 @@ class Database {
         const peer = peers[k]
         try {
           const url = config.server.publicUrl
-          const lastTimeKey = peer.url + "_lasttm3_" + type
+          const lastTimeKey = peer.url + "_lasttm" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 100 })
+          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 1000 })
           const { result, keys, maxTime } = res?.data
           if (!result) continue
           console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
@@ -1699,7 +1699,7 @@ class Database {
     const result = {}
 
     const _inner = async ({ db, tld = '' }) => {
-      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart] })
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart] })
       if (!ret) return null
       let maxTime = 0
       for (const item of ret) {
@@ -1759,6 +1759,7 @@ class Database {
         missed[kk] = item
         continue
       }
+      const verified = item_my.verified
       delete item_my.verified, delete item_my.id
       const hash = Util.fnv1aHash(JSON.stringify(item_my))
       const hash1 = Util.fnv1aHash(JSON.stringify(item))
@@ -1767,7 +1768,7 @@ class Database {
         else missed[kk] = item //incoming is newer, add to fetch list
       }
       else {
-        this.incVerifyCount(item, type)
+        !verified && this.incVerifyCount(item, type)
       }
     }
     ret.miss = missed
