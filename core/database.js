@@ -1575,7 +1575,7 @@ class Database {
     const ret = this.runPreparedSql({ name: "incVerifyCount1" + type + tld, db, method: "run", sql, paras: [key] })
     return ret
   }
-  async verifyDBFromPeers() {
+  /*async verifyDBFromPeers() {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
     for (const type of types) {
@@ -1617,6 +1617,30 @@ class Database {
       }
     }
     setTimeout(this.verifyDBFromPeers.bind(this), 5000);
+  } */
+  async pullNewDomains() {
+    const { Nodes, axios, config } = this.indexers
+    const types = ['domains', 'keys']
+    for (const type of types) {
+      const peers = Nodes.getNodes()
+      for (let k in peers) {
+        const peer = peers[k]
+        try {
+          const url = config.server.publicUrl
+          let lastTime = +db.readConfig('dmdb', this.url + "_lasttm") || 0
+          const res = await axios.post(peer.url + "/api/pullNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
+          const { result, keys } = res?.data
+          if (!result || !items.data) continue
+          console.log("--------got data from ", peer.url, " Count:", objLen(result), "Keys:", keys)
+          if (objLen(result) === 0) continue
+          const ret = this.verifyIncomingItems({ items: result, type, from: peer.url })
+          if (ret.maxTime)
+            this.writeConfig('dmdb', peer.url + "_lasttm", ret.maxTime + '')
+        } catch (e) {
+
+        }
+      }
+    }
   }
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
@@ -1659,6 +1683,36 @@ class Database {
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
     }
   }
+  async getNewDm({ tmstart, type, info }) {
+    let table = 'keys', ts = 'ts', colname = 'key'
+    if (type === "domains") {
+      table = 'nidobj', ts = 'txUpdate', colname = 'domain'
+    }
+    const sql = `select * from ${table} where ${ts} < ? limit 500`
+    const result = {}
+
+    const _inner = async (db, tld = '') => {
+      //const ret = db.prepare(sql).all(now - 10 * 1000, count)
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart, count] })
+      if (!ret) return null
+      for (const item of ret) {
+        delete item.verified, delete item.id
+        const str = JSON.stringify(item)
+        const hash = Util.fnv1aHash(str)
+        result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
+      }
+    }
+    await _inner(this.dmdb)
+    for (const tld in this.tldDbs) {
+      await _inner(this.tldDbs[tld], tld)
+    }
+    let ret = {}
+    if (info === 'keycount') {
+      ret.keys = this.getDataCount({ domainKey: true }).keys
+    }
+    ret.result = result
+    return ret
+  }
   async readRawItems(items, type) {
     const ret = {}
     let table = 'keys', keyname = 'key'
@@ -1681,10 +1735,12 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', colname = 'domain', ts = 'txUpdate'
     }
+    let maxTime = 0
     const ret = { diff: {} }, missed = {}
     const sql = `select * from ${table} where ${colname} = ?`
     for (const kk in items) {
       const item = items[kk]
+      maxTime = Math.max(maxTime, item[ts])
       const { db } = this.getDomainDB({ key: kk })
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table, db, method: 'get', sql, paras: [kk] })
       if (!item_my) {
@@ -1706,6 +1762,7 @@ class Database {
     if (info === 'keycount') {
       ret.keys = this.getDataCount({ domainKey: true }).keys
     }
+    ret.maxTime = maxTime
     if (Object.keys(missed).length > 0)
       this.fetchMissedItems(missed, type, from)
     return ret

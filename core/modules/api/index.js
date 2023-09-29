@@ -454,6 +454,9 @@ class appModule {
             }
             return await db.API_execPreparedQuery({ name, sql, paras, method, transform })
         })
+        app.post(PREFIX + '/getNewDm', async (req, res) => {
+            return await db.getNewDm(req.body)
+        })
         app.get(PREFIX + '/reverify', async (req, res) => {
             const txid = req.query['txid']
             const ret = db.getFullTx({ txid })

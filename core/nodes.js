@@ -424,8 +424,8 @@ class Nodes {
             db.verifyDBFromPeers()
         }
         else*/
-        db.verifyDBFromPeers()
-        this.pullNewTx()
+        //db.verifyDBFromPeers()
+        //this.pullNewTx()
     }
     async pullNewTx() {
         const { db } = this.indexers
