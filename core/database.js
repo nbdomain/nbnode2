@@ -1627,7 +1627,7 @@ class Database {
         const peer = peers[k]
         try {
           const url = config.server.publicUrl
-          const lastTimeKey = peer.url + "_lasttm_" + type
+          const lastTimeKey = peer.url + "_lasttm1_" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
           const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
           const { result, keys } = res?.data
@@ -1690,7 +1690,7 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where ${ts} >= ? limit 500 ORDER BY ${ts} ASC`
+    const sql = `select * from ${table} where ${ts} >= ? ORDER BY ${ts} ASC limit 500`
     const result = {}
 
     const _inner = async (db, tld = '') => {
