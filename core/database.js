@@ -1621,6 +1621,7 @@ class Database {
   async pullNewDomains() {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
+    const MaxCount = 1000
     for (const type of types) {
       const peers = Nodes.getNodes()
       for (let k in peers) {
@@ -1629,12 +1630,18 @@ class Database {
           const url = config.server.publicUrl
           const lastTimeKey = peer.url + "_lasttm" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount: 1000 })
+          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
           const { result, keys, maxTime } = res?.data
-          if (!result) continue
           console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
-          if (objLen(result) === 0) continue
-          const ret = await this.verifyIncomingItems({ items: result, type, from: peer.url })
+          const count = objLen(result)
+          if (count === 0) {
+            console.log(peer.url, " " + type + " synced")
+            continue
+          }
+          const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
+          if (count < MaxCount && objLen(diff) === 0) {
+            console.log(peer.url, " " + type + " synced")
+          }
           if (maxTime)
             this.writeConfig('dmdb', lastTimeKey, maxTime + '')
         } catch (e) {
