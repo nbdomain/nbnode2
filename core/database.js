@@ -1627,16 +1627,16 @@ class Database {
         const peer = peers[k]
         try {
           const url = config.server.publicUrl
-          const lastTimeKey = peer.url + "_lasttm1_" + type
+          const lastTimeKey = peer.url + "_lasttm3_" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
           const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount" })
-          const { result, keys } = res?.data
+          const { result, keys, maxTime } = res?.data
           if (!result) continue
-          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "toNow:", Math.floor((Date.now() - lastTime) / 1000))
+          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(lastTime / 1000))
           if (objLen(result) === 0) continue
           const ret = await this.verifyIncomingItems({ items: result, type, from: peer.url })
-          if (ret.maxTime) 1695956227217
-          this.writeConfig('dmdb', lastTimeKey, ret.maxTime + '')
+          if (maxTime)
+            this.writeConfig('dmdb', lastTimeKey, maxTime + '')
         } catch (e) {
           console.error(e.message)
         }
@@ -1693,24 +1693,31 @@ class Database {
     const sql = `select * from ${table} where ${ts} >= ? ORDER BY ${ts} ASC limit 500`
     const result = {}
 
-    const _inner = async (db, tld = '') => {
+    const _inner = async ({ db, tld = '' }) => {
       //const ret = db.prepare(sql).all(now - 10 * 1000, count)
       const ret = this.runPreparedSql({ name: "getNewDm" + type + tld, db, method: "all", sql, paras: [tmstart] })
       if (!ret) return null
+      let maxTime = 0
       for (const item of ret) {
         delete item.verified, delete item.id
         result[item[colname]] = item
+        maxTime = Math.max(maxTime, item[ts])
       }
+      return { maxTime, count: ret.length }
     }
-    await _inner(this.dmdb)
+    const { maxTime, count } = await _inner({ db: this.dmdb, end: 9999999999999 })
+    let retMaxTime = maxTime
     for (const tld in this.tldDbs) {
-      await _inner(this.tldDbs[tld], tld)
+      const ret1 = await _inner({ db: this.tldDbs[tld], tld, end: maxTime })
+      if (ret1.maxTime != 0)
+        retMaxTime = Math.min(retMaxTime, ret1.maxTime)
     }
     let ret = {}
     if (info === 'keycount') {
       ret.keys = this.getDataCount({ domainKey: true }).keys
     }
     ret.result = result
+    ret.maxTime = retMaxTime
     return ret
   }
   async readRawItems(items, type) {
