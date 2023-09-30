@@ -1645,7 +1645,7 @@ class Database {
           if (maxTime)
             this.writeConfig('dmdb', lastTimeKey, maxTime + '')
         } catch (e) {
-          console.error(e.message)
+          console.error(peer.url + ":", e.message)
         }
       }
     }
