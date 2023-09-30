@@ -1690,8 +1690,8 @@ class Database {
                 VALUES (?,?, ?,?, ?, ?, ?, ?, ?)
                 ON CONFLICT( domain ) DO UPDATE
                 SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?`
-      const txUpdate = obj.last_ts
-      const txCreate = obj.reg_ts
+      const txUpdate = obj.last_ts || obj.txUpdate
+      const txCreate = obj.reg_ts || obj.txCreate
       const paras = [obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
         txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld]
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
