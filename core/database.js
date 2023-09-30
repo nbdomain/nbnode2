@@ -1639,7 +1639,7 @@ class Database {
           const { result, keys, domains, maxTime } = res?.data
           console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "lastestTime:", Math.floor(maxTime / 1000))
           if (peer_count === 0) {
-            const res =  this.getDataCount({ domainKey: true })
+            const res = this.getDataCount({ domainKey: true })
             console.log(`--------got ${type} from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
           }
           const count = objLen(result)
@@ -1711,11 +1711,11 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where ${ts} > ? ORDER BY ${ts} ASC limit ${MaxCount}`
+    const sql = `select * from ${table} where ${ts} > ? OR (${ts} > ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
 
     const _inner = async ({ db, tld = '' }) => {
-      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart] })
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart,tmstart] })
       if (!ret) return null
       let maxTime = 0
       for (const item of ret) {
@@ -1725,11 +1725,11 @@ class Database {
       }
       return { maxTime, count: ret.length }
     }
-    const { maxTime, count } = await _inner({ db: this.dmdb, end: 9999999999999 })
+    const { maxTime, count } = await _inner({ db: this.dmdb })
     let retMaxTime = maxTime
     const tldMaxTime = []
     for (const tld in this.tldDbs) {
-      const ret1 = await _inner({ db: this.tldDbs[tld], tld, end: maxTime })
+      const ret1 = await _inner({ db: this.tldDbs[tld], tld })
       if (ret1.maxTime != 0)
         tldMaxTime.push(ret1.maxTime)
     }
