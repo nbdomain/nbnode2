@@ -1674,11 +1674,11 @@ class Database {
       const item = items[kk]
       const item1 = diff[kk]
       if (!item1) {
-        this.incVerifyCount({ item, type })
+        this.incVerifyCount(item, type)
         continue
       }
       if (item1[ts] > item[ts]) {
-        this.saveRawItem({ item: item1, type })
+        this.saveRawItem( item1, type )
       }
     }
   }
