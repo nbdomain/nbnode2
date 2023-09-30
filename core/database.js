@@ -705,7 +705,7 @@ class Database {
     if (res && res.attributes) res.attributes = Util.parseJson(res.attributes)
     return res
   }
-  getDataCount({ tx = true, domainKey = true } = {}) {
+  getDataCount({ domainKey = true, tx = false } = {}) {
     let { ret, ret1, ret2, ret3 } = {}
     let sql = `select (select count(*) from txs where status!=1) as txs`
     if (tx) {
@@ -721,26 +721,29 @@ class Database {
           this._getDataDMST.push(this.tldDbs[tld].prepare(sql))
         }
       }
-      let keys = 0
+      let keys = 0, domains = 0
       for (const st of this._getDataDMST) {
-        keys += st.get().keys
+        const res = st.get()
+        keys += res.keys
+        domains += res.domains
       }
-      ret1 = { keys }
+      ret1 = { keys, domains }
     }
+
     // sql = "select (select count(*) from data) as odata"
     // odata && (ret2 = this.dtdb.prepare(sql).get())
     // sql = "select (select value from config where key = 'domainUpdates') as 'DomainUpdates'"
     // hash && (ret3 = this.dmdb.prepare(sql).get())
 
-    const txHash = this.readConfig('txdb', 'statusHash')
+    /*const txHash = this.readConfig('txdb', 'statusHash')
     const dmHash = this.readConfig('dmdb', 'domainHash')
     const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
     const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
     const dmHashs = {}
     for (const tld in this.tldDbs) {
       dmHashs[tld] = this.readConfig('dmdb-' + tld, 'domainHash')
-    }
-    return { v: 2, ...ret, ...ret1, ...ret2, ...ret3, txHash, dmHash, dmHashs, maxResolvedTx, maxResolvedTxTime }
+    }*/
+    return { v: 2, ...ret, ...ret1 }
   }
 
   queryChildCount(parent) {
@@ -1624,15 +1627,21 @@ class Database {
     const MaxCount = 1000
     for (const type of types) {
       const peers = Nodes.getNodes()
+      let peer_count = objLen(peers)
       for (let k in peers) {
         const peer = peers[k]
+        peer_count--
         try {
           const url = config.server.publicUrl
           const lastTimeKey = peer.url + "_lasttm" + type
           let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
           const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
-          const { result, keys, maxTime } = res?.data
-          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "lastestTime:", Math.floor(maxTime / 1000))
+          const { result, keys, domains, maxTime } = res?.data
+          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "lastestTime:", Math.floor(maxTime / 1000))
+          if (peer_count === 0) {
+            const res =  this.getDataCount({ domainKey: true })
+            console.log(`--------got ${type} from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
+          }
           const count = objLen(result)
           if (count === 0) {
             console.log(peer.url, " " + type + " synced")
@@ -1726,7 +1735,9 @@ class Database {
     }
     let ret = {}
     if (info === 'keycount') {
-      ret.keys = this.getDataCount({ domainKey: true }).keys
+      const data_count = this.getDataCount({ domainKey: true })
+      ret.keys = data_count.keys
+      ret.domains = data_count.domains
     }
     ret.result = result
     ret.maxTime = objLen(result) < MaxCount ? Math.max(maxTime, ...tldMaxTime) : Math.min(maxTime, ...tldMaxTime)
