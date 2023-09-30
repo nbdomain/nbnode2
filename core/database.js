@@ -1625,39 +1625,40 @@ class Database {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
     const MaxCount = 1000
-    for (const type of types) {
-      const peers = Nodes.getNodes()
-      let peer_count = objLen(peers)
-      for (let k in peers) {
-        const peer = peers[k]
-        peer_count--
-        try {
-          const url = config.server.publicUrl
-          const lastTimeKey = peer.url + "_lasttm" + type
-          let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-          const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
-          const { result, keys, domains, maxTime } = res?.data
-          console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "lastestTime:", Math.floor(maxTime / 1000))
-          if (peer_count === 0) {
-            const res = this.getDataCount({ domainKey: true })
-            console.log(`--------got ${type} from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
-          }
-          const count = objLen(result)
-          if (count === 0) {
-            console.log(peer.url, " " + type + " synced")
-            continue
-          }
-          const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
-          if (count < MaxCount && objLen(diff) === 0) {
-            console.log(peer.url, " " + type + " synced")
-          }
-          if (maxTime)
-            this.writeConfig('dmdb', lastTimeKey, maxTime + '')
-        } catch (e) {
-          console.error(peer.url + ":", e.message)
+    const _inner = async (peer, type) => {
+      try {
+        const url = config.server.publicUrl
+        const lastTimeKey = peer.url + "_lasttm" + type
+        let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
+        const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
+        const { result, keys, domains, maxTime } = res?.data
+        console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "lastestTime:", Math.floor(maxTime / 1000))
+        const count = objLen(result)
+        if (count === 0) {
+          console.log(peer.url, " " + type + " synced")
+          return
         }
+        const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
+        if (count < MaxCount && objLen(diff) === 0) {
+          console.log(peer.url, " " + type + " synced")
+        }
+        if (maxTime)
+          this.writeConfig('dmdb', lastTimeKey, maxTime + '')
+      } catch (e) {
+        console.error(peer.url + ":", e.message)
       }
     }
+    const tasks=[]
+    const res = this.getDataCount({ domainKey: true })
+    console.log(`--------got from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
+    for (const type of types) {
+      const peers = Nodes.getNodes()
+      for (let k in peers) {
+        const peer = peers[k]
+        tasks.push(_inner(peer, type))
+      }
+    }
+    const ret = await Promise.allSettled(tasks)
     setTimeout(this.pullNewDomains.bind(this), 5000);
   }
   async fetchMissedItems(items, type, url) {
@@ -1715,7 +1716,7 @@ class Database {
     const result = {}
 
     const _inner = async ({ db, tld = '' }) => {
-      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart,tmstart] })
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart, tmstart] })
       if (!ret) return null
       let maxTime = 0
       for (const item of ret) {
@@ -1740,7 +1741,7 @@ class Database {
       ret.domains = data_count.domains
     }
     ret.result = result
-    ret.maxTime = objLen(result) < MaxCount ? Math.max(maxTime, ...tldMaxTime) : Math.min(maxTime, ...tldMaxTime)
+    ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
     return ret
   }
   async readRawItems(items, type) {
