@@ -1628,13 +1628,15 @@ class Database {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const toVerify = await this.getUnverifiedItems({ count: MaxCount, type })
+        const toVerify = await this.getUnverifiedItems({ count: 500, type })
         const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
-        const { result, keys, domains, maxTime } = res?.data
+        const { result, keys, domains, maxTime, diff: diff1 } = res?.data
         console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
-        if (peer.url === 'http://34.195.2.150:19000' && type == 'keys') {
+        if (type == 'keys') {
           console.log('found')
         }
+        if (objLen(toVerify) > 0 && diff1 != undefined)
+          this.handleUnverifiedItems({ items: toVerify, diff: diff1, type })
         const count = objLen(result)
         if (count === 0) {
           console.log("**********", peer.url, " " + type + " synced **********")
@@ -1662,6 +1664,23 @@ class Database {
     }
     const ret = await Promise.allSettled(tasks)
     setTimeout(this.pullNewDomains.bind(this), 5000);
+  }
+  handleUnverifiedItems({ diff, items, type }) {
+    let table = 'keys', colname = 'key', ts = 'ts'
+    if (type === "domains") {
+      table = 'nidobj', colname = 'domain', ts = 'txUpdate'
+    }
+    for (const kk in items) {
+      const item = items[kk]
+      const item1 = diff[kk]
+      if (!item1) {
+        this.incVerifyCount({ item, type })
+        continue
+      }
+      if (item1[ts] > item[ts]) {
+        this.saveRawItem({ item: item1, type })
+      }
+    }
   }
   async fetchMissedItems(items, type, url) {
     const { axios } = this.indexers
