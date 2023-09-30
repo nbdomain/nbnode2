@@ -1638,7 +1638,7 @@ class Database {
         }
         const count = objLen(result)
         if (count === 0) {
-          console.log("**********",peer.url, " " + type + " synced **********")
+          console.log("**********", peer.url, " " + type + " synced **********")
           return
         }
         const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
@@ -1715,7 +1715,7 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where ${ts} > ? OR (${ts} > ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
+    const sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
 
     const _inner = async ({ db, tld = '' }) => {
