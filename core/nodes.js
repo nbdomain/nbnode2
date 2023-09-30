@@ -420,12 +420,11 @@ class Nodes {
     }
     async startLoop() {
         const { config, db } = this.indexers
-        /*if (config.consensus.mode === 'trust_all') {
-            db.verifyDBFromPeers()
+        if (config.consensus.mode === 'trust_all') {
+            db.pullNewDomains()
         }
-        else*/
-        //db.verifyDBFromPeers()
-        //this.pullNewTx()
+        else
+            this.pullNewTx()
     }
     async pullNewTx() {
         const { db } = this.indexers
