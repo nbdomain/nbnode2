@@ -1632,10 +1632,13 @@ class Database {
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
         const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime } = res?.data
-        console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "lastestTime:", Math.floor(maxTime / 1000))
+        console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
+        if (peer.url === 'http://34.195.2.150:19000' && type == 'keys') {
+          console.log('found')
+        }
         const count = objLen(result)
         if (count === 0) {
-          console.log(peer.url, " " + type + " synced")
+          console.log("**********",peer.url, " " + type + " synced **********")
           return
         }
         const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
@@ -1648,7 +1651,7 @@ class Database {
         console.error(peer.url + ":", e.message)
       }
     }
-    const tasks=[]
+    const tasks = []
     const res = this.getDataCount({ domainKey: true })
     console.log(`--------got from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
     for (const type of types) {
@@ -1707,7 +1710,7 @@ class Database {
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
     }
   }
-  async getNewDm({ tmstart, type, info, MaxCount = 500 }) {
+  async getNewDm({ tmstart, type, info, MaxCount = 500, from }) {
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
@@ -1742,6 +1745,9 @@ class Database {
     }
     ret.result = result
     ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
+    if (from === 'http://pi.skyjeff.com:10001' && type === 'keys') {
+      console.log("found")
+    }
     return ret
   }
   async readRawItems(items, type) {
