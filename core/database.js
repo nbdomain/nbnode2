@@ -1555,9 +1555,7 @@ class Database {
       if (!ret) return null
       for (const item of ret) {
         delete item.verified, delete item.id
-        const str = JSON.stringify(item)
-        const hash = Util.fnv1aHash(str)
-        result[item[colname]] = { [colname]: item[colname], hash, ts: item[ts] }
+        result[item[colname]] = item
       }
     }
     await _inner(this.dmdb)
@@ -1630,7 +1628,8 @@ class Database {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const res = await axios.post(peer.url + "/api/getNewDm", { tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
+        const toVerify = await this.getUnverifiedItems({ count: MaxCount, type })
+        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime } = res?.data
         console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
         if (peer.url === 'http://34.195.2.150:19000' && type == 'keys') {
@@ -1711,14 +1710,17 @@ class Database {
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
     }
   }
-  async getNewDm({ tmstart, type, info, MaxCount = 500, from }) {
+  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
+    let ret = {}
     const sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
-
+    if (toVerify) {
+      ret = await this.verifyIncomingItems({ items: toVerify, type, from })
+    }
     const _inner = async ({ db, tld = '' }) => {
       const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart, tmstart] })
       if (!ret) return null
@@ -1731,14 +1733,12 @@ class Database {
       return { maxTime, count: ret.length }
     }
     const { maxTime, count } = await _inner({ db: this.dmdb })
-    let retMaxTime = maxTime
     const tldMaxTime = []
     for (const tld in this.tldDbs) {
       const ret1 = await _inner({ db: this.tldDbs[tld], tld })
       if (ret1.maxTime != 0)
         tldMaxTime.push(ret1.maxTime)
     }
-    let ret = {}
     if (info === 'keycount') {
       const data_count = this.getDataCount({ domainKey: true })
       ret.keys = data_count.keys
@@ -1748,6 +1748,9 @@ class Database {
     ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
     if (from === 'http://pi.skyjeff.com:10001' && type === 'keys') {
       console.log("found")
+    }
+    if (ret.maxTime < 1685969396173) {
+      console.log('found1')
     }
     return ret
   }
