@@ -1705,6 +1705,7 @@ class Database {
                 SET txCreate=?,txUpdate=?,owner=? ,owner_key=?,status=?,last_txid=?,jsonString=?,tld=?`
       const txUpdate = obj.last_ts || obj.txUpdate
       const txCreate = obj.reg_ts || obj.txCreate
+      delete obj.jsonString
       const paras = [obj.domain, txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld,
         txCreate, txUpdate, obj.owner, obj.owner_key, obj.status, obj.last_txid, JSON.stringify(obj), obj.tld]
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
@@ -1789,7 +1790,7 @@ class Database {
       const hash = Util.fnv1aHash(JSON.stringify(item_my))
       const hash1 = Util.fnv1aHash(JSON.stringify(item))
       if (hash !== hash1) {
-        if (item.ts < item_my[ts]) ret.diff[kk] = item_my //incoming is older
+        if (item[ts] < item_my[ts]) ret.diff[kk] = item_my //incoming is older
         else missed[kk] = item //incoming is newer, add to fetch list
       }
       else {
