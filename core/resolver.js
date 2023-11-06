@@ -222,10 +222,9 @@ class Resolver {
                 }
             }
             try {
-                console.log("... can resolve")
+                //console.log("... can resolve")
                 this.abort = false
                 const rtxArray = this.db.getUnresolvedTX(MAX_RESOLVE_COUNT)
-                const nidObjMap = MemDomains.getMap()
                 if (rtxArray == null || rtxArray.length == 0) {
                     if (!this.resolveFinish) {
                         console.warn(`--$----Handled All current TX from DB-------`)

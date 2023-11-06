@@ -930,7 +930,7 @@ class Database {
       if (updateObj) {
         for (let k in updateObj) {
           if ((k.at(0) === 'p' || k.at(0) === 'u') && typeof (props[k]) != 'undefined') {
-            if (props[k].slice(0, 7) === '$append') {
+            if (props[k].slice(0, 8) === '$append$') {
               const p = props[k].slice(8)
               updateObj[k] += p
             } else
@@ -939,7 +939,12 @@ class Database {
         }
         const vobj = Util.parseJson(value)
         const oldv = Util.parseJson(updateObj.value)
-        updateObj.value = JSON.stringify({ v: vobj.v ? vobj.v : oldv.v, id: vobj.id })
+        if (typeof (vobj.v) === 'undefined') vobj.v = oldv.v
+        if (vobj.v.slice(0, 8) === '$append$') {
+          const p = vobj.v.slice(8)
+          vobj.v = oldv.v + p
+        }
+        updateObj.value = JSON.stringify(vobj)
       } else {
         updateObj = { key: fullKey, value, domain, ts, parent, ...props }
       }
@@ -1631,15 +1636,15 @@ class Database {
         const toVerify = await this.getUnverifiedItems({ count: 500, type })
         const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
-        console.log(`--------got ${type} from `, peer.url, " Count:", objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
+        const count = objLen(result)
+        const synced = (count === 0 ? "Synced" : "")
+        console.log(peer.url, ` ${type} ${synced}----- Count:`, objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
         if (type == 'keys') {
-          console.log('found')
+          //console.log('found')
         }
         if (objLen(toVerify) > 0 && diff1 != undefined)
           this.handleUnverifiedItems({ items: toVerify, diff: diff1, type })
-        const count = objLen(result)
         if (count === 0) {
-          console.log("**********", peer.url, " " + type + " synced **********")
           return
         }
         const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
@@ -1663,6 +1668,8 @@ class Database {
       }
     }
     const ret = await Promise.allSettled(tasks)
+    console.log("************************")
+
     setTimeout(this.pullNewDomains.bind(this), 5000);
   }
   handleUnverifiedItems({ diff, items, type }) {
@@ -1678,7 +1685,7 @@ class Database {
         continue
       }
       if (item1[ts] > item[ts]) {
-        this.saveRawItem( item1, type )
+        this.saveRawItem(item1, type)
       }
     }
   }
@@ -1734,6 +1741,9 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
+    if (from === 'http://34.195.2.150:19000' && type === 'keys') {
+      console.log("found")
+    }
     let ret = {}
     const sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
     const result = {}
@@ -1765,9 +1775,7 @@ class Database {
     }
     ret.result = result
     ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
-    if (from === 'http://pi.skyjeff.com:10001' && type === 'keys') {
-      console.log("found")
-    }
+
     if (ret.maxTime < 1685969396173) {
       console.log('found1')
     }
