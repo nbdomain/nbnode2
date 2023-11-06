@@ -925,29 +925,34 @@ class Database {
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
       const { db, tld } = this.getDomainDB({ key: domain })
+      let update = (props['_dbAction'] === 'update')
+      delete props['_dbAction']
       let sql = "select * from keys where key = ?"
-      let updateObj = this.runPreparedSql({ name: 'saveKey0' + tld, db, method: 'get', sql, paras: [fullKey] })
-      if (updateObj) {
-        for (let k in updateObj) {
-          if ((k.at(0) === 'p' || k.at(0) === 'u') && typeof (props[k]) != 'undefined') {
-            if (typeof (props[k]) === 'string' && props[k].slice(0, 8) === '$append$') {
-              const p = props[k].slice(8)
-              updateObj[k] += p
-            } else
-              updateObj[k] = props[k]
+      let updateObj = null
+      if (update) {
+        updateObj = this.runPreparedSql({ name: 'saveKey0' + tld, db, method: 'get', sql, paras: [fullKey] })
+        if (updateObj) {
+          for (let k in updateObj) {
+            if ((k.at(0) === 'p' || k.at(0) === 'u') && typeof (props[k]) != 'undefined') {
+              if (typeof (props[k]) === 'string' && props[k].slice(0, 8) === '$append$') {
+                const p = props[k].slice(8)
+                updateObj[k] += p
+              } else
+                updateObj[k] = props[k]
+            }
           }
+          const vobj = Util.parseJson(value)
+          const oldv = Util.parseJson(updateObj.value)
+          if (typeof (vobj.v) === 'undefined') vobj.v = oldv.v
+          else if (typeof (vobj.v) === 'string' && vobj.v.slice(0, 8) === '$append$') {
+            const p = vobj.v.slice(8)
+            vobj.v = oldv.v + p
+          }
+          updateObj.value = JSON.stringify(vobj)
         }
-        const vobj = Util.parseJson(value)
-        const oldv = Util.parseJson(updateObj.value)
-        if (typeof (vobj.v) === 'undefined') vobj.v = oldv.v
-        if (typeof (vobj.v) === 'string' && vobj.v.slice(0, 8) === '$append$') {
-          const p = vobj.v.slice(8)
-          vobj.v = oldv.v + p
-        }
-        updateObj.value = JSON.stringify(vobj)
-      } else {
-        updateObj = { key: fullKey, value, domain, ts, parent, ...props }
       }
+      if (!updateObj)
+        updateObj = { key: fullKey, value, domain, ts, parent, ...props }
       updateObj.ts = ts, updateObj.domain = domain, updateObj.parent = parent
       this.saveRawItem(updateObj, 'keys')
       //const paras = [fullKey, updateObj.value, domain, ts, parent, updateObj.p1, updateObj.p2, updateObj.p3, updateObj.p4, updateObj.p5, updateObj.p6, updateObj.p7, updateObj.p8, updateObj.p9, updateObj.p10, updateObj.p11, updateObj.p12, updateObj.p13, updateObj.p14, updateObj.p15, updateObj.p16, updateObj.p17, updateObj.p18, updateObj.p19, updateObj.p20, updateObj.u1, updateObj.u2, updateObj.u3, updateObj.u4, updateObj.u5]
@@ -963,13 +968,6 @@ class Database {
           db.prepare(sql).run(tagName, tags[tagName], fullKey, domain, ts)
         }
       }
-      //update hash
-      /*let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-      const hash = +Util.fnv1aHash(strObj)
-      domainHash ^= hash
-      this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-      this.logger.info(domain, ":key=", key, ":value=", value, " dmhash:", domainHash)
-      console.log("domainHash:", domainHash)*/
     } catch (e) {
       console.error(e)
     }
