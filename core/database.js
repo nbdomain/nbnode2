@@ -255,7 +255,7 @@ class Database {
       }
       return ret
     } catch (e) {
-      console.error(e.message)
+      console.error(e.message + ":" + sql)
     }
     return null
   }
