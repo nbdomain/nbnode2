@@ -783,6 +783,9 @@ class Database {
           if (df[1] && df[1].indexOf('i') != -1) { //integer
             item.props[k] = +item.props[k]
           }
+          if (df[1] && df[1].indexOf('o') != -1) { //object
+            item.props[k] = Util.parseJson(item.props[k]) || {}
+          }
           Util.changeKeyname(item.props, k, df[0])
         }
       }
