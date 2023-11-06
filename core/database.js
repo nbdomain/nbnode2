@@ -930,7 +930,7 @@ class Database {
       if (updateObj) {
         for (let k in updateObj) {
           if ((k.at(0) === 'p' || k.at(0) === 'u') && typeof (props[k]) != 'undefined') {
-            if (props[k].slice(0, 8) === '$append$') {
+            if (typeof (props[k]) === 'string' && props[k].slice(0, 8) === '$append$') {
               const p = props[k].slice(8)
               updateObj[k] += p
             } else
@@ -940,7 +940,7 @@ class Database {
         const vobj = Util.parseJson(value)
         const oldv = Util.parseJson(updateObj.value)
         if (typeof (vobj.v) === 'undefined') vobj.v = oldv.v
-        if (vobj.v.slice(0, 8) === '$append$') {
+        if (typeof (vobj.v) === 'string' && vobj.v.slice(0, 8) === '$append$') {
           const p = vobj.v.slice(8)
           vobj.v = oldv.v + p
         }
