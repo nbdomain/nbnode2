@@ -1629,6 +1629,11 @@ class Database {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
     const MaxCount = 1000
+    if (!this.pullCounter) this.pullCounter = 1
+    if (this.pullCounter++ > 100) this.pullCounter = 1
+    if (this.pullCounter % 6 === 0) {
+      this.compactTxDB()
+    }
     const _inner = async (peer, type) => {
       try {
         const url = config.server.publicUrl
