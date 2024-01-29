@@ -11,9 +11,6 @@
     "@fastify/cors": "^8.2.1",
     "@fastify/http-proxy": "^9.1.0",
     "@fastify/static": "^6.10.1",
-    "@root/greenlock": "^4.0.5",
-    "@socket.io/cluster-adapter": "^0.2.2",
-    "@socket.io/sticky": "^1.0.3",
     "abort-controller": "^3.0.0",
     "arweave": "^1.13.7",
     "axios": "^0.21.4",
@@ -51,8 +48,6 @@
     "random-weighted-choice": "^0.1.4",
     "reconnecting-eventsource": "^1.6.2",
     "selfsigned": "^2.1.1",
-    "socket.io": "^4.6.1",
-    "socket.io-client": "^4.6.1",
     "winston": "^3.8.2",
     "winston-daily-rotate-file": "^4.7.1"
   }

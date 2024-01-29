@@ -112,14 +112,7 @@ class Database {
           }
         }
       }
-      /* if (!this.dmdb) {
-         this.dmdb = this._initdbPara(this.dmfile, "domain")
-       }
-       
-       //other standalone TLD db
-       for (const tld in this.standAloneTld) {
-         if (!this.tldDef[tld]) this.tldDef[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"), "domain")
-       } */
+      console.log("handlers:", this.dbHandles)
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
       if (!TXRESOLVED_FLAG) {
         TXRESOLVED_FLAG = Date.now()
@@ -1584,7 +1577,6 @@ class Database {
 
     const _inner = async (dbInfo) => {
       const { handle: db, tlds, name } = dbInfo
-      if (!db) console.log("ddd", dbInfo)
       let sql = `select * from ${table} where verified ='0' AND ${ts} < ?`
       let paras = [now - 10 * 1000]
       if (table === 'keys' && tlds.length > 1) {
