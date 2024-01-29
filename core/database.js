@@ -1650,8 +1650,8 @@ class Database {
       }
       return { maxTime, count: ret.length }
     }
-    const { maxTime, count } = await _inner({ db: this.dmdb })
     const tldMaxTime = []
+    //const { maxTime, count } = await _inner({ db: this.dmdb })
     /*for (const tld in this.tldDef) {
       const ret1 = await _inner({ db: this.tldDef[tld].handle, tld })
       if (ret1.maxTime != 0)
@@ -1669,7 +1669,7 @@ class Database {
       ret.domains = data_count.domains
     }
     ret.result = result
-    ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
+    ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min( ...tldMaxTime)
 
     if (ret.maxTime < 1685969396173) {
       console.log('found1')
