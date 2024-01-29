@@ -1,6 +1,5 @@
 const { Server } = require('socket.io')
-const { createAdapter } = require("@socket.io/cluster-adapter");
-const { setupWorker } = require("@socket.io/sticky");
+
 
 const axios = require('axios')
 const NBPeer = require('./nbpeer')

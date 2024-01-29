@@ -48,6 +48,8 @@
     "random-weighted-choice": "^0.1.4",
     "reconnecting-eventsource": "^1.6.2",
     "selfsigned": "^2.1.1",
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.7.4",
     "winston": "^3.8.2",
     "winston-daily-rotate-file": "^4.7.1"
   }
