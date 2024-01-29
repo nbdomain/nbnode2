@@ -1697,8 +1697,11 @@ class Database {
     if (this.pullCounter % 6 === 0) {
       this.compactTxDB()
     }
+    console.log("1")
     const _inner = async (peer, type, toVerify) => {
       try {
+        console.log("2")
+
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
@@ -1715,6 +1718,8 @@ class Database {
         if (count === 0) {
           return
         }
+        console.log("4")
+
         const { diff } = await this.verifyIncomingItems({ items: result, type, from: peer.url })
         if (count < MaxCount && objLen(diff) === 0) {
           console.log(peer.url, " " + type + " synced")
@@ -1722,6 +1727,8 @@ class Database {
         if (maxTime)
           this.writeConfig('dmdb', lastTimeKey, maxTime + '')
       } catch (e) {
+        console.log("3")
+
         console.error(peer.url + ":", e.message)
       }
     }
