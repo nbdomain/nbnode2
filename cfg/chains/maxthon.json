@@ -7,6 +7,29 @@
     "node_info": {
         "contact": "bloodchen@gmail.com"
     },
+    "dbs": {
+        "main": {
+            "file": "domains.db",
+            "tlds": [
+                "pv"
+            ]
+        },
+        "mxextra": {
+            "file": "domains.pp.db",
+            "tlds": [
+                "pp"
+            ]
+        },
+        "syc_data": {
+            "notes": "config,ads",
+            "file": "sync1.db",
+            "tldKeysPerTable": true,
+            "tlds": [
+                "px",
+                "s1"
+            ]
+        }
+    },
     "tld": {
         "pv": {
             "chain": "not",
@@ -24,6 +47,12 @@
             "chain": "not",
             "address": {
                 "protocol": "notpx"
+            }
+        },
+        "s1": {
+            "chain": "not",
+            "address": {
+                "protocol": "nots1"
             }
         }
     },

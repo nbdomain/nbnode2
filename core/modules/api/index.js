@@ -433,7 +433,7 @@ class appModule {
                     return db.API_execPreparedQuery({ name: "test", paras: ['NFZxNUx3YVZGeUM4Z1UzMyAGb/6Wte0vj5dzYO5h54SayACyJ6whFG/NubzP73rS'] })
                 }
                 case 'deletedb': {
-                    return db.deleteDB({ type: 'tlddb', name: req.query['tld'] })
+                    return db.deleteDB({ name: req.query['name'] })
                 }
                 case 'verifyDB': {
                     return db.verifyDBFromPeers()

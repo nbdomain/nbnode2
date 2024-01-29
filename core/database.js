@@ -48,7 +48,8 @@ class Database {
     const standalone = cfg_chain.tld_standalone_db ? cfg_chain.tld_standalone_db.split('&') : []
     this.standAloneTld = {}
     standalone.forEach(item => this.standAloneTld[item] = true)
-    this.tldDbs = {}
+    this.tldDef = {}
+    this.dbHandles = {}
     this.tickerAll = createChannel()
     this.tickers = {}
     this.onAddTransaction = null
@@ -58,6 +59,10 @@ class Database {
     this.queries = {}
   }
   _initdbPara(filename, type) {
+    if (!fs.existsSync(filename)) {
+      if (type === 'domain') fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), filename);
+      if (type === 'tx') fs.copyFileSync(Path.join(__dirname, "/template/txs.db"), filename);
+    }
     const db = new Sqlite3Database(filename, { fileMustExist: true })
     // 100MB cache
     db.pragma('cache_size = 6400')
@@ -70,44 +75,72 @@ class Database {
     return db
   }
   initdb(dbname) {
+    const { config } = this.indexers
     if (dbname === 'txdb') {
       //--------------------------------------------------------//
       //  Transaction DB
       //-------------------------------------------------------//
       if (!this.txdb) {
-        this.txdb = this._initdbPara(this.txfile)
+        this.txdb = this._initdbPara(this.txfile, "tx")
       }
     }
     if (dbname === 'dmdb') {
       //--------------------------------------------------------//
-      //  Domains DB
+      //  Init Domains DB
       //-------------------------------------------------------//
-      if (!this.dmdb) {
-        this.dmdb = this._initdbPara(this.dmfile, "domain")
+      for (const key in config.dbs) {
+        const db = config.dbs[key]
+        const { file, tlds, tldKeysPerTable } = db
+        const dbHandle = this._initdbPara(Path.join(this.path, file), "domain")
+        this.dbHandles[key] = { handle: dbHandle, tlds, name: key }
+        if (key === 'main') this.dmdb = dbHandle
+        for (const [index, tld] of tlds.entries()) {
+          this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
+          if (tldKeysPerTable && index > 0) {
+            const tabKeys = `keys_${tld}`
+            this.tldDef[tld].tabKeys = tabKeys
+            try {
+              let sql = "SELECT sql FROM sqlite_master WHERE name='keys'"
+              let { sql: createSql } = dbHandle.prepare(sql).get()
+              createSql = createSql.replace('keys', tabKeys)
+              dbHandle.prepare(createSql).run()
+              sql = `CREATE INDEX index_parent_${tld} ON ${tabKeys} ( parent )`
+              dbHandle.prepare(sql).run()
+            } catch (e) {
+              console.log(e.message)
+            }
+          }
+        }
       }
+      /* if (!this.dmdb) {
+         this.dmdb = this._initdbPara(this.dmfile, "domain")
+       }
+       
+       //other standalone TLD db
+       for (const tld in this.standAloneTld) {
+         if (!this.tldDef[tld]) this.tldDef[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"), "domain")
+       } */
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
       if (!TXRESOLVED_FLAG) {
         TXRESOLVED_FLAG = Date.now()
         this.writeConfig('dmdb', "TXRESOLVED_FLAG", TXRESOLVED_FLAG + '')
       }
-      //other standalone TLD db
-      for (const tld in this.standAloneTld) {
-        if (!this.tldDbs[tld]) this.tldDbs[tld] = this._initdbPara(Path.join(this.path, "domains." + tld + ".db"), "domain")
-      }
     }
     if (dbname === 'dtdb') {
       //----------------------------DATA DB----------------------------------
-      this.dtdb = this._initdbPara(this.dtfile)
+      this.dtdb = this._initdbPara(this.dtfile, "data")
     }
   }
-  getDomainDB({ key, tld }) {
-    if (this.tldDbs == {} || (!key && !tld)) return { db: this.dmdb, tld: '' }
+  getDomainDB({ key, tld = '' }) {
+    if (this.tldDef == {} || (!key && !tld)) return { db: this.dmdb, tld }
     if (!tld) {
       const dd = key.split('.')
       tld = dd[dd.length - 1]
     }
-    if (this.tldDbs[tld]) return { db: this.tldDbs[tld], tld }
-    return { db: this.dmdb, tld: '' }
+    const tldInfo = this.tldDef[tld]
+    if (!tldInfo) return { db: this.dmdb, tld, tab: "keys" }
+    const { handle, tabKeys } = tldInfo
+    return { db: handle, tld, tabKeys }
   }
   open() {
     if (!this.txdb) {
@@ -134,12 +167,6 @@ class Database {
       if (!fs.existsSync(this.dtfile)) {
         fs.copyFileSync(Path.join(__dirname, "/template/odata.db"), this.dtfile);
       }
-      for (const tld in this.standAloneTld) {
-        const filename = Path.join(this.path, "domains." + tld + ".db")
-        if (!fs.existsSync(filename)) {
-          fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), filename);
-        }
-      }
       this.initdb('txdb')
       this.initdb('dmdb')
       this.initdb('dtdb')
@@ -157,14 +184,15 @@ class Database {
       this.onResetDB(type)
     }
   }
-  deleteDB({ type, name }) {
-    if (type === 'tlddb') {
-      let db = this.tldDbs[name]
-      if (db) {
-        db.close()
-        fs.unlinkSync(db.name)
-        fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), db.name);
-        this.tldDbs[name] = this._initdbPara(db.name)
+  deleteDB({ name }) {
+    let db = this.dbHandles[name].handle
+    if (db) {
+      db.close()
+      fs.unlinkSync(db.name)
+      fs.copyFileSync(Path.join(__dirname, "/template/domains.db"), db.name);
+      const handle = this._initdbPara(db.name)
+      for (const tld of this.dbHandles.tlds) {
+        this.tldDef[tld].handle = handle
       }
     }
   }
@@ -281,9 +309,9 @@ class Database {
       this.dmdb.close()
       this.dmdb = null
     }
-    if (this.tldDbs) {
-      for (const tld in this.tldDbs) {
-        this.tldDbs[tld].close()
+    if (this.tldDef) {
+      for (const tld in this.tldDef) {
+        this.tldDef[tld].handle.close()
       }
     }
     if (this.dtdb) {
@@ -398,12 +426,12 @@ class Database {
       this.writeConfig('dmdb', 'checkpointTime', checkpointTime + '')
       _backupDB(this.txdb)
       _backupDB(this.dmdb)
-      for (const tld in this.tldDbs) {
-        _backupDB(this.tldDbs[tld])
+      for (const tld in this.tldDef) {
+        _backupDB(this.tldDef[tld].handle)
       }
 
       /*  let dbname = Path.join(this.bkPath, `bk_domains.db`)
-  
+   
         fs.rmSync(dbname, { force: true })
         let sql = "VACUUM main INTO '" + dbname + "'"
         console.log("backup to:", dbname)
@@ -669,7 +697,7 @@ class Database {
       if (res) return res
     }
     //res = this.getDomainStmt.get(domain);
-    const { db, tld } = this.getDomainDB({ key: domain })
+    const { db, tld, tabKeys } = this.getDomainDB({ key: domain })
     res = this.runPreparedSql({ name: "LoadDomain" + tld, db, method: 'get', sql: 'SELECT * from nidObj where domain = ?', paras: [domain] })
     if (!res) return null
     if (raw) return res
@@ -717,8 +745,8 @@ class Database {
       if (!this._getDataDMST) {
         this._getDataDMST = []
         this._getDataDMST.push(this.dmdb.prepare(sql))
-        for (const tld in this.tldDbs) {
-          this._getDataDMST.push(this.tldDbs[tld].prepare(sql))
+        for (const tld in this.tldDef) {
+          this._getDataDMST.push(this.tldDef[tld].handle.prepare(sql))
         }
       }
       let keys = 0, domains = 0
@@ -740,16 +768,16 @@ class Database {
     const maxResolvedTx = this.readConfig('dmdb', 'maxResolvedTx')
     const maxResolvedTxTime = this.readConfig('dmdb', 'maxResolvedTxTime')
     const dmHashs = {}
-    for (const tld in this.tldDbs) {
+    for (const tld in this.tldDef) {
       dmHashs[tld] = this.readConfig('dmdb-' + tld, 'domainHash')
     }*/
     return { v: 2, ...ret, ...ret1 }
   }
 
   queryChildCount(parent) {
-    const sql = "select count(*) from keys where parent = ?"
     //const res = this.dmdb.prepare(sql).raw(true).get(parent)
-    const { db, tld } = this.getDomainDB({ key: parent })
+    const { db, tld, tabKeys } = this.getDomainDB({ key: parent })
+    const sql = `select count(*) from ${tabKeys} where parent = ?`
     const res = this.runPreparedSql({ name: 'queryChildCount' + tld, db, method: 'get', sql, paras: [parent] })
     return { [parent]: Object.values(res)[0] }
   }
@@ -864,9 +892,10 @@ class Database {
     }
   } */
   async readChildrenKeys(parent) {
-    const sql = "select * from keys where parent = ?"
     //const ret = this.dmdb.prepare(sql).all(parentKey)
-    const { db, tld } = this.getDomainDB({ key: parent })
+    const { db, tld, tabKeys } = this.getDomainDB({ key: parent })
+    const sql = `select * from ${tabKeys} where parent = ?`
+
     const ret = this.runPreparedSql({ name: 'readChildrenKeys' + tld, db, method: 'all', sql, paras: [parent] })
 
     for (let i = 0; i < ret.length; i++) {
@@ -876,8 +905,8 @@ class Database {
   }
   async readKey(key, transform = true) {
     try {
-      const { db, tld } = this.getDomainDB({ key })
-      const sql = 'SELECT * from keys where key=?'
+      const { db, tld, tabKeys } = this.getDomainDB({ key })
+      const sql = `SELECT * from ${tabKeys} where key=?`
       let ret = this.runPreparedSql({ name: "readKeyStmt" + tld, db, method: 'get', sql, paras: [key] })
       if (!ret) return null
       if (transform)
@@ -890,8 +919,8 @@ class Database {
     return null;
   }
   async getAllKeys(domain) {
-    const sql = 'select * from keys where domain= ?'
-    const { db, tld } = this.getDomainDB({ key: domain })
+    const { db, tld, tabKeys } = this.getDomainDB({ key: domain })
+    const sql = `select * from ${tabKeys} where domain= ?`
     const ret = db.prepare(sql).all(domain)
     if (!ret) return {}
     for (let i = 0; i < ret.length; i++) {
@@ -900,17 +929,16 @@ class Database {
     return ret
   }
   async delKey(key, ts, domain) {
-    //const sql = "DELETE from keys where key = ?"
-    const sql = "replace into keys (key, value, ts, domain) values (?,'deleted',?,?)"
+    const { db, tld, tabKeys } = this.getDomainDB({ key })
+    const sql = `replace into ${tabKeys} (key, value, ts, domain) values (?,'deleted',?,?)`
 
-    //    const res = this.dmdb.prepare(sql).run(key)
-    const { db, tld } = this.getDomainDB({ key })
     const res = this.runPreparedSql({ name: "delKey" + tld, db, method: 'run', sql, paras: [key, ts, domain] })
   }
   async delChild(parent) {
-    const sql = "DELETE from keys where parent = ?"
     //const res = this.dmdb.prepare(sql).run(parent)
-    const { db, tld } = this.getDomainDB({ key: parent })
+    const { db, tld, tabKeys } = this.getDomainDB({ key: parent })
+    const sql = `DELETE from ${tabKeys} where parent = ?`
+
     const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
 
     if (res.changes > 0) {
@@ -927,10 +955,10 @@ class Database {
     const fullKey = key + '.' + domain
     const parent = fullKey.slice(fullKey.indexOf('.') + 1)
     try {
-      const { db, tld } = this.getDomainDB({ key: domain })
+      const { db, tld, tabKeys } = this.getDomainDB({ key: domain })
       let update = (props['_dbAction'] === 'update')
       delete props['_dbAction']
-      let sql = "select * from keys where key = ?"
+      let sql = `select * from ${tabKeys} where key = ?`
       let updateObj = null
       if (update) {
         updateObj = this.runPreparedSql({ name: 'saveKey0' + tld, db, method: 'get', sql, paras: [fullKey] })
@@ -999,7 +1027,7 @@ class Database {
         const from = option.time.from ? option.time.from : 0
         const to = option.time.to ? option.time.to : 9999999999
         sql = 'SELECT domain FROM nidobj WHERE txCreate > ? AND txCreate < ? '
-        const ret = db.prepare(sql).all(from, to);
+        let ret = db.prepare(sql).all(from, to);
         if (!ret) ret = []
         for (let i = 0; i < ret.length; i++) {
           ret[i] = await this.TransformOneKeyItem(ret[i])
@@ -1009,8 +1037,8 @@ class Database {
       return []
     }
     let ret = await _findDomains(this.dmdb, option)
-    for (const tld in this.tldDbs) {
-      const ret1 = await _findDomains(this.tldDbs[tld], option)
+    for (const tld in this.tldDef) {
+      const ret1 = await _findDomains(this.tldDef[tld].handle, option)
       ret = ret.concat(ret1)
     }
     return ret
@@ -1029,8 +1057,8 @@ class Database {
       return res;
     }
     let ret = _getSellDomains(this.dmdb, option)
-    for (const tld in this.tldDbs) {
-      const ret1 = _getSellDomains(this.tldDbs[tld], option)
+    for (const tld in this.tldDef) {
+      const ret1 = _getSellDomains(this.tldDef[tld].handle, option)
       ret = ret.concat(ret1)
     }
     return ret
@@ -1147,7 +1175,7 @@ class Database {
   }
   readDataFromDisk(hash, option = { string: true }) {
     const { config } = this.indexers
-    const path = config.dataPath
+    let path = config.dataPath
     if (!fs.existsSync(path)) {
       path = Path.join(__dirname, "/db/data/")
       console.error("DataPath does exist, using ", path)
@@ -1180,7 +1208,7 @@ class Database {
       else {
         const tlds = dbName.split('-')
         if (tlds[0] === 'dmdb') {
-          db = this.tldDbs[tlds[1]]
+          db = this.tldDef[tlds[1]]?.handle
           if (!db) db = this.dmdb
         }
       }
@@ -1202,7 +1230,7 @@ class Database {
       else {
         const tlds = dbName.split('-')
         if (tlds[0] === 'dmdb') {
-          db = this.tldDbs[tlds[1]]
+          db = this.tldDef[tlds[1]]?.handle
           if (!db) db = this.dmdb
         }
       }
@@ -1305,8 +1333,8 @@ class Database {
       return { keys: objs.length, domains: domains.length, dmHash }
     }
     const ret = {}// _updateDBHash(this.dmdb)
-    for (const tld in this.tldDbs) {
-      ret[tld] = _updateDBHash(this.tldDbs[tld], tld)
+    for (const tld in this.tldDef) {
+      ret[tld] = _updateDBHash(this.tldDef[tld]?.handle, tld)
     }
     return ret
   }
@@ -1552,24 +1580,107 @@ class Database {
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
-    const sql = `select * from ${table} where verified ='0' AND ${ts} < ? limit ?`
     const result = {}
 
-    const _inner = async (db, tld = '') => {
-      //const ret = db.prepare(sql).all(now - 10 * 1000, count)
-      const ret = this.runPreparedSql({ name: "getUnverifiedItems" + type + tld, db, method: "all", sql, paras: [now - 10 * 1000, count] })
+    const _inner = async (dbInfo) => {
+      const { handle: db, tlds, name } = dbInfo
+      let sql = `select * from ${table} where verified ='0' AND ${ts} < ?`
+      let paras = [now - 10 * 1000]
+      if (table === 'keys' && tlds.length > 1) {
+        sql = `select * from ${table} where verified ='0' AND ${ts} < ? `
+        for (const tld of tlds) {
+          if (this.tldDef[tld].tabKeys != 'keys') {
+            table = this.tldDef[tld].tabKeys
+            sql += `UNION ALL select * from ${table} where verified ='0' AND ${ts} < ? `
+            paras.push(paras[0])
+          }
+        }
+      }
+      paras.push(count)
+      sql += `limit ?`
+      const ret = this.runPreparedSql({ name: "getUnverifiedItems" + type + name, db, method: "all", sql, paras })
       if (!ret) return null
       for (const item of ret) {
         delete item.verified, delete item.id
         result[item[colname]] = item
       }
     }
-    await _inner(this.dmdb)
-    for (const tld in this.tldDbs) {
-      await _inner(this.tldDbs[tld], tld)
+    /*await _inner(this.dmdb)
+    for (const tld in this.tldDef) {
+      await _inner(this.tldDef[tld].handle, tld)
+    }*/
+    for (const name in this.dbHandles) {
+      const dbInfo = this.dbHandles[name]
+      await _inner(dbInfo)
     }
 
     return Object.keys(result).length == 0 ? null : result
+  }
+  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
+    let table = 'keys', ts = 'ts', colname = 'key'
+    if (type === "domains") {
+      table = 'nidobj', ts = 'txUpdate', colname = 'domain'
+    }
+    if (from === 'http://34.195.2.150:19000' && type === 'keys') {
+      console.log("found")
+    }
+    let ret = {}
+    const result = {}
+    if (toVerify) {
+      ret = await this.verifyIncomingItems({ items: toVerify, type, from })
+    }
+    const _inner = async (dbInfo) => {
+      //const sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
+      const { handle: db, tlds, name } = dbInfo
+      let sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
+      let paras = [tmstart, tmstart]
+      if (table === 'keys' && tlds.length > 1) {
+        sql = `select * from keys where ${ts} > ? OR (${ts} < ? AND verified = '0' ) `
+        for (const tld of tlds) {
+          if (this.tldDef[tld].tabKeys != 'keys') {
+            table = this.tldDef[tld].tabKeys
+            sql += `UNION ALL select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) `
+            paras.push(tmstart)
+            paras.push(tmstart)
+          }
+        }
+        sql += `ORDER BY ${ts} ASC limit ${MaxCount}`
+      }
+      const ret = this.runPreparedSql({ name: "getNewDm" + type + name + MaxCount, db, method: "all", sql, paras })
+      if (!ret) return null
+      let maxTime = 0
+      for (const item of ret) {
+        delete item.verified, delete item.id
+        result[item[colname]] = item
+        maxTime = Math.max(maxTime, item[ts])
+      }
+      return { maxTime, count: ret.length }
+    }
+    const { maxTime, count } = await _inner({ db: this.dmdb })
+    const tldMaxTime = []
+    /*for (const tld in this.tldDef) {
+      const ret1 = await _inner({ db: this.tldDef[tld].handle, tld })
+      if (ret1.maxTime != 0)
+        tldMaxTime.push(ret1.maxTime)
+    }*/
+    for (const name in this.dbHandles) {
+      const dbInfo = this.dbHandles[name]
+      const ret1 = await _inner(dbInfo)
+      if (ret1.maxTime != 0)
+        tldMaxTime.push(ret1.maxTime)
+    }
+    if (info === 'keycount') {
+      const data_count = this.getDataCount({ domainKey: true })
+      ret.keys = data_count.keys
+      ret.domains = data_count.domains
+    }
+    ret.result = result
+    ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
+
+    if (ret.maxTime < 1685969396173) {
+      console.log('found1')
+    }
+    return ret
   }
   incVerifyCount(item, type) {
     let table = 'keys', keyname = 'key'
@@ -1577,54 +1688,13 @@ class Database {
       table = 'nidobj', keyname = 'domain'
     }
     const key = item[keyname]
-    const { db, tld } = this.getDomainDB({ key })
+    const { db, tld, tabKeys } = this.getDomainDB({ key })
+    if (table === 'keys') table = tabKeys
     const sql = `update ${table} set verified = verified + 1 where ${keyname} = ?`
     const ret = this.runPreparedSql({ name: "incVerifyCount1" + type + tld, db, method: "run", sql, paras: [key] })
     return ret
   }
-  /*async verifyDBFromPeers() {
-    const { Nodes, axios, config } = this.indexers
-    const types = ['domains', 'keys']
-    for (const type of types) {
-      const items = await this.getUnverifiedItems({ db: this.dmdb, count: 500, type })
-      if (items) {
-        const peers = Nodes.getNodes()
-        for (let k in peers) {
-          const peer = peers[k]
-          try {
-            const url = config.server.publicUrl
-            console.warn("verifying ", Object.keys(items).length, " items from ", peer.url)
-            const ret = await axios.post(peer.url + "/api/verifyDMs", { items, type, from: url, info: "keycount" })
-            const { diff, miss, keys } = ret.data
-            console.log('got diff:', objLen(diff), " miss:", objLen(miss))
-            if (keys)
-              console.log('---------------', peer.url, " keys", keys)
-            for (const key in items) {
-              const item = items[key]
-              const diff_item = diff[key]
-              if (miss[key]) continue
-              if (!diff_item) {
-                this.incVerifyCount(item, type)
-              } else {
-                if (diff_item.ts > item.ts) {
-                  //console.log(JSON.stringify(diff_item))
-                  //console.log(JSON.stringify(await this.readKey(item.key, false)))
-                  console.warn("found outdated item:", item.key)
-                  this.saveRawItem(diff_item, type)
-                  console.warn("fixed")
-                }
-              }
-            }
-          } catch (e) {
-            console.error("verifyDBFromPeers:", e.message)
-          }
-        }
-      } else {
-        console.log("all items verified:", type)
-      }
-    }
-    setTimeout(this.verifyDBFromPeers.bind(this), 5000);
-  } */
+
   async pullNewDomains() {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
@@ -1634,12 +1704,11 @@ class Database {
     if (this.pullCounter % 6 === 0) {
       this.compactTxDB()
     }
-    const _inner = async (peer, type) => {
+    const _inner = async (peer, type,toVerify) => {
       try {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const toVerify = await this.getUnverifiedItems({ count: 500, type })
         const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
         const count = objLen(result)
@@ -1668,9 +1737,10 @@ class Database {
     console.log(`--------got from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
     for (const type of types) {
       const peers = Nodes.getNodes()
+      const toVerify = await this.getUnverifiedItems({ count: 500, type })
       for (let k in peers) {
         const peer = peers[k]
-        tasks.push(_inner(peer, type))
+        tasks.push(_inner(peer, type,toVerify))
       }
     }
     const ret = await Promise.allSettled(tasks)
@@ -1716,13 +1786,12 @@ class Database {
     }
     console.log("saving:", item[keyname])
     if (type === 'keys') {
-      const sql = `Insert or Replace into keys (key,value,domain,ts,parent,
-        p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4,u5) 
-        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      const { db, tld } = this.getDomainDB({ key: item.key })
+
+      const { db, tld, tabKeys } = this.getDomainDB({ key: item.key })
+      const sql = `Insert or Replace into ${tabKeys} (key,value,domain,ts,parent,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       const paras = [item.key, item.value, item.domain, item.ts, item.parent,
       item.p1, item.p2, item.p3, item.p4, item.p5, item.p6, item.p7, item.p8, item.p9, item.p10, item.p11, item.p12, item.p13, item.p14
-        , item.p15, item.p16, item.p17, item.p18, item.p19, item.p20, item.u1, item.u2, item.u3, item.u4, item.u5]
+        , item.p15, item.p16, item.p17, item.p18, item.p19, item.p20, item.u1, item.u2, item.u3, item.u4]
       return this.runPreparedSql({ name: 'saveKey1' + tld, db, method: 'run', sql, paras })
     }
     if (type === 'domains') {
@@ -1742,51 +1811,7 @@ class Database {
       return this.runPreparedSql({ name: 'saveDomainObj' + tld, db, method: 'run', sql, paras })
     }
   }
-  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
-    let table = 'keys', ts = 'ts', colname = 'key'
-    if (type === "domains") {
-      table = 'nidobj', ts = 'txUpdate', colname = 'domain'
-    }
-    if (from === 'http://34.195.2.150:19000' && type === 'keys') {
-      console.log("found")
-    }
-    let ret = {}
-    const sql = `select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) ORDER BY ${ts} ASC limit ${MaxCount}`
-    const result = {}
-    if (toVerify) {
-      ret = await this.verifyIncomingItems({ items: toVerify, type, from })
-    }
-    const _inner = async ({ db, tld = '' }) => {
-      const ret = this.runPreparedSql({ name: "getNewDm" + type + tld + MaxCount, db, method: "all", sql, paras: [tmstart, tmstart] })
-      if (!ret) return null
-      let maxTime = 0
-      for (const item of ret) {
-        delete item.verified, delete item.id
-        result[item[colname]] = item
-        maxTime = Math.max(maxTime, item[ts])
-      }
-      return { maxTime, count: ret.length }
-    }
-    const { maxTime, count } = await _inner({ db: this.dmdb })
-    const tldMaxTime = []
-    for (const tld in this.tldDbs) {
-      const ret1 = await _inner({ db: this.tldDbs[tld], tld })
-      if (ret1.maxTime != 0)
-        tldMaxTime.push(ret1.maxTime)
-    }
-    if (info === 'keycount') {
-      const data_count = this.getDataCount({ domainKey: true })
-      ret.keys = data_count.keys
-      ret.domains = data_count.domains
-    }
-    ret.result = result
-    ret.maxTime = objLen(result) < MaxCount ? Date.now() : Math.min(maxTime, ...tldMaxTime)
 
-    if (ret.maxTime < 1685969396173) {
-      console.log('found1')
-    }
-    return ret
-  }
   async readRawItems(items, type) {
     const ret = {}
     let table = 'keys', keyname = 'key'
@@ -1811,11 +1836,11 @@ class Database {
     }
     let maxTime = 0
     const ret = { diff: {} }, missed = {}
-    const sql = `select * from ${table} where ${colname} = ?`
     for (const kk in items) {
       const item = items[kk]
       maxTime = Math.max(maxTime, item[ts])
-      const { db, tld } = this.getDomainDB({ key: kk })
+      const { db, tld, tabKeys } = this.getDomainDB({ key: kk })
+      const sql = `select * from ${tabKeys} where ${colname} = ?`
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table + tld, db, method: 'get', sql, paras: [kk] })
       if (!item_my) {
         missed[kk] = item
