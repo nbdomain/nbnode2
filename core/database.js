@@ -1584,6 +1584,7 @@ class Database {
 
     const _inner = async (dbInfo) => {
       const { handle: db, tlds, name } = dbInfo
+      if (!db) console.log("ddd", dbInfo)
       let sql = `select * from ${table} where verified ='0' AND ${ts} < ?`
       let paras = [now - 10 * 1000]
       if (table === 'keys' && tlds.length > 1) {
@@ -1704,7 +1705,7 @@ class Database {
     if (this.pullCounter % 6 === 0) {
       this.compactTxDB()
     }
-    const _inner = async (peer, type,toVerify) => {
+    const _inner = async (peer, type, toVerify) => {
       try {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
@@ -1740,7 +1741,7 @@ class Database {
       const toVerify = await this.getUnverifiedItems({ count: 500, type })
       for (let k in peers) {
         const peer = peers[k]
-        tasks.push(_inner(peer, type,toVerify))
+        tasks.push(_inner(peer, type, toVerify))
       }
     }
     const ret = await Promise.allSettled(tasks)
