@@ -107,15 +107,11 @@ class Database {
               createSql = createSql.replace('keys', tabKeys)
               tabCreated = true
               dbHandle.prepare(createSql).run()
-
-              sql = `CREATE INDEX index_parent_${tld} ON ${tabKeys} ( parent )`
-              dbHandle.prepare(sql).run()
-
             } catch (e) {
               console.log(e.message)
             }
           }
-          /*if (indexes && (index == 0 || tabCreated)) { //create indexes
+          if (indexes && (index == 0 || tabCreated)) { //create indexes
             for (const ind of indexes) {
               try {
                 const sql = `CREATE INDEX index_${ind}_${tld} ON ${tabKeys} ( ${ind} )`
@@ -124,7 +120,7 @@ class Database {
                 console.error(e.message)
               }
             }
-          }*/
+          }
 
         }
 

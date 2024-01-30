@@ -23,8 +23,9 @@
                 "a9"
             ],
             "indexes": [
+                "p1",
                 "p2",
-                "parent"
+                "p4"
             ]
         },
         "mxextra": {
