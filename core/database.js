@@ -90,7 +90,7 @@ class Database {
       //-------------------------------------------------------//
       for (const key in config.dbs) {
         const db = config.dbs[key]
-        const { file, tlds, tldKeysPerTable, indexes } = db
+        const { file, tlds, tldKeysPerTable, indexes = [] } = db
         const dbHandle = this._initdbPara(Path.join(this.path, file), "domain")
         this.dbHandles[key] = { handle: dbHandle, tlds, name: key }
         if (key === 'main') this.dmdb = dbHandle
