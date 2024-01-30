@@ -65,7 +65,7 @@ class Database {
     }
     const db = new Sqlite3Database(filename, { fileMustExist: true })
     // 100MB cache
-    db.pragma('cache_size = 6400')
+    db.pragma('cache_size = -200000')
     db.pragma('page_size = 16384')
     // WAL mode allows simultaneous readers
     db.pragma('journal_mode = WAL')
