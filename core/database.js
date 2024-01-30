@@ -1783,6 +1783,10 @@ class Database {
     if (type === 'keys') {
 
       const { db, tld, tabKeys } = this.getDomainDB({ key: item.key })
+      if (!tabKeys) {
+        console.error("saveRawItem: unsupported domain:", item.key)
+        return false
+      }
       const sql = `Insert or Replace into ${tabKeys} (key,value,domain,ts,parent,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,u1,u2,u3,u4) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       const paras = [item.key, item.value, item.domain, item.ts, item.parent,
       item.p1, item.p2, item.p3, item.p4, item.p5, item.p6, item.p7, item.p8, item.p9, item.p10, item.p11, item.p12, item.p13, item.p14
@@ -1835,6 +1839,10 @@ class Database {
       const item = items[kk]
       maxTime = Math.max(maxTime, item[ts])
       const { db, tld, tabKeys } = this.getDomainDB({ key: kk })
+      if (!tabKeys) {
+        console.error("verifyIncomingItems: unsupported domain:", kk)
+        continue
+      }
       const sql = `select * from ${tabKeys} where ${colname} = ?`
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table + tld, db, method: 'get', sql, paras: [kk] })
       if (!item_my) {
