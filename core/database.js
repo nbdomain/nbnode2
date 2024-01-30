@@ -292,7 +292,7 @@ class Database {
         case 'run': ret = this.queries[name].run(...paras); break;
       }
       const t2 = Date.now()
-      console.log("runPreparedSql:", name, sql, paras, "time=", (t2 - t1) / 1000)
+      console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
       return ret
     } catch (e) {
       console.error(e)

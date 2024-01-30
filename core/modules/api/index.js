@@ -59,7 +59,7 @@ class appModule {
                 const allowIPs = process.env.allowIPs.split(' ')
                 const IP = getClientIp(req)
                 const ips = IP.split('.')
-                if (allowIPs.indexOf(IP) == -1 && config?.nodeIPs.indexOf(IP) === -1 && IP != '1'
+                if (allowIPs.indexOf(IP) == -1 && config?.nodeIPs?.indexOf(IP) === -1 && IP != '1'
                     && ips[0] !== "127" && ips[0] !== "10" && !(ips[0] == "172" && +ips[1] >= 16 && +ips[1] <= 31) && !(ips[0] === "192" && ips[1] === "168")) {
                     console.error("not allowed:", IP)
                     res.send("not allowed")
