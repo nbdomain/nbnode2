@@ -30,7 +30,7 @@ class Logger {
             //maxSize: '20m',
             maxFiles: '5d',
             prepend: true,
-            level: cfg_chain?.log?.level || 'info',
+            level: cfg_chain?.log?.level || 'error',
         });
         transport.on('rotate', function (oldFilename, newFilename) {
             // call function like upload to s3 or on cloud
