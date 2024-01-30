@@ -11,15 +11,10 @@
 const http = require('http')
 const fastifyModule = require('fastify')
 const cors = require('@fastify/cors')
-const httpProxy = require('@fastify/http-proxy')
 
 const URL = require('url')
 var dns = require("dns");
 var axios = require("axios");
-const { ExpressPeerServer } = require('peer');
-const { createProxyMiddleware } = require("http-proxy-middleware");
-const { createCipheriv } = require('crypto');
-const { Nodes } = require('./nodes');
 const Path = require('path')
 
 

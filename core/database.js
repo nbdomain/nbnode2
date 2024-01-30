@@ -263,7 +263,7 @@ class Database {
     }
   }
   runPreparedSql({ name, db, method, sql, paras = [], update = false }) {
-    //console.log("runPreparedSql:", sql, paras)
+    const t1 = Date.now()
     try {
       if (!this.queries[name] || update) {
         this.queries[name] = db.prepare(sql)
@@ -274,6 +274,8 @@ class Database {
         case 'all': ret = this.queries[name].all(...paras); break;
         case 'run': ret = this.queries[name].run(...paras); break;
       }
+      const t2 = Date.now()
+      console.log("runPreparedSql:", name, sql, "time=", Math.floor((t2 - t1) / 1000))
       return ret
     } catch (e) {
       console.error(e)
