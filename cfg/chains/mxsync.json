@@ -1,0 +1,154 @@
+{
+    "chainid": "mxsync",
+    "server": {
+        "port": 9000
+    },
+    "node_info": {
+        "contact": "bloodchen@gmail.com"
+    },
+    "dbs": {
+        "main": {
+            "file": "domains.db",
+            "tlds": [
+                "ss"
+            ]
+        },
+        "bookmark": {
+            "notes": "bookmark data",
+            "file": "bookmark.db",
+            "tldKeysPerTable": true,
+            "tlds": [
+                "b1",
+                "b2",
+                "b3",
+                "b4",
+                "b5",
+                "b6",
+                "b7",
+                "b8",
+                "b9"
+            ]
+        },
+        "config": {
+            "notes": "config data",
+            "file": "config.db",
+            "tldKeysPerTable": true,
+            "tlds": [
+                "c1",
+                "c2",
+                "c3",
+                "c4",
+                "c5"
+            ]
+        }
+    },
+    "tld": {
+        "ss": {
+            "chain": "not",
+            "address": {
+                "protocol": "noss"
+            }
+        },
+        "b1": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob1"
+            }
+        },
+        "b2": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob2"
+            }
+        },
+        "b3": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob3"
+            }
+        },
+        "b4": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob4"
+            }
+        },
+        "b5": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob5"
+            }
+        },
+        "b6": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob6"
+            }
+        },
+        "b7": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob7"
+            }
+        },
+        "b8": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob8"
+            }
+        },
+        "b9": {
+            "chain": "not",
+            "address": {
+                "protocol": "nob9"
+            }
+        },
+        "c1": {
+            "chain": "not",
+            "address": {
+                "protocol": "noc1"
+            }
+        },
+        "c2": {
+            "chain": "not",
+            "address": {
+                "protocol": "noc2"
+            }
+        },
+        "c3": {
+            "chain": "not",
+            "address": {
+                "protocol": "noc3"
+            }
+        },
+        "c4": {
+            "chain": "not",
+            "address": {
+                "protocol": "noc4"
+            }
+        },
+        "c5": {
+            "chain": "not",
+            "address": {
+                "protocol": "noc5"
+            }
+        }
+    },
+    "consensus": {
+        "mode": "trust_all"
+    },
+    "pnodes": [
+        "http://pi.skyjeff.com:9100",
+        "http://pi.skyjeff.com:10001",
+        "http://143.198.66.116:9200",
+        "http://112.213.125.241:5000",
+        "http://34.195.2.150:19000"
+    ],
+    "apikey": [
+        "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
+    ],
+    "txdb": {
+        "daysToKeep": 7
+    },
+    "logfile": "nbnode-%DATE%.log"
+}
