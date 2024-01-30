@@ -107,6 +107,10 @@ class Database {
               createSql = createSql.replace('keys', tabKeys)
               tabCreated = true
               dbHandle.prepare(createSql).run()
+
+              sql = `CREATE INDEX index_parent_${tld} ON ${tabKeys} ( parent )`
+              dbHandle.prepare(sql).run()
+
             } catch (e) {
               console.log(e.message)
             }
