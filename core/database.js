@@ -95,6 +95,7 @@ class Database {
         this.dbHandles[key] = { handle: dbHandle, tlds, name: key }
         if (key === 'main') this.dmdb = dbHandle
         let tabCreated = false
+        indexes.push('verified')
         for (const [index, tld] of tlds.entries()) {
           this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
           let tabKeys = "keys"
