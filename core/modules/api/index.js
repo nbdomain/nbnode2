@@ -68,7 +68,7 @@ class appModule {
             done()
         })
         app.get(PREFIX + '/', async function (req, res, next) {
-
+            const t1 = Date.now()
             let domain = req.query['nid'];
             let f = req.query['full'] === 'true';
             const price = req.query['price'] !== 'false';
@@ -86,6 +86,8 @@ class appModule {
                 if (ret.code === 0) {
                     ret.chain = Util.getchain(domain)
                 }
+                const t2 = Date.now()
+                console.log("read Domain:", domain, "time=", (t2 - t1) / 1000)
                 return (ret);
             } catch (err) {
                 console.error(err);
