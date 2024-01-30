@@ -62,7 +62,7 @@
     "consensus": {
         "mode": "trust_all"
     },
-    "pnodes": [
+    "pnodes--": [
         "http://pi.skyjeff.com:9100",
         "http://pi.skyjeff.com:10001",
         "http://143.198.66.116:9200",
