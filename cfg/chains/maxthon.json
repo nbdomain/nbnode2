@@ -9,8 +9,18 @@
     "dbs": {
         "main": {
             "file": "domains.db",
+            "tldKeysPerTable": true,
             "tlds": [
-                "pv"
+                "pv",
+                "a1",
+                "a2",
+                "a3",
+                "a4",
+                "a5",
+                "a6",
+                "a7",
+                "a8",
+                "a9"
             ],
             "indexes": [
                 "p2",
@@ -50,6 +60,60 @@
             "chain": "not",
             "address": {
                 "protocol": "notpx"
+            }
+        },
+        "a1": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa1"
+            }
+        },
+        "a2": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa2"
+            }
+        },
+        "a3": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa3"
+            }
+        },
+        "a4": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa4"
+            }
+        },
+        "a5": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa5"
+            }
+        },
+        "a6": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa6"
+            }
+        },
+        "a7": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa7"
+            }
+        },
+        "a8": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa8"
+            }
+        },
+        "a9": {
+            "chain": "not",
+            "address": {
+                "protocol": "noa9"
             }
         },
         "s1": {

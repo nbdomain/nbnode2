@@ -1603,8 +1603,8 @@ class Database {
         sql = `select * from ${table} where verified ='0' AND ${ts} < ? `
         for (const tld of tlds) {
           if (this.tldDef[tld].tabKeys != 'keys') {
-            table = this.tldDef[tld].tabKeys
-            sql += `UNION ALL select * from ${table} where verified ='0' AND ${ts} < ? `
+            const tabKeys = this.tldDef[tld].tabKeys
+            sql += `UNION ALL select * from ${tabKeys} where verified ='0' AND ${ts} < ? `
             paras.push(paras[0])
           }
         }
@@ -1651,8 +1651,8 @@ class Database {
         sql = `select * from keys where ${ts} > ? OR (${ts} < ? AND verified = '0' ) `
         for (const tld of tlds) {
           if (this.tldDef[tld].tabKeys != 'keys') {
-            table = this.tldDef[tld].tabKeys
-            sql += `UNION ALL select * from ${table} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) `
+            const tabKeys = this.tldDef[tld].tabKeys
+            sql += `UNION ALL select * from ${tabKeys} where ${ts} > ? OR (${ts} < ? AND verified = '0' ) `
             paras.push(tmstart)
             paras.push(tmstart)
           }

@@ -221,8 +221,9 @@ class Nodes {
         }
         // const nodes = this.indexers.db.loadNodes(true) //load from db
         // await _addFromArray(nodes)
-        const p = await this._fromDNS()
-        await _addFromArray(p)
+
+        // const p = await this._fromDNS()
+        // await _addFromArray(p)
 
     }
     isProducer(pkey) {
