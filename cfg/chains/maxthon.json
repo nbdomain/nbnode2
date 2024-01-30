@@ -11,6 +11,10 @@
             "file": "domains.db",
             "tlds": [
                 "pv"
+            ],
+            "indexes": [
+                "p2",
+                "parent"
             ]
         },
         "mxextra": {

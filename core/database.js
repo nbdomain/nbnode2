@@ -90,27 +90,40 @@ class Database {
       //-------------------------------------------------------//
       for (const key in config.dbs) {
         const db = config.dbs[key]
-        const { file, tlds, tldKeysPerTable } = db
+        const { file, tlds, tldKeysPerTable, indexes } = db
         const dbHandle = this._initdbPara(Path.join(this.path, file), "domain")
         this.dbHandles[key] = { handle: dbHandle, tlds, name: key }
         if (key === 'main') this.dmdb = dbHandle
+        let tabCreated = false
         for (const [index, tld] of tlds.entries()) {
           this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
+          let tabKeys = "keys"
           if (tldKeysPerTable && index > 0) {
-            const tabKeys = `keys_${tld}`
+            tabKeys = `keys_${tld}`
             this.tldDef[tld].tabKeys = tabKeys
             try {
               let sql = "SELECT sql FROM sqlite_master WHERE name='keys'"
               let { sql: createSql } = dbHandle.prepare(sql).get()
               createSql = createSql.replace('keys', tabKeys)
+              tabCreated = true
               dbHandle.prepare(createSql).run()
-              sql = `CREATE INDEX index_parent_${tld} ON ${tabKeys} ( parent )`
-              dbHandle.prepare(sql).run()
             } catch (e) {
               console.log(e.message)
             }
           }
+          /*if (indexes && (index == 0 || tabCreated)) { //create indexes
+            for (const ind of indexes) {
+              try {
+                const sql = `CREATE INDEX index_${ind}_${tld} ON ${tabKeys} ( ${ind} )`
+                dbHandle.prepare(sql).run()
+              } catch (e) {
+                console.error(e.message)
+              }
+            }
+          }*/
+
         }
+
       }
       console.log("handlers:", this.dbHandles)
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
@@ -275,7 +288,7 @@ class Database {
         case 'run': ret = this.queries[name].run(...paras); break;
       }
       const t2 = Date.now()
-      console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
+      console.log("runPreparedSql:", name, sql, paras, "time=", (t2 - t1) / 1000)
       return ret
     } catch (e) {
       console.error(e)
