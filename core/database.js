@@ -70,7 +70,7 @@ class Database {
     // WAL mode allows simultaneous readers
     db.pragma('journal_mode = WAL')
     // Synchronizes WAL at checkpoints
-    db.pragma('synchronous = off')
+    db.pragma('synchronous = NORMAL')
     this.preDealDB(db, type)
     return db
   }
