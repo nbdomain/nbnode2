@@ -424,8 +424,8 @@ class appModule {
                     return (result)
                     return;
                 }
-                case 'getAllTables': {
-                    let ret = db.getAllTables(req.query.name)
+                case 'getDBInfo': {
+                    let ret = db.getDBInfo(req.query.name)
                     return (ret)
                 }
                 case 'compactTX': {

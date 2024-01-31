@@ -156,11 +156,13 @@ class Database {
     const { handle, tabKeys } = tldInfo
     return { db: handle, tld, tabKeys }
   }
-  async getAllTables(name) {
-    const sql = "SELECT name FROM sqlite_master where type='table'"
+  async getDBInfo(name) {
+    let sql = "SELECT name FROM sqlite_master where type='table'"
     const db = this.dbHandles[name].handle
-    const res = await db.prepare(sql).all()
-    return res
+    const tables = await db.prepare(sql).raw(true).all()
+    sql = "SELECT name FROM sqlite_master where type='index'"
+    const indexs = await db.prepare(sql).raw(true).all()
+    return { tables, indexs }
   }
   open() {
     if (!this.txdb) {
