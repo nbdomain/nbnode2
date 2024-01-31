@@ -1282,7 +1282,7 @@ class Database {
       const { config, logger } = this.indexers
       const tmStart = Date.now()
       logger.console("compactTxDB started...")
-      const daysToKeep = config?.txdb?.daysToKeep || 7
+      const daysToKeep = config?.txdb?.daysToKeep || 3
       const daysAgo = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       let sql = "select txid, chain from txs where txTime<?"
       const txs = this.txdb.prepare(sql).all(daysAgo.getTime())
@@ -1776,7 +1776,7 @@ class Database {
     const ret = await Promise.allSettled(tasks)
     console.log("************************")
 
-    setTimeout(this.pullNewDomains.bind(this), 5000);
+    setTimeout(this.pullNewDomains.bind(this), 10000);
   }
   handleUnverifiedItems({ diff, items, type }) {
     let table = 'keys', colname = 'key', ts = 'ts'
