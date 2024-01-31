@@ -164,6 +164,14 @@ class Database {
     const indexs = await db.prepare(sql).raw(true).all()
     return { tables, indexs }
   }
+  async showTable(name, table) {
+    let sql = `SELECT * FROM ${table} limit 10`
+    const db = this.dbHandles[name].handle
+    const items = await db.prepare(sql).raw(true).all()
+    sql = `select COUNT(*) from ${table} `
+    const count = await db.prepare(sql).get()
+    return { items, count }
+  }
   open() {
     if (!this.txdb) {
       if (!fs.existsSync(this.txfile + "." + VER_TXDB)) {

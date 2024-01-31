@@ -428,6 +428,10 @@ class appModule {
                     let ret = db.getDBInfo(req.query.name)
                     return (ret)
                 }
+                case 'showtable': {
+                    let ret = db.showTable(req.query.name, req.query.table)
+                    return ret
+                }
                 case 'compactTX': {
                     db.compactTxDB(); break;
                 }
