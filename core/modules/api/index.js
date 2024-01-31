@@ -189,10 +189,9 @@ class appModule {
             const { logger } = indexers
             const obj = req.body;
             const IP = getClientIp(req)
-            logger.console('/sendTx from:', IP)
-            logger.info("/sendTx: ", obj)
+            console.log('/sendTx from:', IP)
             const ret = await Nodes.sendNewTx(obj)
-            logger.info("/sendTx ret: ", ret)
+            console.log("/sendTx ret: ", ret)
             return (ret);
         });
         app.post(PREFIX + '/verifyDMs', async function (req, res) {
