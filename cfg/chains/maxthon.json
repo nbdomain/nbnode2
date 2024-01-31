@@ -18,6 +18,15 @@
                         "p2",
                         "p4"
                     ]
+                }
+            ]
+        },
+        "mxextra": {
+            "file": "domains.pp.db",
+            "tldKeysPerTable": true,
+            "tlds": [
+                {
+                    "tld": "pp"
                 },
                 {
                     "tld": "a1"
@@ -45,14 +54,6 @@
                 },
                 {
                     "tld": "a9"
-                }
-            ]
-        },
-        "mxextra": {
-            "file": "domains.pp.db",
-            "tlds": [
-                {
-                    "tld": "pp"
                 }
             ]
         },
