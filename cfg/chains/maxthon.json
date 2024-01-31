@@ -11,27 +11,49 @@
             "file": "domains.db",
             "tldKeysPerTable": true,
             "tlds": [
-                "pv",
-                "a1",
-                "a2",
-                "a3",
-                "a4",
-                "a5",
-                "a6",
-                "a7",
-                "a8",
-                "a9"
-            ],
-            "indexes": [
-                "p1",
-                "p2",
-                "p4"
+                {
+                    "tld": "pv",
+                    "indexers": [
+                        "p1",
+                        "p2",
+                        "p4"
+                    ]
+                },
+                {
+                    "tld": "a1"
+                },
+                {
+                    "tld": "a2"
+                },
+                {
+                    "tld": "a3"
+                },
+                {
+                    "tld": "a4"
+                },
+                {
+                    "tld": "a5"
+                },
+                {
+                    "tld": "a6"
+                },
+                {
+                    "tld": "a7"
+                },
+                {
+                    "tld": "a8"
+                },
+                {
+                    "tld": "a9"
+                }
             ]
         },
         "mxextra": {
             "file": "domains.pp.db",
             "tlds": [
-                "pp"
+                {
+                    "tld": "pp"
+                }
             ]
         },
         "syc_data": {
@@ -39,8 +61,12 @@
             "file": "sync1.db",
             "tldKeysPerTable": true,
             "tlds": [
-                "px",
-                "s1"
+                {
+                    "tld": "px"
+                },
+                {
+                    "tld": "s1"
+                }
             ]
         }
     },
@@ -127,7 +153,7 @@
     "consensus": {
         "mode": "trust_all"
     },
-    "pnodes--": [
+    "pnodes": [
         "http://pi.skyjeff.com:9100",
         "http://pi.skyjeff.com:10001",
         "http://143.198.66.116:9200",

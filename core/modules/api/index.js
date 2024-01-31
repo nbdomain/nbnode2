@@ -407,6 +407,7 @@ class appModule {
                     indexers.shutdown()
                     break;
                 }
+                case 'vacuum': await db.vacuumDB(req.query['name'])
                 case 'pulltx': db.pullNewTx(100); break;
                 case 'vdb': db.verifyTxDB(); break;
                 case 'restoredm': db.restoreLastGoodDomainDB(); break;

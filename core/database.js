@@ -88,17 +88,33 @@ class Database {
       //--------------------------------------------------------//
       //  Init Domains DB
       //-------------------------------------------------------//
+      const _createIndexer = ({ cols, table, tld, dbHandle }) => {
+        for (const col of cols) {
+          try {
+            const sql = `CREATE INDEX index_${col}_${tld} ON ${table} ( ${col} )`
+            dbHandle.prepare(sql).run()
+          } catch (e) {
+            console.error(e.message)
+          }
+        }
+      }
       for (const key in config.dbs) {
         const db = config.dbs[key]
         const { file, tlds, tldKeysPerTable, indexes = [] } = db
         const dbHandle = this._initdbPara(Path.join(this.path, file), "domain")
-        this.dbHandles[key] = { handle: dbHandle, tlds, name: key }
+        const arrTld = []
+        tlds.forEach(item => arrTld.push(item.tld))
+        this.dbHandles[key] = { handle: dbHandle, tlds: arrTld, name: key }
         if (key === 'main') this.dmdb = dbHandle
         let tabCreated = false
         indexes.push('verified')
-        for (const [index, tld] of tlds.entries()) {
+        for (const [index, tldInfo] of tlds.entries()) {
+          const { tld, indexers } = tldInfo
           this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
           let tabKeys = "keys"
+          if (index === 0 && indexers) {
+            _createIndexer({ cols: indexers, table: tabKeys, tld, dbHandle })
+          }
           if (tldKeysPerTable && index > 0) {
             tabKeys = `keys_${tld}`
             this.tldDef[tld].tabKeys = tabKeys
@@ -111,20 +127,10 @@ class Database {
             } catch (e) {
               console.log(e.message)
             }
+            if (indexers)
+              _createIndexer({ cols: indexers, table: tabKeys, tld, dbHandle })
           }
-          if (indexes && (index == 0 || tabCreated)) { //create indexes
-            for (const ind of indexes) {
-              try {
-                const sql = `CREATE INDEX index_${ind}_${tld} ON ${tabKeys} ( ${ind} )`
-                dbHandle.prepare(sql).run()
-              } catch (e) {
-                console.error(e.message)
-              }
-            }
-          }
-
         }
-
       }
       console.log("handlers:", this.dbHandles)
       TXRESOLVED_FLAG = this.readConfig('dmdb', "TXRESOLVED_FLAG")
@@ -420,6 +426,10 @@ class Database {
   }
   restoreLastGoodDomainDB() {
     this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
+  }
+  async vacuumDB(name) {
+    const db = this.dbHandles[name]
+    db.handle.prepare("VACUUM").run()
   }
   async backupDB() {
     try {
@@ -1854,11 +1864,12 @@ class Database {
     for (const kk in items) {
       const item = items[kk]
       maxTime = Math.max(maxTime, item[ts])
-      const { db, tld, tabKeys } = this.getDomainDB({ key: kk })
+      let { db, tld, tabKeys } = this.getDomainDB({ key: kk })
       if (!tabKeys) {
         console.error("verifyIncomingItems: unsupported domain:", kk)
         continue
       }
+      if (type === 'domains') tabKeys = table
       const sql = `select * from ${tabKeys} where ${colname} = ?`
       const item_my = await this.runPreparedSql({ name: "verifyItems" + table + tld, db, method: 'get', sql, paras: [kk] })
       if (!item_my) {
