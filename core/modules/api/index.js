@@ -424,10 +424,9 @@ class appModule {
                     return (result)
                     return;
                 }
-                case 'calDomainHash': {
-                    let ret = db.updateAllDomainHashes()
+                case 'getAllTables': {
+                    let ret = db.getAllTables(req.query.name)
                     return (ret)
-                    return;
                 }
                 case 'compactTX': {
                     db.compactTxDB(); break;

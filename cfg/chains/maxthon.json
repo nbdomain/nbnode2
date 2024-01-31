@@ -24,6 +24,11 @@
         "mxextra": {
             "file": "domains.pp.db",
             "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
             "tlds": [
                 {
                     "tld": "pp"

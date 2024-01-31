@@ -100,18 +100,19 @@ class Database {
       }
       for (const key in config.dbs) {
         const db = config.dbs[key]
-        const { file, tlds, tldKeysPerTable, indexes = [] } = db
+        const { file, tlds, tldKeysPerTable, gindex = [] } = db
         const dbHandle = this._initdbPara(Path.join(this.path, file), "domain")
         const arrTld = []
         tlds.forEach(item => arrTld.push(item.tld))
         this.dbHandles[key] = { handle: dbHandle, tlds: arrTld, name: key }
         if (key === 'main') this.dmdb = dbHandle
         let tabCreated = false
-        indexes.push('verified')
+        gindex.push('verified')
         for (const [index, tldInfo] of tlds.entries()) {
-          const { tld, indexers } = tldInfo
+          let { tld, indexers = [] } = tldInfo
           this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
           let tabKeys = "keys"
+          if (gindex) indexers = indexers.concat(gindex)
           if (index === 0 && indexers) {
             _createIndexer({ cols: indexers, table: tabKeys, tld, dbHandle })
           }
@@ -154,6 +155,12 @@ class Database {
     if (!tldInfo) return { db: this.dmdb, tld, tab: "keys" }
     const { handle, tabKeys } = tldInfo
     return { db: handle, tld, tabKeys }
+  }
+  async getAllTables(name) {
+    const sql = "SELECT name FROM sqlite_master where type='table'"
+    const db = this.dbHandles[name].handle
+    const res = await db.prepare(sql).all()
+    return res
   }
   open() {
     if (!this.txdb) {
