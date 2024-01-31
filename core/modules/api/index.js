@@ -87,7 +87,7 @@ class appModule {
                     ret.chain = Util.getchain(domain)
                 }
                 const t2 = Date.now()
-                console.log("read Domain:", domain, "time=", (t2 - t1) / 1000)
+                //console.log("read Domain:", domain, "time=", (t2 - t1) / 1000)
                 return (ret);
             } catch (err) {
                 console.error(err);
@@ -191,7 +191,8 @@ class appModule {
             const IP = getClientIp(req)
             console.log('/sendTx from:', IP)
             const ret = await Nodes.sendNewTx(obj)
-            console.log("/sendTx ret: ", ret)
+            if (ret.code != 0)
+                console.error("/sendTx error: ", ret)
             return (ret);
         });
         app.post(PREFIX + '/verifyDMs', async function (req, res) {
