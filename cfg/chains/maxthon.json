@@ -170,7 +170,7 @@
         "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
     ],
     "txdb": {
-        "daysToKeep": 7
+        "daysToKeep": 3
     },
     "logfile": "nbnode-%DATE%.log"
 }
