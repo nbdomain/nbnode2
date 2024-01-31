@@ -72,7 +72,9 @@ class Indexers {
 
     process.env.publicUrl && (config.server.publicUrl = process.env.publicUrl)
     process.env.adminKey && (config.adminKey = process.env.adminKey)
-
+    if (process.env.build === 'production') {
+      console.log = function () { };
+    }
     this.CONSTS = CONSTS
     this.initDB()
     this.logger = logger
