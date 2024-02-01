@@ -470,20 +470,20 @@ class CMD_KEY {
                 props[p] = '' + props[p] //convert all props to string
             }
             if (u_check.length > 0) {
-              /*  let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
-                u_check.shift()
-                for (const u of u_check) {
-                    sql += "OR " + u + " = ?"
-                }
-                sql += " ) "
-                try {
-                    const res = this.parser.db.dmdb.prepare(sql).get(...u_value)
-                    if (res && res.key != fullkey) { //
-                        return { code: 1, err: 'unique constrain failed' }
-                    }
-                } catch (e) {
-                    console.error(e.message)
-                } */
+                /*  let sql = `select * from keys where parent = '${parent}' AND ( ` + u_check[0] + " = ? "
+                  u_check.shift()
+                  for (const u of u_check) {
+                      sql += "OR " + u + " = ?"
+                  }
+                  sql += " ) "
+                  try {
+                      const res = this.parser.db.dmdb.prepare(sql).get(...u_value)
+                      if (res && res.key != fullkey) { //
+                          return { code: 1, err: 'unique constrain failed' }
+                      }
+                  } catch (e) {
+                      console.error(e.message)
+                  } */
 
             }
         }
@@ -535,9 +535,13 @@ class CMD_KEY {
         if (this.verify(rtx, rtx.output) != 1) return null
 
         const output = rtx.output
+        console.log("saving keys, length:", output.values.length)
         for (const item of output.values) {
             const { k, v, tags, props, action } = item
             let newValue = { v, id: output.txid }
+            if(k==='checkin-6396800-2024_01-pc.golds'){
+                console.log('found')
+            }
             await this.parser.db.saveKey({ key: k, value: JSON.stringify(newValue), domain: output.domain, props, tags, ts: output.ts })
         }
 
