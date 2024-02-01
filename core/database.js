@@ -312,7 +312,7 @@ class Database {
         case 'run': ret = this.queries[name].run(...paras); break;
       }
       const t2 = Date.now()
-      console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
+      //console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
       return ret
     } catch (e) {
       console.error(e)
@@ -1685,6 +1685,7 @@ class Database {
       }
       const ret = this.runPreparedSql({ name: "getNewDm" + type + name + MaxCount, db, method: "all", sql, paras })
       if (!ret) return null
+      console.error("getNewDm ret len=", ret.length)
       let maxTime = 0
       for (const item of ret) {
         delete item.verified, delete item.id
@@ -1735,7 +1736,7 @@ class Database {
   async pullNewDomains() {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
-    const MaxCount = 1000
+    const MaxCount = 100
     if (!this.pullCounter) this.pullCounter = 1
     if (this.pullCounter++ > 100) this.pullCounter = 1
     if (this.pullCounter % 6 === 0) {
