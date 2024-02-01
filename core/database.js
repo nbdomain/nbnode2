@@ -1653,7 +1653,7 @@ class Database {
 
     return Object.keys(result).length == 0 ? null : result
   }
-  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
+  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 100, from }) {
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
