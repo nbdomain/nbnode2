@@ -108,6 +108,7 @@ class Database {
         if (key === 'main') this.dmdb = dbHandle
         let tabCreated = false
         gindex.push('verified')
+        gindex.push('ts')
         for (const [index, tldInfo] of tlds.entries()) {
           let { tld, indexers = [] } = tldInfo
           this.tldDef[tld] = { handle: dbHandle, file, tabKeys: "keys" }
