@@ -1685,7 +1685,7 @@ class Database {
       }
       const ret = this.runPreparedSql({ name: "getNewDm" + type + name + MaxCount, db, method: "all", sql, paras })
       if (!ret) return null
-      console.error("getNewDm ret len=", ret.length)
+      console.error("getNewDm ret len=", ret.length, "MaxCount=", MaxCount)
       let maxTime = 0
       for (const item of ret) {
         delete item.verified, delete item.id
@@ -1747,7 +1747,7 @@ class Database {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
+        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount" })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
         const count = objLen(result)
         const synced = (count === 0 ? "Synced" : "")
