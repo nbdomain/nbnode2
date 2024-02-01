@@ -1685,7 +1685,7 @@ class Database {
       }
       const ret = this.runPreparedSql({ name: "getNewDm" + type + name + MaxCount, db, method: "all", sql, paras })
       if (!ret) return null
-      console.error("getNewDm ret len=", ret.length, "MaxCount=", MaxCount)
+      console.error("getNewDm ret len=", ret.length, "MaxCount=", MaxCount, "from=", from, "type=", type)
       let maxTime = 0
       for (const item of ret) {
         delete item.verified, delete item.id
