@@ -1653,7 +1653,7 @@ class Database {
 
     return Object.keys(result).length == 0 ? null : result
   }
-  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 100, from }) {
+  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
@@ -1736,7 +1736,7 @@ class Database {
   async pullNewDomains() {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
-    const MaxCount = 100
+    const MaxCount = 500
     if (!this.pullCounter) this.pullCounter = 1
     if (this.pullCounter++ > 100) this.pullCounter = 1
     if (this.pullCounter % 6 === 0) {
@@ -1747,7 +1747,7 @@ class Database {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount" })
+        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
         const count = objLen(result)
         const synced = (count === 0 ? "Synced" : "")
@@ -1776,7 +1776,7 @@ class Database {
     console.log(`--------got from `, "MYSELF", "Keys:", res.keys, "Domains:", res.domains)
     for (const type of types) {
       const peers = Nodes.getNodes()
-      const toVerify = await this.getUnverifiedItems({ count: 500, type })
+      const toVerify = await this.getUnverifiedItems({ count: 200, type })
       for (let k in peers) {
         const peer = peers[k]
         tasks.push(_inner(peer, type, toVerify))
