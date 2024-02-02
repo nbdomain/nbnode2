@@ -189,7 +189,7 @@ class appModule {
             const { logger } = indexers
             const obj = req.body;
             const IP = getClientIp(req)
-            console.log('/sendTx from:', IP)
+            console.log('/sendTx body:', obj)
             const ret = await Nodes.sendNewTx(obj)
             if (ret.code != 0)
                 console.error("/sendTx error: ", ret)
