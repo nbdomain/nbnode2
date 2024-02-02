@@ -56,7 +56,7 @@ let CONFIG = null
 class Indexers {
   static initDB() {
     const { config } = this
-    const dbPath = config?.path?.db || Path.join(__dirname, "../data/db", process.env.chainid)
+    const dbPath = config?.path?.db || Path.join(__dirname, "../data/db")
     this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
