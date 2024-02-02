@@ -503,10 +503,14 @@ class Database {
   // --------------------------------------------------------------------------
 
   getLatestTxTime() {
-    const sql = `SELECT txTime from txs where status!=1 ORDER BY txTime DESC`
-    //const res = this.txdb.prepare(sql).get()
-    const res = this.runPreparedSql({ name: 'getLatestTxTime', db: this.txdb, method: 'get', sql })
-    return res ? res.txTime : -1
+    let maxTxTime = +this.readConfig("txdb", "maxTxTime")
+    if (!maxTxTime) {
+      const sql = `SELECT txTime from txs where status!=1 ORDER BY txTime DESC`
+      const res = this.runPreparedSql({ name: 'getLatestTxTime', db: this.txdb, method: 'get', sql })
+      maxTxTime = res ? res.txTime : -1
+    }
+
+    return maxTxTime
   }
 
   getFullTx({ txid }) {
@@ -555,6 +559,10 @@ class Database {
       }
 
       await this.updateTxHash({ txid, rawtx, txTime, oDataRecord })
+      const maxTxTime = +this.readConfig("txdb", 'maxTxTime') || 0
+      if (txTime > maxTxTime) {
+        this.writeConfig("txdb", "maxTxTime", txTime)
+      }
     } catch (e) {
       console.error(e.message)
     }

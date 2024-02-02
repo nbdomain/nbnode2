@@ -56,7 +56,10 @@ let CONFIG = null
 class Indexers {
   static initDB() {
     const { config } = this
-    const dbPath = config?.path?.db || Path.join(__dirname, "../data/db")
+    let dbPath = config?.path?.db || Path.join(__dirname, "../data/db", process.env.chainid)
+    if (!fs.existsSync(dbPath)) {
+      dbPath = Path.join(__dirname, "../data/db")
+    }
     this.db = new Database(dbPath, logger, this)
     this.db.open()
   }
