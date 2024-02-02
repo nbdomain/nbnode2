@@ -32,7 +32,7 @@ class Database {
   constructor(path, logger, indexers) {
     const { cfg_chain } = indexers
     this.path = path
-    this.bkPath = Path.join(path, "../files")
+    this.bkPath = Path.join(path, "backup")
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path);
     }
