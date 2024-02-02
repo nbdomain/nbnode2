@@ -313,7 +313,7 @@ class Database {
         case 'run': ret = this.queries[name].run(...paras); break;
       }
       const t2 = Date.now()
-      console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
+      //console.log("runPreparedSql:", name, sql, "time=", (t2 - t1) / 1000)
       return ret
     } catch (e) {
       console.error(e)
@@ -1662,13 +1662,18 @@ class Database {
 
     return Object.keys(result).length == 0 ? null : result
   }
-  async getNewDm({ toVerify, tmstart, type, info, MaxCount = 500, from }) {
+  async getNewDm({ chainid, toVerify, tmstart, type, info, MaxCount = 500, from }) {
+    const { config } = this.indexers
+
     let table = 'keys', ts = 'ts', colname = 'key'
     if (type === "domains") {
       table = 'nidobj', ts = 'txUpdate', colname = 'domain'
     }
     if (from === 'http://34.195.2.150:19000' && type === 'keys') {
       console.log("found")
+    }
+    if (chainid != config.chainid) {
+      return { code: 100, msg: "unsupported chain" }
     }
     let ret = {}
     const result = {}
@@ -1746,6 +1751,7 @@ class Database {
     const { Nodes, axios, config } = this.indexers
     const types = ['domains', 'keys']
     const MaxCount = 500
+    const chainid = config.chainid
     if (!this.pullCounter) this.pullCounter = 1
     if (this.pullCounter++ > 100) this.pullCounter = 1
     if (this.pullCounter % 6 === 0) {
@@ -1756,7 +1762,7 @@ class Database {
         const url = config.server.publicUrl
         const lastTimeKey = peer.url + "_lasttm" + type
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
-        const res = await axios.post(peer.url + "/api/getNewDm", { toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
+        const res = await axios.post(peer.url + "/api/getNewDm", { chainid, toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
         const count = objLen(result)
         const synced = (count === 0 ? "Synced" : "")

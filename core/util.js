@@ -56,8 +56,7 @@ class ArNodes {
         return node;
     }
 }
-const arNodes = new ArNodes()
-arNodes.init("https://www.arweave.net")
+
 
 class CMD_BASE {
     static parseTX(rtx) {
@@ -78,6 +77,9 @@ class Util {
         this.indexers = indexers
         const { config } = this.indexers
         SUB_PROTOCOL_MAP = config.tld
+        
+        //const arNodes = new ArNodes()
+        //arNodes.init("https://www.arweave.net")
     }
     static readJsonFile(filename) {
         return this.parseJson(fs.readFileSync(filename, 'utf8'));

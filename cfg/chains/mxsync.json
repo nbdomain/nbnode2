@@ -13,9 +13,9 @@
                 "ss"
             ]
         },
-        "bookmark": {
-            "notes": "bookmark data",
-            "file": "bookmark.db",
+        "meta": {
+            "notes": "meta for sync data",
+            "file": "metas.db",
             "tldKeysPerTable": true,
             "tlds": [
                 "b1",
@@ -27,18 +27,6 @@
                 "b7",
                 "b8",
                 "b9"
-            ]
-        },
-        "config": {
-            "notes": "config data",
-            "file": "config.db",
-            "tldKeysPerTable": true,
-            "tlds": [
-                "c1",
-                "c2",
-                "c3",
-                "c4",
-                "c5"
             ]
         }
     },
@@ -137,13 +125,7 @@
     "consensus": {
         "mode": "trust_all"
     },
-    "pnodes": [
-        "http://pi.skyjeff.com:9100",
-        "http://pi.skyjeff.com:10001",
-        "http://143.198.66.116:9200",
-        "http://112.213.125.241:5000",
-        "http://34.195.2.150:19000"
-    ],
+    "pnodes": [],
     "apikey": [
         "Kz73qH99sZzdmtKM46mNhJKNL7ZCEMTQK44pBR5SFw2Q1KpLSxK5"
     ],
