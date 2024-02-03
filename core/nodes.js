@@ -7,7 +7,6 @@ const { DEF } = require('./def');
 const { Util } = require('./util');
 const path = require('path')
 const fs = require('fs');
-const { resourceLimits } = require('worker_threads');
 const NtpTimeSync = require("ntp-time-sync").NtpTimeSync
 dnsPromises = dns.promises;
 
@@ -143,10 +142,10 @@ class Nodes {
 
         return true
     }
-    startNodeServer() {
+    /*startNodeServer() {
         if (!this.nodeServer) this.nodeServer = new NodeServer()
         this.nodeServer.start(this.indexers)
-    }
+    }*/
     async _fromDNS() {
         const { config } = this.indexers
         return new Promise(resolve => {
@@ -236,7 +235,7 @@ class Nodes {
     onNodeDisconnect(node) {
         this.removeNode(node.id)
     }
-    async connectAsClient(node) {
+    /*async connectAsClient(node) {
         const { config, logger } = this.indexers
 
         if (this.nodeClients[node.id]) {
@@ -254,7 +253,7 @@ class Nodes {
         }
         console.error("failed to connect:", node.id)
         return false
-    }
+    }*/
     getNodes() {
         return this.pnodes || {}
     }
@@ -287,7 +286,48 @@ class Nodes {
         return connected_clients
     }
     async sendNewTx(obj) {
-        return await rpcHandler.handleNewTxFromApp({ indexers: this.indexers, obj })
+        const { indexer, Parser, Util, Nodes, db, config, resolver } = this.indexers
+        let ret = await Parser.parseTX({ rawtx: obj.rawtx, oData: obj.oData, newTx: true, chain: obj.chain });
+        if (ret.code != 0 || !ret.rtx.output || ret.rtx.output.err) {
+            console.error("parseRaw error err:", ret)
+            return { code: -1, message: ret.msg }
+        }
+        let txids = null, cost = 0
+        if (obj.more_rawtx) {
+            txids = []
+            for (const raw of obj.more_rawtx) { //if there are more 
+                const rr = await Util.sendRawtx(raw, obj.chain);
+                if (rr.code == 0) {
+                    console.log("send more tx successfully. txid:", rr.txid);
+                    txids.push(rr.txid)
+                    cost += rr.cost
+                }
+                else {
+                    console.error("send more tx failed:", rr)
+                    return rr
+                }
+            }
+        }
+        const ret1 = await Util.sendRawtx(obj.rawtx, obj.chain);
+        if (ret1.code == 0) {
+            cost += ret1.cost
+            if (txids) ret1.more_txid = txids
+            console.log("send tx successfully. txid:", ret1.txid)
+            let oDataRecord = null
+            if (ret.rtx && ret.rtx.oHash) {
+                oDataRecord = { raw: obj.oData }
+            }
+            //const sig = await Util.bitcoinSign(config.key, ret1.txid)
+            //let sigs = { [Nodes.thisNode.key]: sig }
+            if (await indexer.addTxFull({ txid: ret1.txid, /*sigs,*/ rawtx: obj.rawtx, txTime: ret.rtx.ts, oDataRecord, noVerify: true, chain: obj.chain })) {
+                //db.addTransactionSigs(ret1.txid, sigs)
+                //sigs = db.getTransactionSigs(ret1.txid)
+                //Nodes.notifyPeers({ cmd: "newtx", data: JSON.stringify({ txid: ret1.txid, sigs }) })
+            }
+        } else {
+            console.log("send tx failed")
+        }
+        return ret1
     }
     async downloadAndUseDomainDB(from, includingTxDB = true) {
         const orgCanResolve = this._canResolve

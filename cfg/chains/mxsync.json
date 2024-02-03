@@ -10,115 +10,111 @@
         "main": {
             "file": "domains.db",
             "tlds": [
-                "ss"
+                {
+                    "tld": "mm"
+                }
             ]
         },
         "meta": {
             "notes": "meta for sync data",
             "file": "metas.db",
             "tldKeysPerTable": true,
+            "gindex": [
+                "p1"
+            ],
             "tlds": [
-                "b1",
-                "b2",
-                "b3",
-                "b4",
-                "b5",
-                "b6",
-                "b7",
-                "b8",
-                "b9"
+                {
+                    "tld": "m"
+                },
+                {
+                    "tld": "m1"
+                },
+                {
+                    "tld": "m2"
+                },
+                {
+                    "tld": "m3"
+                },
+                {
+                    "tld": "m4"
+                },
+                {
+                    "tld": "m5"
+                },
+                {
+                    "tld": "m6"
+                },
+                {
+                    "tld": "m7"
+                },
+                {
+                    "tld": "m8"
+                },
+                {
+                    "tld": "m9"
+                }
             ]
         }
     },
     "tld": {
-        "ss": {
+        "mm": {
             "chain": "not",
             "address": {
-                "protocol": "noss"
+                "protocol": "nomm"
             }
         },
-        "b1": {
+        "m1": {
             "chain": "not",
             "address": {
-                "protocol": "nob1"
+                "protocol": "nom1"
             }
         },
-        "b2": {
+        "m2": {
             "chain": "not",
             "address": {
-                "protocol": "nob2"
+                "protocol": "nom2"
             }
         },
-        "b3": {
+        "m3": {
             "chain": "not",
             "address": {
-                "protocol": "nob3"
+                "protocol": "nom3"
             }
         },
-        "b4": {
+        "m4": {
             "chain": "not",
             "address": {
-                "protocol": "nob4"
+                "protocol": "nom4"
             }
         },
-        "b5": {
+        "m5": {
             "chain": "not",
             "address": {
-                "protocol": "nob5"
+                "protocol": "nom5"
             }
         },
-        "b6": {
+        "m6": {
             "chain": "not",
             "address": {
-                "protocol": "nob6"
+                "protocol": "nom6"
             }
         },
-        "b7": {
+        "m7": {
             "chain": "not",
             "address": {
-                "protocol": "nob7"
+                "protocol": "nom7"
             }
         },
-        "b8": {
+        "m8": {
             "chain": "not",
             "address": {
-                "protocol": "nob8"
+                "protocol": "nom8"
             }
         },
-        "b9": {
+        "m9": {
             "chain": "not",
             "address": {
-                "protocol": "nob9"
-            }
-        },
-        "c1": {
-            "chain": "not",
-            "address": {
-                "protocol": "noc1"
-            }
-        },
-        "c2": {
-            "chain": "not",
-            "address": {
-                "protocol": "noc2"
-            }
-        },
-        "c3": {
-            "chain": "not",
-            "address": {
-                "protocol": "noc3"
-            }
-        },
-        "c4": {
-            "chain": "not",
-            "address": {
-                "protocol": "noc4"
-            }
-        },
-        "c5": {
-            "chain": "not",
-            "address": {
-                "protocol": "noc5"
+                "protocol": "nom9"
             }
         }
     },
