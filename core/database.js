@@ -986,15 +986,8 @@ class Database {
     const sql = `DELETE from ${tabKeys} where parent = ?`
 
     const res = this.runPreparedSql({ name: "delChild" + tld, db, method: 'run', sql, paras: [parent] })
-
-    if (res.changes > 0) {
-      /*  let domainHash = +this.readConfig("dmdb-" + tld, "domainHash") || 0
-        const strObj = "delChild:" + parent
-        const hash = +Util.fnv1aHash(strObj)
-        domainHash ^= hash
-        this.writeConfig("dmdb-" + tld, "domainHash", domainHash + '')
-        this.logger.info(":del_child=", parent, " dmhash:", domainHash)*/
-    }
+    console.log(res)
+    return res
   }
   async saveKey({ key, value, domain, props = {}, tags, ts }) {
     const tmstart = Date.now()
@@ -1293,6 +1286,22 @@ class Database {
       return null
     }
   }
+  compactDMDB(dbname) {
+    const sql = "SELECT name FROM sqlite_master where type='table'"
+    let res = 0
+    const dbInfo = this.dbHandles[dbname]
+    if (!dbInfo) return { code: 100, err: "not found", dbname }
+    const { handle } = dbInfo
+    const names = handle.prepare(sql).raw(true).all()
+    for (const name of names) {
+      if (name[0].indexOf('keys') === 0) {
+        const sqDelete = `delete from ${name[0]} where value='deleted'`
+        res = handle.prepare(sqDelete).run()
+        console.log(res)
+      }
+    }
+    this.vacuumDB(dbname)
+  }
   compactTxDB() {
     let ret = null
     try {
@@ -1339,19 +1348,7 @@ class Database {
     }
 
   }
-  async updaetAllTxHashes() {
-    console.log("calculating all tx hashes...")
-    this.writeConfig('txdb', 'txHash', null)
-    let sql = 'select txid from txs'
-    const txs = this.txdb.prepare(sql).all()
-    for (let tx of txs) {
-      const full = this.getFullTx({ txid: tx.txid })
-      if (full.tx.status !== 1) {
-        await this.updateTxHash({ txid: full.tx.txid, rawtx: full.tx.rawtx, txTime: full.tx.txTime, oDataRecord: full.oDataRecord })
-      }
-    }
-    console.log("finish calculating. txHash:", this.readConfig('txdb', 'txHash'))
-  }
+
   updateAllDomainHashes() {
     const _updateDBHash = (db, tld) => {
       let dmHash = 0;
@@ -1384,10 +1381,10 @@ class Database {
     }
     return ret
   }
-  async verifyTxDB() {
-    console.log("verifying...")
-    await this.updaetAllTxHashes()
-    console.log("verify finish")
+  async deleteOldAsset() {
+    console.log("deleting...")
+    await this.delChild("golds.mxback.pv")
+    console.log("deleting finish")
   }
   async getNewTx({ afterHeight, fromTime }) {
     let time = +fromTime || 0
@@ -1463,99 +1460,7 @@ class Database {
     //console.log("execQuery:", (t2 - t1) / 1000)
     return ret
   }
-  //------------------------------Blocks--------------------------------
-  getLastBlock() {
-    try {
-      const sql = "SELECT * FROM blocks ORDER BY height DESC LIMIT 1"
-      let block = this.txdb.prepare(sql).get()
-      if (block) {
-        block = { ...JSON.parse(block.body), hash: block.hash }
-      }
-      return block
-    } catch (e) {
-      console.error(e)
-    }
-    return null
-  }
-  getBlocks(from, to) {
-    const sql = "select * from blocks where height >= ? AND height <= ?"
-    const ret = this.txdb.prepare(sql).all(from, to)
-    return ret
-  }
-  getBlock(height, uBlockType = false) {
-    try {
-      const sql = "select * from blocks where height=?"
-      let block = this.txdb.prepare(sql).get(height)
-      if (uBlockType && block) {
-        return { block: { ...JSON.parse(block.body), hash: block.hash }, sigs: JSON.parse(block.sigs) }
-      }
-      return block
-    } catch (e) {
-      console.error(e)
-    }
-    return null
-  }
-  deleteTxs(txs) {
-    try {
-      let sql = "delete from txs where txid in (";
-      const txids = []
-      for (const tx of txs) {
-        txids.push(tx.txid)
-        sql += "?,"
-      }
-      sql = sql.slice(0, sql.length - 1) + ")"
-      const ret = this.txdb.prepare(sql).run(txids)
-      return ret
-    } catch (e) {
-      return false
-    }
-  }
-  async getBlockTxs(height) {
-    const BL = this.getBlock(height)
-    if (!BL) return []
-    const block = JSON.parse(BL.body)
-    const ret = []
-    if (block) {
-      for (const tx of block.txs) {
-        const txitem = this.getFullTx({ txid: tx.txid })
-        txitem && ret.push(txitem.tx)
-      }
-    }
-    return ret
-  }
-  async saveBlock({ sigs, block }) {
-    console.log("Saving block: " + block.height)
-    try {
-      const hash = block.hash
-      delete block.hash
-      const sql = "Insert into blocks (height,body,hash,sigs) values (?,?,?,?)"
 
-      const statusHash = block.height == 0 ? null : this.readConfig('txdb', 'statusHash')
-      const newStatus = statusHash ? await Util.dataHash(statusHash.value + hash) : hash
-
-      //this.tx_transaction(() => {
-      this.txdb.prepare(sql).run(block.height, JSON.stringify(block), hash, JSON.stringify(sigs))
-      //set height of the tx
-      const txs = block.txs
-      for (const tx of txs) {
-        //console.log("set txid:", tx.txid, " height:", block.height)
-        this.setTransactionHeight(tx.txid, block.height)
-      }
-      this.txdb.prepare("insert or replace into config (key,value) VALUES('statusHash',?)").run(newStatus)
-      this.txdb.prepare("insert or replace into config (key,value) VALUES('height',?)").run(block.height + '')
-      //})
-    } catch (e) {
-      console.error("saveBlock:", e.message)
-    }
-  }
-  deleteBlock(height) {
-    try {
-      const sql = "delete from blocks where height = ?"
-      this.txdb.prepare(sql).run(height)
-    } catch (e) {
-      return false
-    }
-  }
   //------------------------------Nodes---------------------------------
   addNode({ url, info }) {
     try {

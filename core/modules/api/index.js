@@ -441,8 +441,11 @@ class appModule {
                 case 'deletedb': {
                     return db.deleteDB({ name: req.query['name'] })
                 }
-                case 'verifyDB': {
-                    return db.verifyDBFromPeers()
+                case 'deleteAsset': {
+                    return db.deleteOldAsset()
+                }
+                case 'compactDMDB': {
+                    return db.compactDMDB(req.query.name)
                 }
                 case 'pullNewDM': {
                     return db.pullNewDomains()
