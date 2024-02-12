@@ -445,7 +445,7 @@ class Database {
   restoreLastGoodDomainDB() {
     this.restoreDomainDB(Path.join(this.bkPath, "bk_domains.db"))
   }
-  async vacuumDB(name) {
+  async vacuumDMDB(name) {
     const db = this.dbHandles[name]
     db.handle.prepare("VACUUM").run()
   }
@@ -1300,14 +1300,20 @@ class Database {
         console.log(res)
       }
     }
-    this.vacuumDB(dbname)
+    this.vacuumDMDB(dbname)
   }
-  compactTxDB() {
+  compactTXDB() {
+    console.log("compacting txdb...")
+    let ret = this.txdb.prepare("VACUUM").run()
+    ret = this.dtdb.prepare("VACUUM").run()
+    console.log("compacting txdb end")
+  }
+  removeOldTx() {
     let ret = null
     try {
       const { config, logger } = this.indexers
       const tmStart = Date.now()
-      logger.console("compactTxDB started...")
+      logger.console("removeOldTx started...")
       const daysToKeep = config?.txdb?.daysToKeep || 3
       const daysAgo = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       let sql = "select txid, chain from txs where txTime<?"
@@ -1332,7 +1338,7 @@ class Database {
       sql = 'delete from txs where txTime < ?'
       ret = this.txdb.prepare(sql).run(daysAgo.getTime())
       const tmEnd = Date.now()
-      logger.console("compactTxDB ends.Deleted:", hashToDel.length, " time:", (tmEnd - tmStart) / 1000)
+      logger.console("removeOldTx ends.Deleted:", hashToDel.length, " time:", (tmEnd - tmStart) / 1000)
     } catch (e) {
       console.error(e.message)
     }
@@ -1660,7 +1666,7 @@ class Database {
     if (!this.pullCounter) this.pullCounter = 1
     if (this.pullCounter++ > 100) this.pullCounter = 1
     if (this.pullCounter % 6 === 0) {
-      this.compactTxDB()
+      this.removeOldTx()
     }
     const _inner = async (peer, type, toVerify) => {
       try {

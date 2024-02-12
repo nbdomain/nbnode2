@@ -432,8 +432,8 @@ class appModule {
                     let ret = db.showTable(req.query.name, req.query.table)
                     return ret
                 }
-                case 'compactTX': {
-                    db.compactTxDB(); break;
+                case 'compactTXDB': {
+                    db.compactTXDB(); break;
                 }
                 case 'execPreparedQuery': {
                     return db.API_execPreparedQuery({ name: "test", paras: ['NFZxNUx3YVZGeUM4Z1UzMyAGb/6Wte0vj5dzYO5h54SayACyJ6whFG/NubzP73rS'] })
