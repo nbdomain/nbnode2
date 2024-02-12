@@ -215,7 +215,10 @@ class Nodes {
                 const result = await self.addNode({ url })
             }
         }
-        if (cfg_chain.pnodes) {
+        if (process.env.pnodes) {
+            const nodes = JSON.parse(process.env.pnodes)
+            await _addFromArray(nodes)
+        } else if (cfg_chain.pnodes) {
             await _addFromArray(cfg_chain.pnodes)
         }
         // const nodes = this.indexers.db.loadNodes(true) //load from db
