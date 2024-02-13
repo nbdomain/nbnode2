@@ -58,7 +58,8 @@ class Indexers {
     const { config } = this
     let dbPath = config?.path?.db || Path.join(__dirname, "../data/db", process.env.chainid)
     if (!fs.existsSync(dbPath)) {
-      dbPath = Path.join(__dirname, "../data/db")
+      //dbPath = Path.join(__dirname, "../data/db")
+      fs.mkdirSync(dbPath, { recursive: true })
     }
     this.db = new Database(dbPath, logger, this)
     this.db.open()
