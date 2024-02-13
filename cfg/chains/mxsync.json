@@ -11,47 +11,142 @@
             "file": "domains.db",
             "tlds": [
                 {
-                    "tld": "mm"
+                    "tld": "uu"
                 }
             ]
         },
-        "meta": {
+        "u1": {
             "notes": "meta for sync data",
-            "file": "metas.db",
+            "file": "u1.db",
             "tldKeysPerTable": true,
             "gindex": [
-                "p1"
+                "p1",
+                "p2",
+                "p3"
             ],
             "tlds": [
                 {
-                    "tld": "m"
-                },
+                    "tld": "u1"
+                }
+            ]
+        },
+        "u2": {
+            "notes": "meta for sync data",
+            "file": "u2.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m1"
-                },
+                    "tld": "u2"
+                }
+            ]
+        },
+        "u3": {
+            "notes": "meta for sync data",
+            "file": "u3.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m2"
-                },
+                    "tld": "u3"
+                }
+            ]
+        },
+        "u4": {
+            "notes": "meta for sync data",
+            "file": "u4.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m3"
-                },
+                    "tld": "u4"
+                }
+            ]
+        },
+        "u5": {
+            "notes": "meta for sync data",
+            "file": "u5.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m4"
-                },
+                    "tld": "u5"
+                }
+            ]
+        },
+        "u6": {
+            "notes": "meta for sync data",
+            "file": "u6.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m5"
-                },
+                    "tld": "u6"
+                }
+            ]
+        },
+        "u7": {
+            "notes": "meta for sync data",
+            "file": "u7.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m6"
-                },
+                    "tld": "u7"
+                }
+            ]
+        },
+        "u8": {
+            "notes": "meta for sync data",
+            "file": "u8.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m7"
-                },
+                    "tld": "u8"
+                }
+            ]
+        },
+        "u9": {
+            "notes": "meta for sync data",
+            "file": "u9.db",
+            "tldKeysPerTable": true,
+            "gindex": [
+                "p1",
+                "p2",
+                "p3"
+            ],
+            "tlds": [
                 {
-                    "tld": "m8"
-                },
-                {
-                    "tld": "m9"
+                    "tld": "u9"
                 }
             ]
         }
@@ -63,55 +158,55 @@
                 "protocol": "nomm"
             }
         },
-        "m1": {
+        "u1": {
             "chain": "not",
             "address": {
                 "protocol": "nom1"
             }
         },
-        "m2": {
+        "u2": {
             "chain": "not",
             "address": {
                 "protocol": "nom2"
             }
         },
-        "m3": {
+        "u3": {
             "chain": "not",
             "address": {
                 "protocol": "nom3"
             }
         },
-        "m4": {
+        "u4": {
             "chain": "not",
             "address": {
                 "protocol": "nom4"
             }
         },
-        "m5": {
+        "u5": {
             "chain": "not",
             "address": {
                 "protocol": "nom5"
             }
         },
-        "m6": {
+        "u6": {
             "chain": "not",
             "address": {
                 "protocol": "nom6"
             }
         },
-        "m7": {
+        "u7": {
             "chain": "not",
             "address": {
                 "protocol": "nom7"
             }
         },
-        "m8": {
+        "u8": {
             "chain": "not",
             "address": {
                 "protocol": "nom8"
             }
         },
-        "m9": {
+        "u9": {
             "chain": "not",
             "address": {
                 "protocol": "nom9"

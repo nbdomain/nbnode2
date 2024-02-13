@@ -66,8 +66,11 @@ class Indexers {
 
   static async init() {
     this.cfgFolder = Path.join(__dirname, "../cfg/")
-    dotenv.config({ path: this.cfgFolder + 'env' })
-    this.cfg_chain = Util.readJsonFile(Path.join(this.cfgFolder, "chains/" + process.env.chainid + ".json"))
+    let envFile = this.cfgFolder + 'env'
+    dotenv.config({ path: envFile })
+    const chainid = process.env.chainid
+
+    this.cfg_chain = Util.readJsonFile(Path.join(this.cfgFolder, "chains/" + chainid + ".json"))
     this.config = this.cfg_chain
     const { config } = this
     this.dataFolder = config.dataDir || Path.join(__dirname, "../data/")

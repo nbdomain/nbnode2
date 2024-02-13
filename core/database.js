@@ -848,7 +848,7 @@ class Database {
       }
     }
     //handle props convertion
-    if (item.props) {
+    if (item.props && item.parent) {
       //item.props_org = Object.assign({}, item.props)//structuredClone(item.props)
       const defination = await this.readKey('_def.' + item.parent)//get defination of this level
       if (defination) {
@@ -886,7 +886,7 @@ class Database {
       for (let i = 0; i < ret.length; i++) {
         ret[i] = await this.TransformOneKeyItem(ret[i])
       }
-      return ret
+      return ret.length <= 1 ? ret[0] : ret
     } catch (e) {
       console.error(e.message)
     }
