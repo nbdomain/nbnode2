@@ -207,6 +207,7 @@ class Nodes {
     }
     async loadNodes() {
         const { cfg_chain } = this.indexers
+        const chainid = cfg_chain.chainid
         const self = this;
         const _addFromArray = async function (nodes) {
             if (!Array.isArray(nodes)) return
@@ -215,8 +216,9 @@ class Nodes {
                 const result = await self.addNode({ url })
             }
         }
-        if (process.env.pnodes) {
-            const nodes = JSON.parse(process.env.pnodes)
+        const env_nodes = "nodes_" + chainid
+        if (process.env[env_nodes]) {
+            const nodes = JSON.parse(process.env[env_nodes])
             await _addFromArray(nodes)
         } else if (cfg_chain.pnodes) {
             await _addFromArray(cfg_chain.pnodes)

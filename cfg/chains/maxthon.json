@@ -62,16 +62,22 @@
                 }
             ]
         },
-        "syc_data": {
-            "notes": "config,ads",
-            "file": "sync1.db",
+        "extra123": {
+            "notes": "speaker",
+            "file": "extra123.db",
             "tldKeysPerTable": true,
             "tlds": [
                 {
-                    "tld": "px"
+                    "tld": "ee"
                 },
                 {
-                    "tld": "s1"
+                    "tld": "e1"
+                },
+                {
+                    "tld": "e2"
+                },
+                {
+                    "tld": "e3"
                 }
             ]
         }
@@ -87,12 +93,6 @@
             "chain": "not",
             "address": {
                 "protocol": "notpp"
-            }
-        },
-        "px": {
-            "chain": "not",
-            "address": {
-                "protocol": "notpx"
             }
         },
         "a1": {
@@ -149,10 +149,28 @@
                 "protocol": "noa9"
             }
         },
-        "s1": {
+        "ee": {
             "chain": "not",
             "address": {
-                "protocol": "nots1"
+                "protocol": "notee"
+            }
+        },
+        "e1": {
+            "chain": "not",
+            "address": {
+                "protocol": "note1"
+            }
+        },
+        "e2": {
+            "chain": "not",
+            "address": {
+                "protocol": "note2"
+            }
+        },
+        "e3": {
+            "chain": "not",
+            "address": {
+                "protocol": "note3"
             }
         }
     },
