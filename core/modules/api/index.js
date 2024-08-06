@@ -164,8 +164,8 @@ class appModule {
             if (config.apikey && config.apikey.indexOf(apikey) === -1) {
                 return { code: 100, msg: "no access" }
             }
-            let { exp, para, tld } = req.body
-            return (db.API_runQuery({ exp, para, tld }))
+            let { exp, para, tld, method = 'get' } = req.body
+            return (await db.API_runQuery({ exp, para, tld, method }))
         })
 
         app.get(PREFIX + '/user/:account', async function (req, res) {

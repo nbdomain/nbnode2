@@ -878,19 +878,27 @@ class Database {
       item.k = item.key.slice(0, item.key.indexOf(item.domain) - 1)
     return item
   }
-  async API_runQuery({ exp, para, tld }) {
+  async API_runQuery({ exp, para, method, tld }) {
     try {
       const { db } = this.getDomainDB({ tld })
-      let ret = db.prepare(exp).all(...para)
-      if (!ret) return []
-      for (let i = 0; i < ret.length; i++) {
-        ret[i] = await this.TransformOneKeyItem(ret[i])
+      let ret = null
+      switch (method) {
+        case 'get': ret = db.prepare(exp).get(...para); break;
+        case 'all': ret = db.prepare(exp).all(...para); break;
+        case 'run': ret = db.prepare(exp).run(...para); break;
       }
-      return ret.length <= 1 ? ret[0] : ret
+      if (Array.isArray(ret)) {
+        for (let i = 0; i < ret.length; i++) {
+          ret[i] = await this.TransformOneKeyItem(ret[i])
+        }
+      } else {
+        method != 'run' && ret && (ret = await this.TransformOneKeyItem(ret))
+      }
+      return ret
     } catch (e) {
       console.error(e.message)
     }
-    return []
+    return null
   }
   /*async mangoQuery(q) {
     try {
@@ -1675,6 +1683,10 @@ class Database {
         let lastTime = +this.readConfig('dmdb', lastTimeKey) || 0
         const res = await axios.post(peer.url + "/api/getNewDm", { chainid, toVerify, tmstart: lastTime, type, from: url, info: "keycount", MaxCount })
         const { result, keys, domains, maxTime, diff: diff1 } = res?.data
+        if (res.data == 'not allowed') {
+          console.error('pullNewDomains: not allowed', peer.url)
+          return
+        }
         const count = objLen(result)
         const synced = (count === 0 ? "Synced" : "")
         console.log(peer.url, ` ${type} ${synced}----- Count:`, objLen(result), "Keys:", keys, "Domains:", domains, "maxTime:", maxTime, " tmstart:", lastTime)
