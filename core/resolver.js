@@ -131,17 +131,17 @@ class Resolver {
                         delete obj.nfts[symbol] //remove the non-exist nft
                     }
                 }
-                console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
+                //console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
                 return { code: 0, obj: obj, domain: fullDomain }
             }
             let ret = price ? await Util.fetchDomainPrice(fullDomain, this.db) : { code: 110 };
             ret.domain = fullDomain;
-            console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
+            //console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
 
             return ret.code == 0 ? { ...ret, code: 100 } : ret;
         }
         const ret = await this.readSubdomain(fullDomain, history);
-        console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
+        //console.log("readDomain:", fullDomain, " time:", (Date.now() - time1) / 1000)
 
         if (ret) return ret;
         return { code: ERR.KEY_NOTFOUND, message: fullDomain + " not found" }
