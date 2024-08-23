@@ -470,7 +470,6 @@ class appModule {
         })
 
         app.post(PREFIX + '/execPreparedQuery', async (req, res) => {
-
             const t1 = Date.now()
             const { name, sql, paras, method, transform } = req.body
             const { apikey } = req.headers
@@ -480,7 +479,7 @@ class appModule {
             }
             const ret = await db.API_execPreparedQuery({ name, sql, paras, method, transform })
             const t2 = Date.now()
-            console.log("execPreparedQuery:", para, " time=", (t2 - t1) / 1000)
+            console.log("execPreparedQuery:", paras, " time=", (t2 - t1) / 1000)
             return ret
         })
         app.post(PREFIX + '/getNewDm', async (req, res) => {
