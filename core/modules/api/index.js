@@ -196,13 +196,16 @@ class appModule {
         })
 
         app.post(PREFIX + '/sendTx', async function (req, res) {
+            const t1 = Date.now()
             const { logger } = indexers
             const obj = req.body;
             const IP = getClientIp(req)
-            console.log('/sendTx body:', obj)
+            //console.log('/sendTx body:', obj)
             const ret = await Nodes.sendNewTx(obj)
             if (ret.code != 0)
                 console.error("/sendTx error: ", ret)
+            if ((t2 - t1) / 1000 > 0.1)
+                console.error("long sendTx time:", (t2 - t1) / 1000, "obj", obj)
             return (ret);
         });
         app.post(PREFIX + '/verifyDMs', async function (req, res) {
@@ -479,7 +482,8 @@ class appModule {
             }
             const ret = await db.API_execPreparedQuery({ name, sql, paras, method, transform })
             const t2 = Date.now()
-            // console.log("execPreparedQuery sql:", sql, "paras:", paras, " time=", (t2 - t1) / 1000)
+            if ((t2 - t1) / 1000 > 0.1)
+                console.error("execPreparedQuery sql:", sql, "paras:", paras, " time=", (t2 - t1) / 1000)
             return ret
         })
         app.post(PREFIX + '/getNewDm', async (req, res) => {
