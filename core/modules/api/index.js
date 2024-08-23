@@ -165,12 +165,17 @@ class appModule {
             return (result);
         });
         app.post(PREFIX + '/dbq/', async (req, res) => {
+            const t1 = Date.now()
+
             const apikey = req.headers.apikey
             if (config.apikey && config.apikey.indexOf(apikey) === -1) {
                 return { code: 100, msg: "no access" }
             }
             let { exp, para, tld, method = 'get' } = req.body
-            return (await db.API_runQuery({ exp, para, tld, method }))
+            const ret = (await db.API_runQuery({ exp, para, tld, method }))
+            const t2 = Date.now()
+            console.log("/dbq:", para, " time=", (t2 - t1) / 1000)
+            return ret
         })
 
         app.get(PREFIX + '/user/:account', async function (req, res) {
