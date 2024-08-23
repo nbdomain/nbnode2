@@ -470,6 +470,7 @@ class appModule {
         })
 
         app.post(PREFIX + '/execPreparedQuery', async (req, res) => {
+            console.log("execPreparedQuery")
             const t1 = Date.now()
             const { name, sql, paras, method, transform } = req.body
             const { apikey } = req.headers
