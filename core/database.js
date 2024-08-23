@@ -91,7 +91,8 @@ class Database {
       const _createIndexer = ({ cols, table, tld, dbHandle }) => {
         for (const col of cols) {
           try {
-            const sql = `CREATE INDEX index_${col}_${tld} ON ${table} ( ${col} )`
+            const colss = col.split('_');
+            const sql = `CREATE INDEX index_${col}_${tld} ON ${table} ( ${colss.join(',')} )`
             dbHandle.prepare(sql).run()
           } catch (e) {
             console.error(e.message)
