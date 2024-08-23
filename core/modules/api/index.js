@@ -474,8 +474,8 @@ class appModule {
             const t1 = Date.now()
             const { name, sql, paras, method, transform } = req.body
             const { apikey } = req.headers
-            console.log("execPreparedQuery, apikey:", apikey)
             if (config.apikey && config.apikey.indexOf(apikey) === -1) {
+                console.log("execPreparedQuery, no access")
                 return { code: 100, msg: "no access" }
             }
             const ret = await db.API_execPreparedQuery({ name, sql, paras, method, transform })
