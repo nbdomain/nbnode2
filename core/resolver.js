@@ -110,6 +110,7 @@ class Resolver {
     }
     async readDomain({ fullDomain, forceFull, history = null, price = true }) {
         //fullDomain = fullDomain.toLowerCase()
+        console.log("readDomain:", fullDomain)
         const time1 = Date.now()
         const dd = fullDomain.split('.')
         if (dd.length < 2) return null;
