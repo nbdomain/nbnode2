@@ -96,6 +96,8 @@ class appModule {
         });
         async function getAllItems(para, forceFull = false, from = null, price = true) {
             //check ,
+            const t1 = Date.now()
+
             let items = []
             const domains = para.split(',')
 
@@ -133,6 +135,9 @@ class appModule {
                 if (from && result.obj.ts <= from) continue
                 ret.push(result)
             }
+            const t2 = Date.now()
+            console.log("getAllItems:", para, " time=", (t2 - t1) / 1000)
+
             return ret
         }
         app.get(PREFIX + '/q/*', async function (req, res) {
