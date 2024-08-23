@@ -26,6 +26,7 @@
             "file": "domains.pp.db",
             "tldKeysPerTable": true,
             "gindex": [
+                "parent",
                 "p1",
                 "p2",
                 "p3",
