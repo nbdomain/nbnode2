@@ -202,6 +202,7 @@ class appModule {
             const IP = getClientIp(req)
             //console.log('/sendTx body:', obj)
             const ret = await Nodes.sendNewTx(obj)
+            const t2 = Date.now()
             if (ret.code != 0)
                 console.error("/sendTx error: ", ret)
             if ((t2 - t1) / 1000 > 0.1)
