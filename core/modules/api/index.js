@@ -87,7 +87,7 @@ class appModule {
                     ret.chain = Util.getchain(domain)
                 }
                 const t2 = Date.now()
-                console.log("read Domain:", domain, "time=", (t2 - t1) / 1000)
+                //console.log("read Domain:", domain, "time=", (t2 - t1) / 1000)
                 return (ret);
             } catch (err) {
                 console.error(err);
