@@ -2,8 +2,10 @@ FROM node:20-alpine AS build
 #RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 WORKDIR /tmp
 ENV NODE_ENV production
-ADD package.json /tmp/package.json
-RUN npm install 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+RUN pnpm install --frozen-lockfile
 
 FROM node:20-alpine
 ENV NODE_ENV production
