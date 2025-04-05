@@ -1,11 +1,11 @@
-FROM node:16-alpine AS build
+FROM node:20-alpine AS build
 #RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 WORKDIR /tmp
 ENV NODE_ENV production
 ADD package.json /tmp/package.json
 RUN npm install 
 
-FROM node:16-alpine
+FROM node:20-alpine
 ENV NODE_ENV production
 RUN npm install pm2 -g
 #COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
