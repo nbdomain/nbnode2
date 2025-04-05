@@ -4,7 +4,7 @@ WORKDIR /tmp
 ENV NODE_ENV production
 RUN corepack enable && corepack prepare pnpm@10.7.1 --activate
 COPY package.json pnpm-lock.yaml /tmp/
-RUN echo "LOCKFILE VERSION ↓↓↓" && head -n 10 pnpm-lock.yaml && echo "↑↑↑"
+RUN echo "LOCKFILE VERSION ↓↓↓" && head -n 10 /tmp/pnpm-lock.yaml && echo "↑↑↑"
 RUN pwd && ls -alh
 RUN pnpm install
 
