@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 #RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 WORKDIR /tmp
 ENV NODE_ENV production
-RUN corepack enable && corepack prepare pnpm@10.7.1 --activate
+RUN npm install -g pnpm@10.7.1
 COPY package.json pnpm-lock.yaml /tmp/
 RUN echo "LOCKFILE VERSION ↓↓↓" && head -n 10 /tmp/pnpm-lock.yaml && echo "↑↑↑"
 RUN pwd && ls -alh
