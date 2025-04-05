@@ -3,8 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /tmp
 ENV NODE_ENV production
 RUN corepack enable && corepack prepare pnpm@10.7.1 --activate
-COPY pnpm-lock.yaml /tmp/
-COPY package.json /tmp/
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM node:20-alpine
