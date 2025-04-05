@@ -2,8 +2,8 @@ FROM node:20-alpine AS build
 #RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 WORKDIR /tmp
 ENV NODE_ENV production
-ADD package.json /tmp/package.json
-RUN npm install 
+COPY package*.json ./
+RUN npm ci 
 
 FROM node:20-alpine
 ENV NODE_ENV production
