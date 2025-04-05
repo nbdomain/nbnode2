@@ -19,7 +19,7 @@ COPY --chown=node:node . /home/node/app
 USER node
 
 EXPOSE 9000
-#CMD ["pm2-runtime","/home/node/app/core","-i max"]
+CMD ["pm2-runtime","/home/node/app/core","-i max"]
 
-CMD ["node","core"]
+#CMD ["node","core"]
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
