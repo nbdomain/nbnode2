@@ -72,6 +72,7 @@ class Database {
     // Synchronizes WAL at checkpoints
     db.pragma('synchronous = NORMAL')
     this.preDealDB(db, type)
+    console.log(`[PID ${process.pid}] Opened DB: ${filename}`)
     return db
   }
   initdb(dbname) {
